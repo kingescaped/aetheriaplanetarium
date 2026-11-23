@@ -818,7 +818,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
                 className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
               >
                 <IOSNavigationBar

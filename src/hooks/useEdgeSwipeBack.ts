@@ -55,6 +55,15 @@ export function useEdgeSwipeBack({
   const animControlsRef = useRef<AnimationPlaybackControls | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      if (animControlsRef.current) {
+        animControlsRef.current.stop();
+      }
+      x.set(0);
+    }
+  }, [enabled, x]);
+
+  useEffect(() => {
     return () => {
       if (animControlsRef.current) {
         animControlsRef.current.stop();
@@ -72,6 +81,7 @@ export function useEdgeSwipeBack({
         if (animControlsRef.current) {
           animControlsRef.current.stop();
         }
+        x.set(0);
         isSwipingRef.current = true;
         startXRef.current = touch.clientX;
         startYRef.current = touch.clientY;
@@ -79,7 +89,7 @@ export function useEdgeSwipeBack({
         isHorizontalRef.current = null;
       }
     },
-    [enabled, edgeWidth]
+    [enabled, edgeWidth, x]
   );
 
   const handleTouchMove = useCallback(
@@ -134,8 +144,13 @@ export function useEdgeSwipeBack({
           duration: 0.18,
           ease: [0.32, 0.72, 0, 1],
           onComplete: () => {
-            x.set(0);
+            // Kích hoạt onBack để đóng modal / unmount sub-view trước
             onBackRef.current();
+            // Đợi 50ms sau khi React đã unmount / chuyển trang hoàn tất mới reset x về 0
+            // Tuyệt đối không reset x đồng bộ vì sẽ làm phần tử nhảy ngược về 0px trong 1 frame gây giật lag
+            setTimeout(() => {
+              x.set(0);
+            }, 50);
           },
         });
       } else {
