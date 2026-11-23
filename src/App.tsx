@@ -296,7 +296,7 @@ export function App() {
   const isAnyModalOpen = isAccountOpen || isSearchOpen;
 
   return (
-    <div className={`w-screen h-[100dvh] overflow-hidden relative text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
+    <div className={`fixed inset-0 w-full h-full overflow-hidden text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
       {/* Màn hình khởi tạo hệ thống thiên văn học & hiệu chuẩn Safe Area iOS */}
       <AetheriaSplashScreen isReady={isAppReady} lang={lang} />
 

@@ -52,9 +52,9 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
     <div
       className={`ios-nav-bar w-full z-20 flex flex-col justify-end border-b border-white/10 bg-[#060c1c]/95 backdrop-blur-md select-none flex-shrink-0 ${className}`}
       style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        minHeight: 'calc(56px + env(safe-area-inset-top, 0px))',
-        height: 'calc(56px + env(safe-area-inset-top, 0px))',
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
+        minHeight: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
+        height: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
         ...style,
       }}
     >

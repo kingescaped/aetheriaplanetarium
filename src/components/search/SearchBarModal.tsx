@@ -85,16 +85,16 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
       <motion.div 
         {...swipeHandlers}
         style={{ ...swipeStyle }}
-        className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col bg-[#030712]"
+        className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col bg-[#060c1c]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar with explicit 'X' button and safe area inset */}
         <div 
           className="flex flex-col justify-end border-b border-white/10 bg-[#060c1c] flex-shrink-0"
           style={{
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-            minHeight: 'calc(56px + env(safe-area-inset-top, 0px))',
-            height: 'calc(56px + env(safe-area-inset-top, 0px))',
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
+            minHeight: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
+            height: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
           }}
         >
           <div className="w-full h-[56px] flex items-center px-4">
@@ -199,7 +199,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
         <div 
           className="flex-1 overflow-y-auto p-2.5 md:p-3 divide-y divide-white/5 overscroll-contain"
           style={{
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+            paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 24px)',
           }}
         >
           {filteredStars.length > 0 ? (

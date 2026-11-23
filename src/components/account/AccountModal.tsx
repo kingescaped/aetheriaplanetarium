@@ -731,12 +731,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onClose}
-      className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
+      className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#060c1c] md:bg-black/75 backdrop-blur-xl"
     >
       <motion.div 
         {...rootSwipeHandlers}
         style={{ ...rootSwipeStyle }}
-        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
+        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#060c1c] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+max(env(safe-area-inset-bottom,0px),16px))] md:pb-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ===================== MOBILE LAYOUT ===================== */}
@@ -819,14 +819,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     handleCloseSection();
                   }
                 }}
-                className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
+                className="absolute inset-0 z-20 flex flex-col bg-[#060c1c] shadow-2xl"
               >
                 <IOSNavigationBar
                   title={currentSectionMeta?.title}
                   backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
                   onBack={handleCloseSection}
                 />
-                <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
+                <div className="flex-1 overflow-y-auto p-4 pb-12 overscroll-contain">
                   {renderSectionContent(activeSection)}
                 </div>
               </motion.div>

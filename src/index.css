@@ -11,8 +11,8 @@
   
   html, body, #root {
     width: 100%;
+    min-height: 100%;
     height: 100%;
-    height: 100dvh;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -24,12 +24,12 @@
   }
 
   body {
-    background-color: #030712;
+    background-color: #060c1c;
     background-image: 
       radial-gradient(circle at 50% 10%, rgba(30, 41, 89, 0.4) 0%, transparent 60%),
       radial-gradient(circle at 10% 90%, rgba(45, 27, 85, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 90% 80%, rgba(13, 40, 71, 0.35) 0%, transparent 50%),
-      linear-gradient(180deg, #02040a 0%, #060b18 50%, #030611 100%);
+      linear-gradient(180deg, #060c1c 0%, #040814 40%, #030611 100%);
     background-attachment: fixed;
     color: #e2e8f0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -42,9 +42,10 @@
 
 :root {
   --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
+  --sab: max(env(safe-area-inset-bottom, 0px), 16px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+  --bottom-nav-height: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px));
 }
 
 /* --- BÙ LỀ AN TOÀN IOS (SAFE AREA) --- */
@@ -53,25 +54,25 @@
   .safe-header {
     padding-top: max(env(safe-area-inset-top), 12px) !important;
     /* Chiều cao = Chiều cao gốc (56px) + Tai thỏ */
-    min-height: calc(56px + env(safe-area-inset-top)) !important;
+    min-height: calc(56px + max(env(safe-area-inset-top), 12px)) !important;
   }
   
   /* Cho Bottom Nav / Chân trang */
   .safe-bottom-nav {
     padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
     /* Chiều cao = Chiều cao gốc (64px) + Home indicator */
-    min-height: calc(64px + env(safe-area-inset-bottom)) !important;
+    min-height: calc(64px + max(env(safe-area-inset-bottom), 16px)) !important;
   }
 }
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px) + 12px);
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px));
 }
 
 @media (min-width: 768px) {
@@ -142,26 +143,4 @@
   filter: hue-rotate(320deg) saturate(2.5) brightness(0.85);
 }
 
-/* --- BÙ LỀ AN TOÀN IOS (SAFE AREA) --- */
-@supports (padding-top: env(safe-area-inset-top)) {
-  /* Cho Header / Top Bar */
-  .safe-header {
-    padding-top: max(env(safe-area-inset-top), 12px) !important;
-    /* Chiều cao = Chiều cao gốc (56px) + Tai thỏ */
-    min-height: calc(56px + env(safe-area-inset-top)) !important;
-  }
-  
-  /* Cho Bottom Nav / Chân trang */
-  .safe-bottom-nav {
-    padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
-    /* Chiều cao = Chiều cao gốc (64px) + Home indicator */
-    min-height: calc(64px + env(safe-area-inset-bottom)) !important;
-  }
-}
 
-@media (min-width: 768px) {
-  .safe-header {
-    padding-top: 12px !important;
-    min-height: auto !important;
-  }
-}
