@@ -75,12 +75,12 @@
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(4.75rem + max(env(safe-area-inset-bottom), 16px));
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(3.75rem + max(env(safe-area-inset-bottom), 16px));
 }
 @media (min-width: 768px) {
   .sidebar-mobile-bound {

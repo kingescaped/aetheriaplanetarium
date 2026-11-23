@@ -43,7 +43,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-6 py-2 safe-bottom glass-panel border-t border-white/10 shadow-2xl flex items-center justify-around pointer-events-auto">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-6 pt-2 pb-[max(env(safe-area-inset-bottom),16px)] min-h-[calc(3.75rem+max(env(safe-area-inset-bottom),16px))] glass-panel border-t border-white/10 shadow-2xl flex items-center justify-around pointer-events-auto">
       {/* 1. 2D Sky Map */}
       <button
         onClick={() => handleSelectView('2D_PLANETARIUM')}

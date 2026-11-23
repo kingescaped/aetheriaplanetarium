@@ -369,7 +369,7 @@ export function App() {
 
       {/* Mobile Telemetry HUD Card: Nằm ngay dưới phần đồng hồ giờ theo đúng yêu cầu */}
       {selectedStar && !isAccountOpen && !isSearchOpen && (
-        <div className="md:hidden fixed top-14 right-2.5 z-30 max-w-[210px] pointer-events-auto">
+        <div className="md:hidden fixed top-[calc(max(env(safe-area-inset-top),16px)+3.25rem)] right-2.5 z-30 max-w-[210px] pointer-events-auto">
           <StarTelemetryHUD star={selectedStar} lang={lang} />
         </div>
       )}
