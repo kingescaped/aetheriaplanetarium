@@ -500,13 +500,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop Overlay (Clicking outside closes drawer) */}
-      {isOpen && (
-        <div
-          onClick={onToggle}
-          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-in fade-in"
-        />
-      )}
+      {/* Mobile Backdrop Overlay (Fades out smoothly in 300ms, no instant flash) */}
+      <div
+        onClick={onToggle}
+        className={`md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
       {/* Side Drawer Panel (Mobile: sliding left drawer max 88vw | Desktop: left panel) */}
       <aside
@@ -527,58 +527,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           </div>
 
-          {isOpen ? (
-            <>
-              {tabNavigation}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain">
-                {tabContent}
-              </div>
-            </>
-          ) : (
-            /* Mini vertical icon bar when collapsed - Compact Dock (Desktop only) */
-            <div className="py-2.5 flex flex-col items-center space-y-2">
-              <button
-                onClick={() => {
-                  setActiveTab('observation');
-                  onToggle();
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                title={t.tabLocation}
-              >
-                <MapPin className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('time');
-                  onToggle();
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                title={t.tabTime}
-              >
-                <Clock className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('layers');
-                  onToggle();
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                title={t.tabLayers}
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('catalog');
-                  onToggle();
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                title={t.tabCatalog}
-              >
-                <StarIcon className="w-4 h-4" />
-              </button>
+          {/* Mobile: Luôn giữ nguyên nội dung khi trượt ra ngoài để tránh nháy khung hình */}
+          <div className="md:hidden flex flex-col flex-1 overflow-hidden">
+            {tabNavigation}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain">
+              {tabContent}
             </div>
-          )}
+          </div>
+
+          {/* Desktop: Chuyển đổi giữa full panel và mini dock */}
+          <div className="hidden md:flex flex-col flex-1 overflow-hidden">
+            {isOpen ? (
+              <>
+                {tabNavigation}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain">
+                  {tabContent}
+                </div>
+              </>
+            ) : (
+              /* Mini vertical icon bar when collapsed - Compact Dock (Desktop only) */
+              <div className="py-2.5 flex flex-col items-center space-y-2">
+                <button
+                  onClick={() => {
+                    setActiveTab('observation');
+                    onToggle();
+                  }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                  title={t.tabLocation}
+                >
+                  <MapPin className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('time');
+                    onToggle();
+                  }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                  title={t.tabTime}
+                >
+                  <Clock className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('layers');
+                    onToggle();
+                  }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                  title={t.tabLayers}
+                >
+                  <Layers className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('catalog');
+                    onToggle();
+                  }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                  title={t.tabCatalog}
+                >
+                  <StarIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </>

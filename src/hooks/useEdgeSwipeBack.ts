@@ -59,9 +59,12 @@ export function useEdgeSwipeBack({
       if (animControlsRef.current) {
         animControlsRef.current.stop();
       }
-      x.set(0);
+      // TUYỆT ĐỐI KHÔNG gọi x.set(0) ở đây!
+      // Khi component unmount (hoặc activeSection chuyển sang null), enabled đổi thành false.
+      // Nếu gọi x.set(0), MotionValue sẽ ngay lập tức kéo phần tử trở lại vị trí 0px trên DOM
+      // trước khi React kịp gỡ bỏ phần tử, gây ra hiện tượng NHÁY KHUNG HÌNH!
     }
-  }, [enabled, x]);
+  }, [enabled]);
 
   useEffect(() => {
     return () => {

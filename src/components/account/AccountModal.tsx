@@ -119,15 +119,19 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     onBack: () => {
       soundFx.playTabClick();
       setActiveSection(null);
-      subSwipeX.set(0);
+      // TUYỆT ĐỐI KHÔNG gọi subSwipeX.set(0) ở đây! View đang ở targetX (ngoài màn hình) và unmount an toàn
     },
     edgeWidth: 32,
     threshold: 60,
     enabled: isOpen && activeSection !== null,
   });
 
+  const isNavigatingRef = React.useRef(false);
+
   // Mở mục con với animation trượt mượt mà từ phải sang trái (120fps Native Apple)
   const handleOpenSection = (section: SettingSection) => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
     soundFx.playTabClick();
     const startX = typeof window !== 'undefined' ? window.innerWidth : 400;
     subSwipeX.set(startX);
@@ -135,19 +139,26 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     animate(subSwipeX, 0, {
       duration: 0.22,
       ease: [0.32, 0.72, 0, 1],
+      onComplete: () => {
+        isNavigatingRef.current = false;
+      },
     });
   };
 
   // Đóng mục con khi bấm nút Back (< Cài đặt): Trượt êm ra khỏi màn hình rồi mới unmount
   const handleCloseSection = () => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
     soundFx.playTabClick();
     const targetX = typeof window !== 'undefined' ? window.innerWidth : 400;
     animate(subSwipeX, targetX, {
-      duration: 0.18,
+      duration: 0.2,
       ease: [0.32, 0.72, 0, 1],
       onComplete: () => {
+        // Chỉ unmount sau khi view đã trượt hoàn toàn ra ngoài mép phải màn hình
         setActiveSection(null);
-        subSwipeX.set(0);
+        isNavigatingRef.current = false;
+        // TUYỆT ĐỐI KHÔNG gọi subSwipeX.set(0) ở đây vì sẽ làm view giật ngược vào giữa màn hình trong 1 frame!
       },
     });
   };

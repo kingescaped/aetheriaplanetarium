@@ -297,10 +297,8 @@ export function App() {
     );
   };
 
-  // Check if any modal/drawer is open (to hide Header and HUD on mobile to prevent overlap)
-  const isAnyModalOpen = isMobile 
-    ? (isAccountOpen || isSearchOpen || isSidebarOpen) 
-    : (isAccountOpen || isSearchOpen);
+  // Check if full-screen modal (Settings / Search) is open to hide Main Header
+  const isAnyModalOpen = isAccountOpen || isSearchOpen;
 
   return (
     <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
