@@ -84,6 +84,16 @@ export function usePWA(): UsePWAResult {
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
+    // Tự động reload trang khi Service Worker phiên bản mới đã kích hoạt
+    let refreshing = false;
+    const handleControllerChange = () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
     try {
       const update = registerSW({
         onNeedRefresh() {
@@ -103,6 +113,10 @@ export function usePWA(): UsePWAResult {
     } catch (err) {
       console.warn('PWA ServiceWorker registration notice:', err);
     }
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    };
   }, []);
 
   // 4. Trigger install prompt
