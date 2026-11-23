@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Canvas } from '@react-three/fiber';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import { StarPoints3D } from './StarPoints3D';
@@ -62,6 +63,32 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   const [recenterTrigger, setRecenterTrigger] = useState<number>(0);
   const [cameraHeading, setCameraHeading] = useState<{ az: number; alt: number } | null>(null);
   const displayHeading = cameraHeading || currentHeading;
+
+  // Anchored AR Slot on top of mobile StarBottomSheet ("keo cái AR vào ở trên cái thẻ thông tin")
+  const [arSlot, setArSlot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedStar) {
+      setArSlot(null);
+      return;
+    }
+    const checkSlot = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        const el = document.getElementById('star-sheet-ar-slot');
+        setArSlot(el);
+      } else {
+        setArSlot(null);
+      }
+    };
+    checkSlot();
+    const timer = setTimeout(checkSlot, 60);
+    const observer = new MutationObserver(checkSlot);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [selectedStar]);
 
   // Compute Local Sidereal Time for constellation labels
   const lst = getLST(currentDate, location.longitude);
@@ -178,72 +205,137 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         <TargetSimulation3D selectedStar={selectedStar} lang={lang} />
       </Canvas>
 
-      {/* Floating AR Star Tracker Control Widget (Positioned at bottom-right on mobile, above StarBottomSheet) */}
-      <div
-        className={`fixed md:absolute z-30 pointer-events-auto flex flex-col items-end md:items-center gap-2 transition-all duration-300 ${
-          selectedStar
-            ? 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+96px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
-            : 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+12px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
-        }`}
-      >
-        {!isGyroEnabled ? (
-          <button
-            onClick={handleARButtonClick}
-            className="flex items-center space-x-2 px-3.5 py-2 md:py-1.5 rounded-full glass-panel border border-cyan-500/30 hover:border-cyan-400/60 bg-slate-900/85 hover:bg-slate-800/90 text-xs font-mono text-slate-200 hover:text-white transition-all shadow-glow-cyan/20 active:scale-95 group backdrop-blur-xl"
-            title={t.arTrackerDesc}
-          >
-            <Compass className="w-4 h-4 text-cyan-400 group-hover:rotate-45 transition-transform flex-shrink-0" />
-            <span className="font-sans font-medium text-[12px]">{t.arTracker}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono font-bold">
-              AR
-            </span>
-          </button>
-        ) : (
-          <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-950/90 border border-cyan-400/60 shadow-glow-cyan backdrop-blur-xl animate-fade-in">
-            <div className="relative flex items-center justify-center w-3 h-3 flex-shrink-0">
-              <div className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-75" />
-              <div className="w-2 h-2 rounded-full bg-cyan-300" />
-            </div>
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold font-mono tracking-widest text-cyan-300">
-                  {isSimulated ? (lang === 'vi' ? 'AR MÔ PHỎNG' : 'AR DEMO') : t.arTrackingActive}
+      {/* Floating AR Star Tracker Control Widget (Portaled on top of StarBottomSheet when active on mobile) */}
+      {arSlot ? (
+        createPortal(
+          <div className="pointer-events-auto">
+            {!isGyroEnabled ? (
+              <button
+                onClick={handleARButtonClick}
+                className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-panel border border-cyan-500/30 hover:border-cyan-400/60 bg-slate-900/90 hover:bg-slate-800/95 text-xs font-mono text-slate-200 hover:text-white transition-all shadow-glow-cyan/20 active:scale-95 group backdrop-blur-xl cursor-pointer"
+                title={t.arTrackerDesc}
+              >
+                <Compass className="w-4 h-4 text-cyan-400 group-hover:rotate-45 transition-transform flex-shrink-0" />
+                <span className="font-sans font-medium text-[12px]">{t.arTracker}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono font-bold">
+                  AR
                 </span>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-950/90 border border-cyan-400/60 shadow-glow-cyan backdrop-blur-xl animate-fade-in">
+                <div className="relative flex items-center justify-center w-3 h-3 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-75" />
+                  <div className="w-2 h-2 rounded-full bg-cyan-300" />
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold font-mono tracking-widest text-cyan-300">
+                      {isSimulated ? (lang === 'vi' ? 'AR MÔ PHỎNG' : 'AR DEMO') : t.arTrackingActive}
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-300 flex items-center gap-1.5">
+                    <span>{getCardinalName(displayHeading.az)} ({Math.round(displayHeading.az)}°)</span>
+                    <span>•</span>
+                    <span>Alt: {Math.round(displayHeading.alt)}°</span>
+                  </div>
+                </div>
+
+                {/* Recenter button */}
+                <button
+                  onClick={() => {
+                    soundFx.playToggle(true);
+                    setRecenterTrigger((prev) => prev + 1);
+                  }}
+                  className="p-1 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-200 transition-colors cursor-pointer"
+                  title={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Turn off AR */}
+                <button
+                  onClick={() => {
+                    soundFx.playToggle(false);
+                    disableGyro();
+                  }}
+                  className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="text-[10px] font-mono text-slate-300 flex items-center gap-1.5">
-                <span>{getCardinalName(displayHeading.az)} ({Math.round(displayHeading.az)}°)</span>
-                <span>•</span>
-                <span>Alt: {Math.round(displayHeading.alt)}°</span>
+            )}
+          </div>,
+          arSlot
+        )
+      ) : (
+        <div
+          className={`fixed md:absolute z-30 pointer-events-auto flex flex-col items-end md:items-center gap-2 transition-all duration-300 ${
+            selectedStar
+              ? 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+96px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
+              : 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+12px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
+          }`}
+        >
+          {!isGyroEnabled ? (
+            <button
+              onClick={handleARButtonClick}
+              className="flex items-center space-x-2 px-3.5 py-2 md:py-1.5 rounded-full glass-panel border border-cyan-500/30 hover:border-cyan-400/60 bg-slate-900/85 hover:bg-slate-800/90 text-xs font-mono text-slate-200 hover:text-white transition-all shadow-glow-cyan/20 active:scale-95 group backdrop-blur-xl cursor-pointer"
+              title={t.arTrackerDesc}
+            >
+              <Compass className="w-4 h-4 text-cyan-400 group-hover:rotate-45 transition-transform flex-shrink-0" />
+              <span className="font-sans font-medium text-[12px]">{t.arTracker}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono font-bold">
+                AR
+              </span>
+            </button>
+          ) : (
+            <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-950/90 border border-cyan-400/60 shadow-glow-cyan backdrop-blur-xl animate-fade-in">
+              <div className="relative flex items-center justify-center w-3 h-3 flex-shrink-0">
+                <div className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-75" />
+                <div className="w-2 h-2 rounded-full bg-cyan-300" />
               </div>
+
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold font-mono tracking-widest text-cyan-300">
+                    {isSimulated ? (lang === 'vi' ? 'AR MÔ PHỎNG' : 'AR DEMO') : t.arTrackingActive}
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-300 flex items-center gap-1.5">
+                  <span>{getCardinalName(displayHeading.az)} ({Math.round(displayHeading.az)}°)</span>
+                  <span>•</span>
+                  <span>Alt: {Math.round(displayHeading.alt)}°</span>
+                </div>
+              </div>
+
+              {/* Recenter button (Reset manual drag offset to phone heading) */}
+              <button
+                onClick={() => {
+                  soundFx.playToggle(true);
+                  setRecenterTrigger((prev) => prev + 1);
+                }}
+                className="p-1 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-200 transition-colors cursor-pointer"
+                title={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
+              >
+                <Compass className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Turn off AR */}
+              <button
+                onClick={() => {
+                  soundFx.playToggle(false);
+                  disableGyro();
+                }}
+                className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
             </div>
-
-            {/* Recenter button (Reset manual drag offset to phone heading) */}
-            <button
-              onClick={() => {
-                soundFx.playToggle(true);
-                setRecenterTrigger((prev) => prev + 1);
-              }}
-              className="p-1 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-200 transition-colors"
-              title={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
-            >
-              <Compass className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Turn off AR */}
-            <button
-              onClick={() => {
-                soundFx.playToggle(false);
-                disableGyro();
-              }}
-              className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-              title={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Floating 3D Navigation Guide Tip */}
       <div

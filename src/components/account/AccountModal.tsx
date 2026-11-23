@@ -29,7 +29,7 @@ import { IOSSwitch } from '../layout/IOSSwitch';
 import { UsePWAResult } from '../../hooks/usePWA';
 import { Download, CheckCircle2 } from 'lucide-react';
 import { AetheriaStarLogo } from '../common/AetheriaLogo';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 
 interface AccountModalProps {
@@ -106,22 +106,23 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   }, [isOpen, onClose]);
 
   // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS:
-  // - Khi đang ở mục con (activeSection !== null): vuốt mép trái sẽ quay lại Hub cài đặt chính
-  // - Khi đang ở Hub cài đặt chính: vuốt mép trái sẽ đóng Modal cài đặt
-  const handleSwipeBack = () => {
-    if (activeSection !== null) {
-      soundFx.playTabClick();
-      setActiveSection(null);
-    } else {
-      onClose();
-    }
-  };
-
-  const { handlers: swipeHandlers, style: swipeStyle, backdropOpacity } = useEdgeSwipeBack({
-    onBack: handleSwipeBack,
+  // 1. Khi đang ở Root Hub Cài đặt (activeSection === null): Vuốt mép trái sẽ đóng Modal cài đặt
+  const { handlers: rootSwipeHandlers, style: rootSwipeStyle, backdropOpacity } = useEdgeSwipeBack({
+    onBack: onClose,
     edgeWidth: 32,
     threshold: 60,
-    enabled: isOpen,
+    enabled: isOpen && activeSection === null,
+  });
+
+  // 2. Khi đang ở mục con chi tiết (activeSection !== null): Vuốt mép trái sẽ chỉ trượt mục con sang phải, để lộ Hub cài đặt bên dưới
+  const { handlers: subSwipeHandlers, style: subSwipeStyle } = useEdgeSwipeBack({
+    onBack: () => {
+      soundFx.playTabClick();
+      setActiveSection(null);
+    },
+    edgeWidth: 32,
+    threshold: 60,
+    enabled: isOpen && activeSection !== null,
   });
 
   if (!isOpen) return null;
@@ -733,43 +734,26 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
     >
       <motion.div 
-        {...swipeHandlers}
-        style={{ ...swipeStyle }}
+        {...rootSwipeHandlers}
+        style={{ ...rootSwipeStyle }}
         className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS-Style UINavigationBar: Centered Title, Shortened Back Button, Standard HIG */}
-        <IOSNavigationBar
-          title={activeSection !== null ? currentSectionMeta?.title : (lang === 'vi' ? 'Cài đặt' : 'Settings')}
-          backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
-          onBack={activeSection !== null ? () => setActiveSection(null) : undefined}
-          largeTitle={activeSection === null}
-          trailing={
-            <button
-              onClick={() => {
-                soundFx.playTabClick();
-                onClose();
-              }}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:opacity-60 text-slate-300 hover:text-white transition-all flex items-center justify-center cursor-pointer"
-              title={lang === 'vi' ? 'Đóng cài đặt (Esc)' : 'Close settings (Esc)'}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          }
-        />
-
         {/* ===================== MOBILE LAYOUT ===================== */}
-        <div className="md:hidden flex-1 overflow-y-auto">
-          {activeSection === null ? (
-            /* MOBILE MAIN SETTINGS HUB (Clean Grouped List, No Redundant Subtitles) */
-            <div className="p-4 space-y-4">
+        <div className="md:hidden relative w-full h-full flex flex-col overflow-hidden">
+          {/* 1. Level 0: Mobile Main Settings Hub (Luôn hiển thị ở lớp nền bên dưới) */}
+          <div className="w-full h-full flex flex-col overflow-hidden">
+            <IOSNavigationBar
+              title={lang === 'vi' ? 'Cài đặt' : 'Settings'}
+            />
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
               {/* Profile Card Banner */}
               <div 
                 onClick={() => {
                   soundFx.playTabClick();
                   setActiveSection('profile');
                 }}
-                className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all"
+                className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer"
               >
                 <div className="w-13 h-13 rounded-2xl bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-xl font-bold font-hud text-cyan-300 flex-shrink-0">
                   {user.name.charAt(0).toUpperCase()}
@@ -787,7 +771,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 <ChevronRight className="w-5 h-5 text-slate-500" />
               </div>
 
-              {/* Grouped Settings List (Clean, Subtitles Removed) */}
+              {/* Grouped Settings List (Clean, Không dấu X trên mobile) */}
               <div className="space-y-1.5">
                 <div className="rounded-2xl glass-panel divide-y divide-white/5 overflow-hidden border border-white/5">
                   {navSections.map((item) => {
@@ -799,7 +783,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                           soundFx.playTabClick();
                           setActiveSection(item.id);
                         }}
-                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 active:bg-cyan-500/10 transition-all"
+                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 active:bg-cyan-500/10 transition-all cursor-pointer"
                       >
                         <div className="flex items-center space-x-3.5">
                           <div className="w-8 h-8 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center flex-shrink-0">
@@ -822,52 +806,93 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : (
-            /* MOBILE DETAILED SUB-VIEW */
-            <div className="p-4">
-              {renderSectionContent(activeSection)}
-            </div>
-          )}
+          </div>
+
+          {/* 2. Level 1: Mobile Detailed Sub-View (Lớp phủ trượt sang phải khi vuốt back, LỘ RÕ Hub Cài đặt ở dưới) */}
+          <AnimatePresence>
+            {activeSection !== null && (
+              <motion.div
+                key={activeSection}
+                {...subSwipeHandlers}
+                style={{ ...subSwipeStyle }}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
+              >
+                <IOSNavigationBar
+                  title={currentSectionMeta?.title}
+                  backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
+                  onBack={() => {
+                    soundFx.playTabClick();
+                    setActiveSection(null);
+                  }}
+                />
+                <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
+                  {renderSectionContent(activeSection)}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ===================== DESKTOP MASTER-DETAIL LAYOUT ===================== */}
-        <div className="hidden md:flex flex-1 overflow-hidden">
-          {/* Left Category Sidebar */}
-          <div className="w-72 border-r border-white/10 bg-slate-950/40 p-3 space-y-1 overflow-y-auto">
-            {navSections.map((item) => {
-              const Icon = item.icon;
-              const isSelected = desktopTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    soundFx.playTabClick();
-                    setDesktopTab(item.id);
-                  }}
-                  className={`w-full p-3 rounded-2xl flex items-center justify-between text-left transition-all ${
-                    isSelected
-                      ? 'bg-cyan-500/20 border border-cyan-400/40 text-white shadow-glow-cyan'
-                      : 'hover:bg-white/5 text-slate-300 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <Icon className={`w-4 h-4 ${item.color}`} />
-                    <span className="text-xs font-semibold">{item.title}</span>
-                  </div>
+        <div className="hidden md:flex flex-col flex-1 overflow-hidden">
+          {/* Desktop Navigation Bar with Close button */}
+          <IOSNavigationBar
+            title={desktopTab ? navSections.find((s) => s.id === desktopTab)?.title : (lang === 'vi' ? 'Cài đặt' : 'Settings')}
+            trailing={
+              <button
+                onClick={() => {
+                  soundFx.playTabClick();
+                  onClose();
+                }}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:opacity-60 text-slate-300 hover:text-white transition-all flex items-center justify-center cursor-pointer"
+                title={lang === 'vi' ? 'Đóng cài đặt (Esc)' : 'Close settings (Esc)'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            }
+          />
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Category Sidebar */}
+            <div className="w-72 border-r border-white/10 bg-slate-950/40 p-3 space-y-1 overflow-y-auto">
+              {navSections.map((item) => {
+                const Icon = item.icon;
+                const isSelected = desktopTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      soundFx.playTabClick();
+                      setDesktopTab(item.id);
+                    }}
+                    className={`w-full p-3 rounded-2xl flex items-center justify-between text-left transition-all ${
+                      isSelected
+                        ? 'bg-cyan-500/20 border border-cyan-400/40 text-white shadow-glow-cyan'
+                        : 'hover:bg-white/5 text-slate-300 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <Icon className={`w-4 h-4 ${item.color}`} />
+                      <span className="text-xs font-semibold">{item.title}</span>
+                    </div>
 
-                  {item.badge !== null && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-300 border border-white/10">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    {item.badge !== null && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-300 border border-white/10">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Right Detailed Settings Pane */}
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-950/20">
-            {renderSectionContent(desktopTab)}
+            {/* Right Detailed Settings Pane */}
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-950/20">
+              {renderSectionContent(desktopTab)}
+            </div>
           </div>
         </div>
       </motion.div>

@@ -84,18 +84,23 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
           }
         }}
         // Thiết kế tinh giản siêu gọn (Ultra-compact), vị trí nổi chuẩn xác phía trên thanh BottomNav
-        className="md:hidden fixed star-bottom-sheet left-2.5 right-2.5 z-40 rounded-2xl glass-panel border border-cyan-500/40 shadow-2xl overflow-hidden pointer-events-auto select-none"
+        className="md:hidden fixed star-bottom-sheet left-2.5 right-2.5 z-40 pointer-events-none select-none flex flex-col items-end"
       >
-        {/* Drag Handle Indicator */}
-        <div 
-          onClick={() => {
-            soundFx.playModalTransition();
-            setIsExpanded(!isExpanded);
-          }}
-          className="w-full pt-1.5 pb-0.5 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing"
-        >
-          <div className="w-8 h-1 rounded-full bg-cyan-400/40 hover:bg-cyan-400 transition-colors" />
-        </div>
+        {/* Anchored AR Star Tracker Slot: Gắn chặt nổi phía trên mép phải thẻ thông tin */}
+        <div id="star-sheet-ar-slot" className="pointer-events-auto mb-2 flex justify-end" />
+
+        {/* Card Body Container */}
+        <div className="w-full rounded-2xl glass-panel border border-cyan-500/40 shadow-2xl overflow-hidden pointer-events-auto">
+          {/* Drag Handle Indicator */}
+          <div 
+            onClick={() => {
+              soundFx.playModalTransition();
+              setIsExpanded(!isExpanded);
+            }}
+            className="w-full pt-1.5 pb-0.5 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing"
+          >
+            <div className="w-8 h-1 rounded-full bg-cyan-400/40 hover:bg-cyan-400 transition-colors" />
+          </div>
 
         {/* Compact Header: Tên sao, Chòm sao & Nút điều khiển nhanh */}
         <div className="px-3 py-1 flex items-center justify-between">
@@ -280,6 +285,7 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
             )}
           </div>
         )}
+        </div>
       </motion.div>
     </AnimatePresence>
   );

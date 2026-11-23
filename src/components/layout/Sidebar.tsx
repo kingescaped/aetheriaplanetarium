@@ -500,39 +500,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* 1. Mobile Full-Screen Layout: Unified iOS Page Screen */}
-      <div className="md:hidden">
-        <MobilePageScreen
-          title={t.controlsTitle}
-          backLabel={lang === 'vi' ? 'Bản đồ' : 'Map'}
-          onBack={onToggle}
-          onClose={onToggle}
-          isOpen={isOpen}
-          contentClassName="p-0 flex flex-col"
-        >
-          {tabNavigation}
-          <div className="flex-1 p-4 space-y-4 font-sans text-xs">
-            {tabContent}
-          </div>
-        </MobilePageScreen>
-      </div>
+      {/* Mobile Backdrop Overlay (Clicking outside closes drawer) */}
+      {isOpen && (
+        <div
+          onClick={onToggle}
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        />
+      )}
 
-      {/* 2. Desktop Collapsible Drawer Layout */}
+      {/* Side Drawer Panel (Mobile: sliding left drawer max 88vw | Desktop: left panel) */}
       <aside
-        className={`hidden md:flex md:absolute top-16 left-4 z-20 transition-all duration-300 ease-in-out pointer-events-auto ${
-          isOpen ? 'w-80 sm:w-96 bottom-14' : 'w-11 h-auto pointer-events-auto'
+        className={`fixed md:absolute top-0 left-0 md:left-4 z-50 md:z-20 transition-all duration-300 ease-in-out flex pointer-events-auto ${
+          isOpen 
+            ? 'w-80 sm:w-96 max-w-[88vw] translate-x-0 sidebar-mobile-bound md:top-16 md:bottom-14' 
+            : '-translate-x-full md:translate-x-0 md:w-11 md:top-16 md:h-auto pointer-events-none md:pointer-events-auto'
         }`}
       >
-        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border border-white/10 shadow-glass ${isOpen ? 'h-full' : 'h-auto'}`}>
+        {/* Container with Glassmorphism */}
+        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border-r md:border border-white/10 shadow-glass ${isOpen ? 'h-full' : 'h-auto'}`}>
+          {/* Mobile iOS Navigation Bar (Without Close 'X' Button) */}
+          <div className="md:hidden">
+            <IOSNavigationBar
+              title={t.controlsTitle}
+              backLabel={lang === 'vi' ? 'Bản đồ' : 'Map'}
+              onBack={onToggle}
+            />
+          </div>
+
           {isOpen ? (
             <>
               {tabNavigation}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain">
                 {tabContent}
               </div>
             </>
           ) : (
-            /* Mini vertical icon bar when collapsed - Compact Dock */
+            /* Mini vertical icon bar when collapsed - Compact Dock (Desktop only) */
             <div className="py-2.5 flex flex-col items-center space-y-2">
               <button
                 onClick={() => {
