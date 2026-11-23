@@ -69,17 +69,26 @@ export function App() {
     timeSpeed: 1, // 1x normal speed
   });
 
-  // UI Panels State (Sidebar closed by default on mobile)
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
-    return typeof window !== 'undefined' ? window.innerWidth >= 768 : false;
-  });
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  });
+  // Xác định chuẩn xác giao diện Mobile ngay từ frame đầu tiên (tránh độ trễ viewport 980px trên Safari/iOS)
+  const checkIsMobile = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const isSmallScreen = window.innerWidth < 768;
+    const isMediaSmall = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches;
+    const isMobileUA = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return isSmallScreen || isMediaSmall || isMobileUA;
+  };
+
+  // UI Panels State (Sidebar LUÔN đóng mặc định trên Mobile ngay từ đầu)
+  const [isMobile, setIsMobile] = useState<boolean>(checkIsMobile);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => !checkIsMobile());
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = checkIsMobile();
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarOpen(false);
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

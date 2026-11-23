@@ -29,7 +29,7 @@ import { IOSSwitch } from '../layout/IOSSwitch';
 import { UsePWAResult } from '../../hooks/usePWA';
 import { Download, CheckCircle2 } from 'lucide-react';
 import { AetheriaStarLogo } from '../common/AetheriaLogo';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, animate } from 'framer-motion';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 
 interface AccountModalProps {
@@ -115,15 +115,42 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   });
 
   // 2. Khi đang ở mục con chi tiết (activeSection !== null): Vuốt mép trái sẽ chỉ trượt mục con sang phải, để lộ Hub cài đặt bên dưới
-  const { handlers: subSwipeHandlers, style: subSwipeStyle } = useEdgeSwipeBack({
+  const { handlers: subSwipeHandlers, style: subSwipeStyle, x: subSwipeX } = useEdgeSwipeBack({
     onBack: () => {
       soundFx.playTabClick();
       setActiveSection(null);
+      subSwipeX.set(0);
     },
     edgeWidth: 32,
     threshold: 60,
     enabled: isOpen && activeSection !== null,
   });
+
+  // Mở mục con với animation trượt mượt mà từ phải sang trái (120fps Native Apple)
+  const handleOpenSection = (section: SettingSection) => {
+    soundFx.playTabClick();
+    const startX = typeof window !== 'undefined' ? window.innerWidth : 400;
+    subSwipeX.set(startX);
+    setActiveSection(section);
+    animate(subSwipeX, 0, {
+      duration: 0.22,
+      ease: [0.32, 0.72, 0, 1],
+    });
+  };
+
+  // Đóng mục con khi bấm nút Back (< Cài đặt): Trượt êm ra khỏi màn hình rồi mới unmount
+  const handleCloseSection = () => {
+    soundFx.playTabClick();
+    const targetX = typeof window !== 'undefined' ? window.innerWidth : 400;
+    animate(subSwipeX, targetX, {
+      duration: 0.18,
+      ease: [0.32, 0.72, 0, 1],
+      onComplete: () => {
+        setActiveSection(null);
+        subSwipeX.set(0);
+      },
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -749,10 +776,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
               {/* Profile Card Banner */}
               <div 
-                onClick={() => {
-                  soundFx.playTabClick();
-                  setActiveSection('profile');
-                }}
+                onClick={() => handleOpenSection('profile')}
                 className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer"
               >
                 <div className="w-13 h-13 rounded-2xl bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-xl font-bold font-hud text-cyan-300 flex-shrink-0">
@@ -779,10 +803,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     return (
                       <button
                         key={item.id}
-                        onClick={() => {
-                          soundFx.playTabClick();
-                          setActiveSection(item.id);
-                        }}
+                        onClick={() => handleOpenSection(item.id)}
                         className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 active:bg-cyan-500/10 transition-all cursor-pointer"
                       >
                         <div className="flex items-center space-x-3.5">
@@ -808,33 +829,24 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Level 1: Mobile Detailed Sub-View (Lớp phủ trượt sang phải khi vuốt back, LỘ RÕ Hub Cài đặt ở dưới) */}
-          <AnimatePresence>
-            {activeSection !== null && (
-              <motion.div
-                key={activeSection}
-                {...subSwipeHandlers}
-                style={{ ...subSwipeStyle }}
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
-                className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
-              >
-                <IOSNavigationBar
-                  title={currentSectionMeta?.title}
-                  backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
-                  onBack={() => {
-                    soundFx.playTabClick();
-                    setActiveSection(null);
-                  }}
-                />
-                <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
-                  {renderSectionContent(activeSection)}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* 2. Level 1: Mobile Detailed Sub-View (Trượt mượt mà sang phải khi vuốt back hoặc bấm nút Back, LỘ RÕ Hub Cài đặt ở dưới) */}
+          {activeSection !== null && (
+            <motion.div
+              key={activeSection}
+              {...subSwipeHandlers}
+              style={{ ...subSwipeStyle }}
+              className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
+            >
+              <IOSNavigationBar
+                title={currentSectionMeta?.title}
+                backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
+                onBack={handleCloseSection}
+              />
+              <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
+                {renderSectionContent(activeSection)}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* ===================== DESKTOP MASTER-DETAIL LAYOUT ===================== */}

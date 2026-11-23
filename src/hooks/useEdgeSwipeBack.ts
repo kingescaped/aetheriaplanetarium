@@ -144,13 +144,9 @@ export function useEdgeSwipeBack({
           duration: 0.18,
           ease: [0.32, 0.72, 0, 1],
           onComplete: () => {
-            // Kích hoạt onBack để đóng modal / unmount sub-view trước
+            // Kích hoạt onBack để đóng modal / unmount sub-view
+            // Không dùng setTimeout reset x tại đây để tránh gây giật/nháy 1 frame
             onBackRef.current();
-            // Đợi 50ms sau khi React đã unmount / chuyển trang hoàn tất mới reset x về 0
-            // Tuyệt đối không reset x đồng bộ vì sẽ làm phần tử nhảy ngược về 0px trong 1 frame gây giật lag
-            setTimeout(() => {
-              x.set(0);
-            }, 50);
           },
         });
       } else {
