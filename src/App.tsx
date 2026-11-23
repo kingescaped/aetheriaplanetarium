@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { InfoPanel } from './components/layout/InfoPanel';
@@ -120,7 +121,7 @@ export function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const [selectedStarId, setSelectedStarId] = useState<string | number>('sirius');
+  const [selectedStarId, setSelectedStarId] = useState<string | number>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAccountOpen, setIsAccountOpen] = useState<boolean>(false);
 
@@ -295,7 +296,7 @@ export function App() {
   const isAnyModalOpen = isAccountOpen || isSearchOpen;
 
   return (
-    <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
+    <div className={`w-screen h-[100dvh] overflow-hidden relative text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
       {/* Màn hình khởi tạo hệ thống thiên văn học & hiệu chuẩn Safe Area iOS */}
       <AetheriaSplashScreen isReady={isAppReady} lang={lang} />
 
@@ -492,37 +493,41 @@ export function App() {
       />
 
       {/* Stargazer Account & Observation Log Modal */}
-      <AccountModal
-        isOpen={isAccountOpen}
-        onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onUpdateUser={setUser}
-        favorites={favorites}
-        onToggleFavorite={handleToggleFavorite}
-        onSelectStar={(id) => {
-          setSelectedStarId(id);
-          setViewMode('3D_ZENITH_DOME');
-        }}
-        observationLogs={observationLogs}
-        onAddLog={(newLog) => {
-          setObservationLogs((prev) => [
-            { ...newLog, id: `log_${Date.now()}` },
-            ...prev,
-          ]);
-        }}
-        onDeleteLog={(id) => {
-          setObservationLogs((prev) => prev.filter((log) => log.id !== id));
-        }}
-        preferences={preferences}
-        onUpdatePreferences={setPreferences}
-        starsCatalog={calculatedStars}
-        settings={settings}
-        onSettingsChange={setSettings}
-        location={location}
-        lang={lang}
-        onLanguageChange={setLang}
-        pwa={pwa}
-      />
+      <AnimatePresence>
+        {isAccountOpen && (
+          <AccountModal
+            isOpen={isAccountOpen}
+            onClose={() => setIsAccountOpen(false)}
+            user={user}
+            onUpdateUser={setUser}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
+            onSelectStar={(id) => {
+              setSelectedStarId(id);
+              setViewMode('3D_ZENITH_DOME');
+            }}
+            observationLogs={observationLogs}
+            onAddLog={(newLog) => {
+              setObservationLogs((prev) => [
+                { ...newLog, id: `log_${Date.now()}` },
+                ...prev,
+              ]);
+            }}
+            onDeleteLog={(id) => {
+              setObservationLogs((prev) => prev.filter((log) => log.id !== id));
+            }}
+            preferences={preferences}
+            onUpdatePreferences={setPreferences}
+            starsCatalog={calculatedStars}
+            settings={settings}
+            onSettingsChange={setSettings}
+            location={location}
+            lang={lang}
+            onLanguageChange={setLang}
+            pwa={pwa}
+          />
+        )}
+      </AnimatePresence>
 
       {/* PWA Home Screen Install Banner & Offline Cache Indicator */}
       <PWAInstallBanner pwa={pwa} lang={lang} />

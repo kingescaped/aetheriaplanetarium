@@ -510,14 +510,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Side Drawer Panel (Mobile: sliding left drawer max 88vw | Desktop: left panel) */}
       <aside
-        className={`fixed md:absolute top-0 left-0 md:left-4 z-50 md:z-20 transition-all duration-300 ease-in-out flex pointer-events-auto ${
+        className={`fixed md:absolute top-0 left-0 md:left-4 z-50 md:z-20 transition-all duration-300 ease-in-out flex pointer-events-auto sidebar-mobile-bound md:bottom-14 ${
           isOpen 
-            ? 'w-80 sm:w-96 max-w-[88vw] translate-x-0 sidebar-mobile-bound md:top-16 md:bottom-14' 
+            ? 'w-80 sm:w-96 max-w-[88vw] translate-x-0 md:top-16' 
             : '-translate-x-full md:translate-x-0 md:w-11 md:top-16 md:h-auto pointer-events-none md:pointer-events-auto'
         }`}
       >
-        {/* Container with Glassmorphism */}
-        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border-r md:border border-white/10 shadow-glass ${isOpen ? 'h-full' : 'h-auto'}`}>
+        {/* Container with Glassmorphism: Luôn giữ h-full trên Mobile trong toàn bộ 300ms trượt ra để triệt tiêu hiện tượng nháy khung hình */}
+        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border-r md:border border-white/10 shadow-glass h-full ${!isOpen ? 'md:h-auto' : ''}`}>
           {/* Mobile iOS Navigation Bar (Without Close 'X' Button) */}
           <div className="md:hidden">
             <IOSNavigationBar

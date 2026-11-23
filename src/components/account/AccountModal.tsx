@@ -114,53 +114,16 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     enabled: isOpen && activeSection === null,
   });
 
-  // 2. Khi đang ở mục con chi tiết (activeSection !== null): Vuốt mép trái sẽ chỉ trượt mục con sang phải, để lộ Hub cài đặt bên dưới
-  const { handlers: subSwipeHandlers, style: subSwipeStyle, x: subSwipeX } = useEdgeSwipeBack({
-    onBack: () => {
-      soundFx.playTabClick();
-      setActiveSection(null);
-      // TUYỆT ĐỐI KHÔNG gọi subSwipeX.set(0) ở đây! View đang ở targetX (ngoài màn hình) và unmount an toàn
-    },
-    edgeWidth: 32,
-    threshold: 60,
-    enabled: isOpen && activeSection !== null,
-  });
-
-  const isNavigatingRef = React.useRef(false);
-
-  // Mở mục con với animation trượt mượt mà từ phải sang trái (120fps Native Apple)
+  // Mở mục con với animation trượt mượt mà (AnimatePresence)
   const handleOpenSection = (section: SettingSection) => {
-    if (isNavigatingRef.current) return;
-    isNavigatingRef.current = true;
     soundFx.playTabClick();
-    const startX = typeof window !== 'undefined' ? window.innerWidth : 400;
-    subSwipeX.set(startX);
     setActiveSection(section);
-    animate(subSwipeX, 0, {
-      duration: 0.22,
-      ease: [0.32, 0.72, 0, 1],
-      onComplete: () => {
-        isNavigatingRef.current = false;
-      },
-    });
   };
 
-  // Đóng mục con khi bấm nút Back (< Cài đặt): Trượt êm ra khỏi màn hình rồi mới unmount
+  // Đóng mục con khi bấm nút Back (< Cài đặt): AnimatePresence trượt êm ra khỏi màn hình rồi mới unmount
   const handleCloseSection = () => {
-    if (isNavigatingRef.current) return;
-    isNavigatingRef.current = true;
     soundFx.playTabClick();
-    const targetX = typeof window !== 'undefined' ? window.innerWidth : 400;
-    animate(subSwipeX, targetX, {
-      duration: 0.2,
-      ease: [0.32, 0.72, 0, 1],
-      onComplete: () => {
-        // Chỉ unmount sau khi view đã trượt hoàn toàn ra ngoài mép phải màn hình
-        setActiveSection(null);
-        isNavigatingRef.current = false;
-        // TUYỆT ĐỐI KHÔNG gọi subSwipeX.set(0) ở đây vì sẽ làm view giật ngược vào giữa màn hình trong 1 frame!
-      },
-    });
+    setActiveSection(null);
   };
 
   if (!isOpen) return null;
@@ -762,7 +725,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <div 
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       onClick={onClose}
       className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
     >
@@ -835,24 +802,36 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Level 1: Mobile Detailed Sub-View (Trượt mượt mà sang phải khi vuốt back hoặc bấm nút Back, LỘ RÕ Hub Cài đặt ở dưới) */}
-          {activeSection !== null && (
-            <motion.div
-              key={activeSection}
-              {...subSwipeHandlers}
-              style={{ ...subSwipeStyle }}
-              className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
-            >
-              <IOSNavigationBar
-                title={currentSectionMeta?.title}
-                backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
-                onBack={handleCloseSection}
-              />
-              <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
-                {renderSectionContent(activeSection)}
-              </div>
-            </motion.div>
-          )}
+          {/* 2. Level 1: Mobile Detailed Sub-View (AnimatePresence đảm bảo trượt mượt mà 100% không nháy khung hình) */}
+          <AnimatePresence>
+            {activeSection !== null && (
+              <motion.div
+                key={activeSection}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={{ left: 0, right: 0.7 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x > 75 || info.velocity.x > 300) {
+                    handleCloseSection();
+                  }
+                }}
+                className="absolute inset-0 z-20 flex flex-col bg-[#030712] shadow-2xl"
+              >
+                <IOSNavigationBar
+                  title={currentSectionMeta?.title}
+                  backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
+                  onBack={handleCloseSection}
+                />
+                <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
+                  {renderSectionContent(activeSection)}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ===================== DESKTOP MASTER-DETAIL LAYOUT ===================== */}
@@ -914,6 +893,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
