@@ -26,7 +26,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[#030712] text-slate-100 overflow-hidden select-none font-sans antialiased overscroll-none touch-none">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback khởi động tức thì trước khi React mount (Tránh màn hình trắng/nháy) -->
+      <div style="position:fixed;inset:0;background:#030712;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;">
+        <div style="width:52px;height:52px;border:2px solid rgba(56,189,248,0.2);border-top:2px solid #38bdf8;border-radius:50%;animation:aetheria-spin 1s linear infinite;"></div>
+        <div style="margin-top:18px;font-size:11px;letter-spacing:0.25em;color:#94a3b8;font-family:system-ui,-apple-system,sans-serif;font-weight:600;text-transform:uppercase;">Aetheria Planetarium</div>
+      </div>
+      <style>@keyframes aetheria-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

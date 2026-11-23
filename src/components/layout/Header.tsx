@@ -49,8 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
     <div 
       className="fixed top-0 left-0 w-full z-50 flex items-center bg-gray-900/80 backdrop-blur-md border-b border-white/10"
       style={{ 
-        paddingTop: 'env(safe-area-inset-top)',
-        height: 'calc(56px + env(safe-area-inset-top))'
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(56px + env(safe-area-inset-top, 0px))'
       }}
     >
       <div className="w-full h-[56px] flex items-center justify-between px-4">

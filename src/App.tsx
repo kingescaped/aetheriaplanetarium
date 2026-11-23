@@ -27,10 +27,42 @@ import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
 import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
+import { AetheriaSplashScreen } from './components/common/AetheriaSplashScreen';
 
 export function App() {
   // PWA Service Worker & Install State
   const pwa = usePWA();
+
+  // App Initialization & Safe Area Calibration Splash Screen
+  const [isAppReady, setIsAppReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const initApp = async () => {
+      try {
+        if ('fonts' in document) {
+          await (document as any).fonts.ready;
+        }
+      } catch (err) {
+        // Fallback
+      }
+
+      // Đệm an toàn ~950ms để:
+      // 1. WebKit iOS gán xong env(safe-area-inset-top/bottom)
+      // 2. batchComputeHorizontalCoordsInPlace tính toán xong 5.200+ sao
+      // 3. Toàn bộ layout settled hoàn toàn sau màn che SplashScreen
+      setTimeout(() => {
+        if (isMounted) {
+          setIsAppReady(true);
+        }
+      }, 950);
+    };
+
+    initApp();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Internationalization (Bilingual Vietnamese / English)
   const [lang, setLang] = useState<Language>(() => {
@@ -272,6 +304,9 @@ export function App() {
 
   return (
     <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
+      {/* Màn hình khởi tạo hệ thống thiên văn học & hiệu chuẩn Safe Area iOS */}
+      <AetheriaSplashScreen isReady={isAppReady} lang={lang} />
+
       {/* Top Header: Chỉ hiển thị ở Bản đồ 2D và Vòm 3D khi không mở Cài đặt, Tìm kiếm hoặc Bảng điều khiển Mobile */}
       {!isAnyModalOpen && (
         <Header

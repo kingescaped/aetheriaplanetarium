@@ -203,7 +203,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     switch (section) {
       case 'profile':
         return (
-          <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="space-y-4">
             {/* Observer Card */}
             <div className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-900/60 border border-white/5">
               <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border-2 border-cyan-400/50 flex items-center justify-center text-2xl font-bold font-hud text-cyan-300 shadow-glow-cyan flex-shrink-0">
@@ -289,7 +289,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
       case 'favorites':
         return (
-          <div className="space-y-3 animate-in fade-in duration-200">
+          <div className="space-y-3">
             {favoriteStarsList.length > 0 ? (
               <div className="space-y-2">
                 {favoriteStarsList.map((star) => (
@@ -343,7 +343,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
       case 'journal':
         return (
-          <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="space-y-4">
             {/* New Entry Form */}
             <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
               <span className="font-semibold uppercase tracking-wider text-[10px] text-cyan-400 font-hud block">
@@ -454,7 +454,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
       case 'display':
         return (
-          <div className="space-y-3 animate-in fade-in duration-200">
+          <div className="space-y-3">
             {/* Night Vision Red Mode */}
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 hover:bg-slate-800/40 transition-all">
               <div className="flex items-center space-x-3">
@@ -576,7 +576,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
       case 'units':
         return (
-          <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="space-y-4">
             {/* Language Switcher */}
             <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
               <div className="flex items-center space-x-2 text-slate-300">
@@ -687,7 +687,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
       case 'about':
         return (
-          <div className="space-y-3.5 animate-in fade-in duration-200">
+          <div className="space-y-3.5">
             <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-400/40 flex items-center justify-center shadow-glow-cyan">
@@ -751,13 +751,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <motion.div 
+    <div 
       onClick={onClose}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      style={{ opacity: backdropOpacity }}
       className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
     >
       <motion.div 
@@ -908,6 +903,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 };

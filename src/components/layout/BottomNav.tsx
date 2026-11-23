@@ -46,8 +46,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <div
       className="fixed bottom-0 left-0 w-full z-50 flex items-center justify-around bg-gray-900/80 backdrop-blur-md border-t border-white/10 md:hidden"
       style={{
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        height: 'calc(64px + env(safe-area-inset-bottom))'
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        height: 'calc(64px + env(safe-area-inset-bottom, 0px))'
       }}
     >
       <div className="w-full h-[64px] flex items-center justify-around">
