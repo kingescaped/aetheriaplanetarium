@@ -151,8 +151,8 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               setSelectedCategory('all');
             }}
             className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'all'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
-                : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
               }`}
           >
             {lang === 'vi' ? 'Tất cả' : 'All'}
@@ -164,8 +164,8 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               setSelectedCategory('bright');
             }}
             className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'bright'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
-                : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
               }`}
           >
             {t.brightestStars} (Mag &lt; 1.5)
@@ -177,8 +177,8 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               setSelectedCategory('constellation');
             }}
             className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'constellation'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
-                : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
               }`}
           >
             {t.majorConstellations}

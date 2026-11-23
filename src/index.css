@@ -8,8 +8,10 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
   }
-  
-  html, body, #root {
+
+  html,
+  body,
+  #root {
     width: 100%;
     min-height: 100%;
     height: 100%;
@@ -25,7 +27,7 @@
 
   body {
     background-color: #060c1c;
-    background-image: 
+    background-image:
       radial-gradient(circle at 50% 10%, rgba(30, 41, 89, 0.4) 0%, transparent 60%),
       radial-gradient(circle at 10% 90%, rgba(45, 27, 85, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 90% 80%, rgba(13, 40, 71, 0.35) 0%, transparent 50%),
@@ -48,10 +50,21 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-.safe-pt { padding-top: var(--sat) !important; }
-.safe-pb { padding-bottom: var(--sab) !important; }
-.safe-h-header { height: calc(56px + var(--sat)) !important; }
-.safe-h-bottom { height: calc(64px + var(--sab)) !important; }
+.safe-pt {
+  padding-top: var(--sat) !important;
+}
+
+.safe-pb {
+  padding-bottom: var(--sab) !important;
+}
+
+.safe-h-header {
+  height: calc(56px + var(--sat)) !important;
+}
+
+.safe-h-bottom {
+  height: calc(64px + var(--sab)) !important;
+}
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
@@ -67,6 +80,7 @@
   .star-bottom-sheet {
     bottom: 5.5rem !important;
   }
+
   .sidebar-mobile-bound {
     bottom: 3.5rem !important;
   }
@@ -126,5 +140,3 @@
 .night-vision {
   filter: hue-rotate(320deg) saturate(2.5) brightness(0.85);
 }
-
-

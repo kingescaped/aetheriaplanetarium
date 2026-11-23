@@ -48,7 +48,7 @@ export const MobilePageScreen: React.FC<MobilePageScreenProps> = ({
   const handleBackAction = onBack || onClose;
 
   const { handlers: swipeHandlers, style: swipeStyle, backdropOpacity } = useEdgeSwipeBack({
-    onBack: handleBackAction || (() => {}),
+    onBack: handleBackAction || (() => { }),
     edgeWidth: 32,
     threshold: 60,
     enabled: isOpen && enableEdgeSwipe && Boolean(handleBackAction),
@@ -80,6 +80,8 @@ export const MobilePageScreen: React.FC<MobilePageScreenProps> = ({
           className={`flex-1 overflow-y-auto w-full overscroll-contain ${contentClassName}`}
           style={{
             paddingBottom: 'calc(var(--sab) + 24px)',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
           }}
         >
           {children}

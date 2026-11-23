@@ -49,8 +49,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           onClick={() => handleSelectView('2D_PLANETARIUM')}
           className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${viewMode === '2D_PLANETARIUM' && !isAccountOpen
-              ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200'
+            ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
+            : 'text-slate-400 hover:text-slate-200'
             }`}
         >
           <Eye className="w-5 h-5 mb-0.5" />
@@ -61,8 +61,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           onClick={() => handleSelectView('3D_ZENITH_DOME')}
           className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all relative ${viewMode === '3D_ZENITH_DOME' && !isAccountOpen
-              ? 'text-purple-300 bg-purple-500/20 shadow-glow-purple'
-              : 'text-slate-400 hover:text-slate-200'
+            ? 'text-purple-300 bg-purple-500/20 shadow-glow-purple'
+            : 'text-slate-400 hover:text-slate-200'
             }`}
         >
           <Box className="w-5 h-5 mb-0.5 text-purple-400" />
@@ -76,8 +76,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           onClick={handleToggleAccount}
           className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${isAccountOpen
-              ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200 active:scale-95'
+            ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
+            : 'text-slate-400 hover:text-slate-200 active:scale-95'
             }`}
         >
           <Settings className="w-5 h-5 mb-0.5" />

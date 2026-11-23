@@ -79,11 +79,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="hidden md:flex pointer-events-auto items-center p-1 rounded-2xl glass-panel shadow-2xl border border-white/10">
           <button
             onClick={() => setViewMode('2D_PLANETARIUM')}
-            className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
-              viewMode === '2D_PLANETARIUM'
+            className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${viewMode === '2D_PLANETARIUM'
                 ? 'bg-gradient-to-r from-cyan-500/30 to-blue-600/30 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-            }`}
+              }`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{t.mode2D}</span>
@@ -91,11 +90,10 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setViewMode('3D_ZENITH_DOME')}
-            className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 relative ${
-              viewMode === '3D_ZENITH_DOME'
+            className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 relative ${viewMode === '3D_ZENITH_DOME'
                 ? 'bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-cyan-500/30 text-purple-200 border border-purple-500/40 shadow-glow-purple'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-            }`}
+              }`}
           >
             <Box className="w-3.5 h-3.5 text-purple-400" />
             <span>{t.mode3D}</span>

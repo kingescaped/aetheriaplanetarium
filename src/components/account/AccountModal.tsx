@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  User, 
-  X, 
-  Bookmark, 
-  BookOpen, 
-  Settings, 
-  Sparkles, 
-  ChevronRight, 
+import {
+  User,
+  X,
+  Bookmark,
+  BookOpen,
+  Settings,
+  Sparkles,
+  ChevronRight,
   ChevronLeft,
-  ChevronDown, 
-  Trash2, 
-  Moon, 
-  Globe, 
-  Eye, 
-  Mountain, 
-  Compass, 
-  Volume2, 
-  Info, 
-  MapPin, 
-  Crosshair 
+  ChevronDown,
+  Trash2,
+  Moon,
+  Globe,
+  Eye,
+  Mountain,
+  Compass,
+  Volume2,
+  Info,
+  MapPin,
+  Crosshair
 } from 'lucide-react';
 import { UserProfile, ObservationLog, UserPreferences } from '../../types/account';
 import { Star, CelestialSettings, ObserverLocation } from '../../types/celestial';
@@ -563,11 +563,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     soundFx.playTabClick();
                     onLanguageChange('vi');
                   }}
-                  className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${
-                    lang === 'vi'
+                  className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${lang === 'vi'
                       ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
                       : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span>🇻🇳</span>
                   <span>Tiếng Việt</span>
@@ -578,11 +577,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     soundFx.playTabClick();
                     onLanguageChange('en');
                   }}
-                  className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${
-                    lang === 'en'
+                  className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${lang === 'en'
                       ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
                       : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span>🇬🇧</span>
                   <span>English</span>
@@ -673,7 +671,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed pt-1">
-                {lang === 'vi' 
+                {lang === 'vi'
                   ? 'Ứng dụng mô phỏng thiên cầu thế hệ mới lấy cảm hứng từ Starwatch, kết hợp công nghệ WebGL 3D Zenith Dome với độ chính xác cơ học thiên văn quốc tế.'
                   : 'Next-generation planetarium web app inspired by Starwatch, featuring 3D Zenith Dome hemisphere simulation and high-precision celestial mechanics.'}
               </p>
@@ -696,7 +694,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 <span className="text-slate-400">PWA Offline Cache</span>
                 <span className="text-emerald-400 font-mono flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  {pwa?.isOfflineReady 
+                  {pwa?.isOfflineReady
                     ? (lang === 'vi' ? 'Sẵn sàng ngoại tuyến' : 'Offline Ready')
                     : (lang === 'vi' ? 'Đã kích hoạt SW' : 'Active')}
                 </span>
@@ -725,7 +723,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -733,7 +731,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       onClick={onClose}
       className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#060c1c] md:bg-black/75 backdrop-blur-xl"
     >
-      <motion.div 
+      <motion.div
         {...rootSwipeHandlers}
         style={{ ...rootSwipeStyle }}
         className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#060c1c] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+var(--sab))] md:pb-0"
@@ -748,7 +746,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             />
             <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
               {/* Profile Card Banner */}
-              <div 
+              <div
                 onClick={() => handleOpenSection('profile')}
                 className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer"
               >
@@ -865,11 +863,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       soundFx.playTabClick();
                       setDesktopTab(item.id);
                     }}
-                    className={`w-full p-3 rounded-2xl flex items-center justify-between text-left transition-all ${
-                      isSelected
+                    className={`w-full p-3 rounded-2xl flex items-center justify-between text-left transition-all ${isSelected
                         ? 'bg-cyan-500/20 border border-cyan-400/40 text-white shadow-glow-cyan'
                         : 'hover:bg-white/5 text-slate-300 border border-transparent'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-3 min-w-0">
                       <Icon className={`w-4 h-4 ${item.color}`} />
