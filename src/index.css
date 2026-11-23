@@ -47,72 +47,38 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-/* Header Safe Area:
-   - Trên mọi màn hình di động: Bắt buộc đệm tối thiểu 54px để né hoàn toàn Dynamic Island & Tai thỏ
-   - Nếu env(safe-area-inset-top) lớn hơn 54px (ví dụ Pro Max): tự động cộng thêm 8px
-*/
-.header-safe-area {
-  padding-top: 54px;
-  padding-top: max(calc(env(safe-area-inset-top, 0px) + 8px), 54px);
-  min-height: calc(max(env(safe-area-inset-top, 0px), 48px) + 3.5rem);
-}
-
-/* BottomNav Safe Area:
-   - Trên mọi màn hình di động: Bắt buộc đệm tối thiểu 34px (độ cao thanh vuốt Home Indicator iOS)
-   - Đảm bảo các nút bấm và chữ không bao giờ bị đè lấn
-*/
-.bottom-nav-safe-area {
-  padding-top: 8px;
-  padding-bottom: 34px;
-  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 8px), 34px);
-  min-height: calc(3.75rem + max(env(safe-area-inset-bottom, 0px), 34px));
-}
-
-.bottom-nav-safe-area > button {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-/* iOS Standard Navigation Bar (UINavigationBar trong Modals & Drawer) */
-.ios-nav-bar {
-  padding-top: 48px;
-  padding-top: max(env(safe-area-inset-top, 0px), 48px);
-  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 48px));
-}
-
-.ios-nav-center {
-  top: max(env(safe-area-inset-top, 0px), 48px);
-}
-
-@media (min-width: 768px) {
-  .header-safe-area {
-    padding-top: 0.75rem !important;
-    min-height: auto !important;
+/* --- BÙ LỀ AN TOÀN IOS (SAFE AREA) --- */
+@supports (padding-top: env(safe-area-inset-top)) {
+  /* Cho Header / Top Bar */
+  .safe-header {
+    padding-top: max(env(safe-area-inset-top), 12px) !important;
+    /* Chiều cao = Chiều cao gốc (56px) + Tai thỏ */
+    min-height: calc(56px + env(safe-area-inset-top)) !important;
   }
-  .bottom-nav-safe-area {
-    padding-bottom: 0.75rem !important;
-    min-height: auto !important;
-  }
-  .ios-nav-bar {
-    padding-top: 0px !important;
-    height: 4rem !important;
-  }
-  .ios-nav-center {
-    top: 0px !important;
+  
+  /* Cho Bottom Nav / Chân trang */
+  .safe-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
+    /* Chiều cao = Chiều cao gốc (64px) + Home indicator */
+    min-height: calc(64px + env(safe-area-inset-bottom)) !important;
   }
 }
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(5.25rem + max(env(safe-area-inset-bottom, 0px), 34px));
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(4.25rem + max(env(safe-area-inset-bottom, 0px), 34px));
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
+  .safe-header {
+    padding-top: 12px !important;
+    min-height: auto !important;
+  }
   .star-bottom-sheet {
     bottom: 5.5rem !important;
   }
@@ -174,4 +140,28 @@
 /* Night Vision Red Mode for dark adaptation */
 .night-vision {
   filter: hue-rotate(320deg) saturate(2.5) brightness(0.85);
+}
+
+/* --- BÙ LỀ AN TOÀN IOS (SAFE AREA) --- */
+@supports (padding-top: env(safe-area-inset-top)) {
+  /* Cho Header / Top Bar */
+  .safe-header {
+    padding-top: max(env(safe-area-inset-top), 12px) !important;
+    /* Chiều cao = Chiều cao gốc (56px) + Tai thỏ */
+    min-height: calc(56px + env(safe-area-inset-top)) !important;
+  }
+  
+  /* Cho Bottom Nav / Chân trang */
+  .safe-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
+    /* Chiều cao = Chiều cao gốc (64px) + Home indicator */
+    min-height: calc(64px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .safe-header {
+    padding-top: 12px !important;
+    min-height: auto !important;
+  }
 }
