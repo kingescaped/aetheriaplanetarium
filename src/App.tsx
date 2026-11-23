@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { InfoPanel } from './components/layout/InfoPanel';
@@ -9,11 +9,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { SearchBarModal } from './components/search/SearchBarModal';
 import { AccountModal } from './components/account/AccountModal';
 import { SkyMap2D } from './components/planetarium/SkyMap2D';
-const ZenithDomeCanvas = lazy(() =>
-  import('./components/zenith3d/ZenithDomeCanvas').then((m) => ({
-    default: m.ZenithDomeCanvas,
-  }))
-);
+import { ZenithDomeCanvas } from './components/zenith3d/ZenithDomeCanvas';
 import { 
   ViewMode, 
   ObserverLocation, 
@@ -39,10 +35,7 @@ export function App() {
   useEffect(() => {
     let isMounted = true;
     const initApp = async () => {
-      // 1. Tải trước (Preload) ngầm component Vòm 3D để khi chuyển tab không bị hiện loading lần 2
-      import('./components/zenith3d/ZenithDomeCanvas').catch(() => {});
-
-      // 2. Chờ font nạp hoàn tất
+      // 1. Chờ font nạp hoàn tất
       try {
         if ('fonts' in document) {
           await (document as any).fonts.ready;
@@ -51,12 +44,12 @@ export function App() {
         // Fallback
       }
 
-      // 3. Đệm an toàn ~900ms để Safe Area iOS và ma trận 5.200 sao hoàn tất ngầm
+      // 2. Đệm an toàn ~850ms để Safe Area iOS và ma trận 5.200 sao hoàn tất ngầm
       setTimeout(() => {
         if (isMounted) {
           setIsAppReady(true);
         }
-      }, 900);
+      }, 850);
     };
 
     initApp();
@@ -352,41 +345,22 @@ export function App() {
             onHoverCoords={(coords) => setCursorCoords(coords)}
           />
         ) : (
-          /* 3D Zenith Dome Viewport (Three.js / React Three Fiber - Code-split & Lazy Loaded) */
-          <Suspense
-            fallback={
-              <div className="flex flex-col items-center justify-center space-y-4 text-cyan-400">
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20 animate-ping" />
-                  <div className="w-12 h-12 rounded-full border-2 border-cyan-500/40 border-t-cyan-400 animate-spin" />
-                </div>
-                <div className="text-center space-y-1">
-                  <p className="text-xs uppercase tracking-widest text-cyan-300 font-mono font-medium">
-                    {lang === 'vi' ? 'Đang khởi tạo Vòm Thiên Đỉnh 3D...' : 'Initializing 3D Zenith Dome...'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-mono">
-                    {lang === 'vi' ? 'Đang tải Three.js engine & tọa độ sao' : 'Loading Three.js engine & star catalog'}
-                  </p>
-                </div>
-              </div>
-            }
-          >
-            <ZenithDomeCanvas
-              stars={calculatedStars}
-              location={location}
-              currentDate={currentDate}
-              settings={settings}
-              selectedStar={selectedStar}
-              onSelectStar={(star) => {
-                soundFx.playStarSelect();
-                setSelectedStarId(star.id);
-              }}
-              targetAzimuth={targetAzimuth}
-              isZenithRequested={isZenithRequested}
-              isFocusRequested={isFocusRequested}
-              lang={lang}
-            />
-          </Suspense>
+          /* 3D Zenith Dome Viewport (Three.js WebGL - Nạp sẵn 100% trong RAM ngay từ đầu) */
+          <ZenithDomeCanvas
+            stars={calculatedStars}
+            location={location}
+            currentDate={currentDate}
+            settings={settings}
+            selectedStar={selectedStar}
+            onSelectStar={(star) => {
+              soundFx.playStarSelect();
+              setSelectedStarId(star.id);
+            }}
+            targetAzimuth={targetAzimuth}
+            isZenithRequested={isZenithRequested}
+            isFocusRequested={isFocusRequested}
+            lang={lang}
+          />
         )}
       </main>
 
