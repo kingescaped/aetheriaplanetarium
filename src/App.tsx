@@ -39,6 +39,10 @@ export function App() {
   useEffect(() => {
     let isMounted = true;
     const initApp = async () => {
+      // 1. Tải trước (Preload) ngầm component Vòm 3D để khi chuyển tab không bị hiện loading lần 2
+      import('./components/zenith3d/ZenithDomeCanvas').catch(() => {});
+
+      // 2. Chờ font nạp hoàn tất
       try {
         if ('fonts' in document) {
           await (document as any).fonts.ready;
@@ -47,15 +51,12 @@ export function App() {
         // Fallback
       }
 
-      // Đệm an toàn ~950ms để:
-      // 1. WebKit iOS gán xong env(safe-area-inset-top/bottom)
-      // 2. batchComputeHorizontalCoordsInPlace tính toán xong 5.200+ sao
-      // 3. Toàn bộ layout settled hoàn toàn sau màn che SplashScreen
+      // 3. Đệm an toàn ~900ms để Safe Area iOS và ma trận 5.200 sao hoàn tất ngầm
       setTimeout(() => {
         if (isMounted) {
           setIsAppReady(true);
         }
-      }, 950);
+      }, 900);
     };
 
     initApp();
