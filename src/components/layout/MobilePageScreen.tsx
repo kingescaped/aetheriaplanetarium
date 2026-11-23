@@ -59,7 +59,7 @@ export const MobilePageScreen: React.FC<MobilePageScreenProps> = ({
   return (
     <motion.div
       style={{ opacity: backdropOpacity }}
-      className={`fixed inset-0 z-50 flex flex-col bg-[#030712] w-screen h-[100dvh] overflow-hidden select-none ${className}`}
+      className={`fixed inset-0 h-[100dvh] flex flex-col z-50 bg-[#030712] overflow-hidden select-none ${className}`}
     >
       <motion.div
         {...swipeHandlers}
@@ -79,7 +79,7 @@ export const MobilePageScreen: React.FC<MobilePageScreenProps> = ({
         <div
           className={`flex-1 overflow-y-auto w-full overscroll-contain ${contentClassName}`}
           style={{
-            paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 24px)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
           }}
         >
           {children}

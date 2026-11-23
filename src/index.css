@@ -42,44 +42,22 @@
 
 :root {
   --sat: env(safe-area-inset-top, 0px);
-  --sab: max(env(safe-area-inset-bottom, 0px), 16px);
+  --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
-  --bottom-nav-height: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px));
-}
-
-/* --- BÙ LỀ AN TOÀN IOS (SAFE AREA) --- */
-@supports (padding-top: env(safe-area-inset-top)) {
-  /* Cho Header / Top Bar */
-  .safe-header {
-    padding-top: max(env(safe-area-inset-top), 12px) !important;
-    /* Chiều cao = Chiều cao gốc (56px) + Tai thỏ */
-    min-height: calc(56px + max(env(safe-area-inset-top), 12px)) !important;
-  }
-  
-  /* Cho Bottom Nav / Chân trang */
-  .safe-bottom-nav {
-    padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
-    /* Chiều cao = Chiều cao gốc (64px) + Home indicator */
-    min-height: calc(64px + max(env(safe-area-inset-bottom), 16px)) !important;
-  }
 }
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px) + 12px);
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(64px + max(env(safe-area-inset-bottom, 0px), 16px));
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
-  .safe-header {
-    padding-top: 12px !important;
-    min-height: auto !important;
-  }
   .star-bottom-sheet {
     bottom: 5.5rem !important;
   }

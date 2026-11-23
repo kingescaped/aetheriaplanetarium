@@ -49,16 +49,14 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
   };
 
   return (
-    <div
-      className={`ios-nav-bar w-full z-20 flex flex-col justify-end border-b border-white/10 bg-[#060c1c]/95 backdrop-blur-md select-none flex-shrink-0 ${className}`}
+    <header
+      className={`w-full shrink-0 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 z-40 select-none ${className}`}
       style={{
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
-        minHeight: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
-        height: 'calc(56px + max(env(safe-area-inset-top, 0px), 12px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
         ...style,
       }}
     >
-      <div className="relative w-full h-[56px] flex items-center justify-between px-3 md:px-4">
+      <div className="w-full h-[56px] flex items-center justify-between px-3 md:px-4 relative">
         {/* 1. Leading Area: Nút trở về (nếu có onBack) HOẶC Tiêu đề căn trái (nếu không có onBack và không căn giữa) */}
         <div className="flex items-center min-w-[70px] z-10">
           {onBack ? (
@@ -104,6 +102,6 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </header>
   );
 };
