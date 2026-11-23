@@ -43,48 +43,56 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-6 safe-bottom-nav glass-panel border-t border-white/10 shadow-2xl flex items-center justify-around pointer-events-auto">
-      {/* 1. 2D Sky Map */}
-      <button
-        onClick={() => handleSelectView('2D_PLANETARIUM')}
-        className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
-          viewMode === '2D_PLANETARIUM' && !isAccountOpen
-            ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
-            : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Eye className="w-5 h-5 mb-0.5" />
-        <span className="text-[11px] font-medium tracking-tight">{t.navSky2d}</span>
-      </button>
+    <div 
+      className="fixed bottom-0 left-0 w-full z-50 flex items-center justify-around bg-gray-900/80 backdrop-blur-md border-t border-white/10 md:hidden"
+      style={{ 
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        height: 'calc(64px + env(safe-area-inset-bottom))'
+      }}
+    >
+      <div className="w-full h-[64px] flex items-center justify-around">
+        {/* 1. 2D Sky Map */}
+        <button
+          onClick={() => handleSelectView('2D_PLANETARIUM')}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
+            viewMode === '2D_PLANETARIUM' && !isAccountOpen
+              ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Eye className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium tracking-tight">{t.navSky2d}</span>
+        </button>
 
-      {/* 2. 3D Zenith Dome */}
-      <button
-        onClick={() => handleSelectView('3D_ZENITH_DOME')}
-        className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all relative ${
-          viewMode === '3D_ZENITH_DOME' && !isAccountOpen
-            ? 'text-purple-300 bg-purple-500/20 shadow-glow-purple'
-            : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Box className="w-5 h-5 mb-0.5 text-purple-400" />
-        <span className="text-[11px] font-medium tracking-tight">{t.navDome3d}</span>
-        {hasActiveTarget && (
-          <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-        )}
-      </button>
+        {/* 2. 3D Zenith Dome */}
+        <button
+          onClick={() => handleSelectView('3D_ZENITH_DOME')}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all relative ${
+            viewMode === '3D_ZENITH_DOME' && !isAccountOpen
+              ? 'text-purple-300 bg-purple-500/20 shadow-glow-purple'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Box className="w-5 h-5 mb-0.5 text-purple-400" />
+          <span className="text-[11px] font-medium tracking-tight">{t.navDome3d}</span>
+          {hasActiveTarget && (
+            <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          )}
+        </button>
 
-      {/* 3. Settings & Account (Always accessible) */}
-      <button
-        onClick={handleToggleAccount}
-        className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
-          isAccountOpen
-            ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
-            : 'text-slate-400 hover:text-slate-200 active:scale-95'
-        }`}
-      >
-        <Settings className="w-5 h-5 mb-0.5" />
-        <span className="text-[11px] font-medium tracking-tight">{t.navAccount}</span>
-      </button>
-    </nav>
+        {/* 3. Settings & Account (Always accessible) */}
+        <button
+          onClick={handleToggleAccount}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
+            isAccountOpen
+              ? 'text-cyan-300 bg-cyan-500/20 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 active:scale-95'
+          }`}
+        >
+          <Settings className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium tracking-tight">{t.navAccount}</span>
+        </button>
+      </div>
+    </div>
   );
 };

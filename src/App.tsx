@@ -245,7 +245,7 @@ export function App() {
   };
 
   return (
-    <div className={`relative w-screen h-screen overflow-hidden bg-[#030612] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
+    <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
       {/* Top Header */}
       <Header
         viewMode={viewMode}
@@ -369,7 +369,10 @@ export function App() {
 
       {/* Mobile Telemetry HUD Card: Nằm ngay dưới phần đồng hồ giờ theo đúng yêu cầu */}
       {selectedStar && !isAccountOpen && !isSearchOpen && (
-        <div className="md:hidden fixed top-[calc(max(env(safe-area-inset-top,0px),54px)+3.75rem)] right-2.5 z-30 max-w-[210px] pointer-events-auto">
+        <div 
+          className="md:hidden fixed right-2.5 z-30 max-w-[210px] pointer-events-auto"
+          style={{ top: 'calc(62px + env(safe-area-inset-top, 0px))' }}
+        >
           <StarTelemetryHUD star={selectedStar} lang={lang} />
         </div>
       )}
