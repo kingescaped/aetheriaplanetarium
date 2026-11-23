@@ -42,14 +42,6 @@
    ROCK-SOLID SAFE AREA INSETS FOR IPHONE (SAFARI & PWA)
    ======================================================== */
 
-:root {
-  /* Mặc định luôn là 47px và 34px. Chỉ khi nào env() lớn hơn 0 thì trình duyệt mới lấy env() */
-  --sat: max(env(safe-area-inset-top), 47px);
-  --sab: max(env(safe-area-inset-bottom), 34px);
-  --sal: max(env(safe-area-inset-left), 0px);
-  --sar: max(env(safe-area-inset-right), 0px);
-}
-
 .safe-pt {
   padding-top: var(--sat) !important;
 }
