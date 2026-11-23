@@ -273,8 +273,8 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         <div
           className={`fixed md:absolute z-30 pointer-events-auto flex flex-col items-end md:items-center gap-2 transition-all duration-300 ${
             selectedStar
-              ? 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+96px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
-              : 'right-3.5 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+12px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
+              ? 'right-3.5 bottom-[calc(4.75rem+var(--sab)+96px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
+              : 'right-3.5 bottom-[calc(4.75rem+var(--sab)+12px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
           }`}
         >
           {!isGyroEnabled ? (

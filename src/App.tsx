@@ -23,16 +23,12 @@ import { getLST, equatorialToHorizontal, batchComputeHorizontalCoordsInPlace } f
 import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
-import { useSafeAreaCalibration } from './hooks/useSafeAreaCalibration';
 import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
 import { AetheriaSplashScreen } from './components/common/AetheriaSplashScreen';
 
 export function App() {
   // PWA Service Worker & Install State
   const pwa = usePWA();
-
-  // JS-based Safe Area calibration: overrides frozen CSS env() values on iOS PWA
-  useSafeAreaCalibration();
 
   // App Initialization & Safe Area Calibration Splash Screen
   const [isAppReady, setIsAppReady] = useState<boolean>(false);
