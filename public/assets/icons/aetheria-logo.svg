@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#0c1a38"/>
+      <stop offset="60%" stop-color="#040916"/>
+      <stop offset="100%" stop-color="#02040a"/>
+    </radialGradient>
+    <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#7dd3fc"/>
+      <stop offset="60%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="crossRay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="bloom" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Cosmic Rounded Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGlow)"/>
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="#38bdf8" stroke-opacity="0.25" stroke-width="2"/>
+
+  <!-- Orbital Rings -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#0ea5e9" stroke-opacity="0.2" stroke-width="2" stroke-dasharray="6 8"/>
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#6366f1" stroke-opacity="0.15" stroke-width="1.5"/>
+
+  <!-- Ambient Flare -->
+  <circle cx="256" cy="256" r="120" fill="url(#starGlow)" opacity="0.65"/>
+
+  <!-- 8-Pointed Celestial Star of Aetheria -->
+  <g filter="url(#bloom)">
+    <!-- Diagonal Subtle Rays -->
+    <path d="M256 120 L272 240 L392 256 L272 272 L256 392 L240 272 L120 256 L240 240 Z" fill="#38bdf8" fill-opacity="0.45" transform="rotate(45 256 256)"/>
+    <!-- Primary Cardinal Rays -->
+    <path d="M256 48 L284 228 L464 256 L284 284 L256 464 L228 284 L48 256 L228 228 Z" fill="url(#crossRay)"/>
+    <!-- Radiant Core -->
+    <circle cx="256" cy="256" r="16" fill="#ffffff"/>
+  </g>
+</svg>

@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    background-color: #030712;
+    background-image: 
+      radial-gradient(circle at 50% 10%, rgba(30, 41, 89, 0.4) 0%, transparent 60%),
+      radial-gradient(circle at 10% 90%, rgba(45, 27, 85, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 90% 80%, rgba(13, 40, 71, 0.35) 0%, transparent 50%),
+      linear-gradient(180deg, #02040a 0%, #060b18 50%, #030611 100%);
+    background-attachment: fixed;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Safe Area Inset utilities for iPhone Dynamic Island & Home Indicator */
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.safe-left {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+}
+
+.safe-right {
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+
+/* iOS Standard Navigation Bar Uniform Variable Classes */
+.ios-nav-bar {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(3.75rem + env(safe-area-inset-top, 0px));
+}
+
+.ios-nav-center {
+  top: env(safe-area-inset-top, 0px);
+}
+
+@media (min-width: 768px) {
+  .ios-nav-bar {
+    padding-top: 0px;
+    height: 4rem;
+  }
+  .ios-nav-center {
+    top: 0px;
+  }
+}
+
+/* Star Bottom Sheet Floating Position */
+.star-bottom-sheet {
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Sidebar Drawer Bounded Above Mobile BottomNav */
+.sidebar-mobile-bound {
+  bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .sidebar-mobile-bound {
+    bottom: 3.5rem;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(12, 18, 36, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-subtle {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+  background: rgba(8, 14, 29, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 15px -3px rgba(56, 189, 248, 0.3);
+  outline: none;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* HUD Text */
+.font-hud {
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  letter-spacing: -0.02em;
+}
+
+/* Night Vision Red Mode for dark adaptation */
+.night-vision {
+  filter: hue-rotate(320deg) saturate(2.5) brightness(0.85);
+}

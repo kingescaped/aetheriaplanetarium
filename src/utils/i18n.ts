@@ -1,0 +1,436 @@
+export type Language = 'vi' | 'en';
+
+export const TRANSLATIONS = {
+  vi: {
+    // Brand & Header
+    brandTitle: 'Aetheria',
+    brandSubtitle: 'ZENITH 3D',
+    planetariumSim: 'MÔ PHỎNG VÒM TRỜI SAO',
+    starwatchRemastered: 'PHIÊN BẢN VŨ TRỤ',
+    mode2D: 'Bản đồ 2D',
+    mode3D: 'Vòm 3D',
+    searchPlaceholder: 'Tìm kiếm ngôi sao, chòm sao (Sirius, Orion, Vega...)...',
+    searchKbd: 'Ctrl K',
+    gpsSync: 'Đồng bộ GPS',
+    customCoords: 'Tọa độ tùy chỉnh',
+    account: 'Cài đặt & Tài khoản',
+    tapToOpenControls: 'Chạm để mở bảng điều khiển',
+
+    // Bottom Navigation
+    navSky2d: 'Bản đồ 2D',
+    navDome3d: 'Vòm 3D',
+    navControls: 'Điều khiển',
+    navSearch: 'Tìm kiếm',
+    navAccount: 'Cài đặt',
+
+    // Star Bottom Sheet & Info Panel
+    targetIn3D: 'Khóa mục tiêu & Chiếu Laser 3D',
+    targetRayTraceShort: 'Chiếu Laser 3D',
+    apparentMagnitude: 'Cấp sao biểu kiến',
+    distance: 'Khoảng cách',
+    spectralClass: 'Lớp quang phổ',
+    celestialCoords: 'Tọa độ thiên cầu',
+    altitude: 'Độ cao góc (Alt)',
+    azimuth: 'Phương vị (Az)',
+    altitudeH: 'Độ cao (h)',
+    azimuthA: 'Phương vị (A)',
+    lightYears: 'năm ánh sáng',
+    parsecs: 'parsec',
+    constellation: 'Chòm sao',
+    deepSpace: 'Vũ trụ sâu',
+    bookmarkStar: 'Lưu sao',
+    logToJournal: 'Ghi nhật ký quan sát',
+    locked: 'ĐÃ KHÓA',
+    zenith: 'THIÊN ĐỈNH',
+    visible: 'Có thể quan sát',
+    belowHorizon: 'Dưới chân trời',
+    lockCameraRayTrace: 'Khóa góc nhìn & Chiếu tia Laser 3D',
+    bayerFlamsteed: 'Ký hiệu Bayer / Flamsteed',
+
+    // Sidebar & Controls
+    controlsTitle: 'Bảng điều khiển',
+    tabLocation: 'Vị trí',
+    tabTime: 'Thời gian',
+    tabLayers: 'Lớp phủ',
+    tabCatalog: 'Mục sao',
+    play: 'Phát',
+    pause: 'Tạm dừng',
+    resetTime: 'Hiện tại',
+    skyLayersTitle: 'Lớp Bầu Trời & Hiển Thị',
+    brightestOnly: 'Chỉ sao sáng nhất (1.0)',
+    nakedEyeLimit: 'Giới hạn mắt thường (6.5)',
+    observerCoords: 'Tọa độ người quan sát',
+    latitude: 'VĨ ĐỘ (°)',
+    longitude: 'KINH ĐỘ (°)',
+    worldObservatories: 'Đài thiên văn nổi tiếng',
+    astronomicalEpoch: 'Thời điểm thiên văn',
+    syncNow: 'Đồng bộ ngay',
+    localTimestamp: 'DẤU THỜI GIAN ĐỊA PHƯƠNG',
+    celestialTimeWarp: 'Tua thời gian thiên thể',
+    currentRate: 'Tốc độ hiện tại:',
+    paused: 'TẠM DỪNG',
+    realTimeRate: 'THỜI GIAN THỰC (1x)',
+    speedUnit: 'TỐC ĐỘ',
+    landmarksTitle: 'Các thiên thể nổi bật',
+    landmarksDesc: 'Chạm vào thiên thể bất kỳ để khóa mục tiêu trong Vòm 3D:',
+
+    // Search Modal
+    searchCelestialTitle: 'Tìm kiếm Thiên thể',
+    close: 'Đóng',
+    noResults: 'Không tìm thấy thiên thể nào phù hợp với',
+    quickFilters: 'Bộ lọc nhanh:',
+    brightestStars: 'Sao sáng nhất',
+    majorConstellations: 'Chòm sao chính',
+
+    // Account & Settings Hub
+    settingsHubTitle: 'Cài đặt & Tài khoản',
+    back: 'Quay lại',
+    profileSection: 'Hồ sơ Quan sát viên',
+    profileDesc: 'Thông tin cá nhân, danh hiệu và cấp bậc thiên văn',
+    favoritesSection: 'Mục tiêu yêu thích',
+    favoritesDesc: 'Danh sách các thiên thể và ngôi sao đã lưu',
+    journalSection: 'Nhật ký Quan sát',
+    journalDesc: 'Sổ tay ghi chép thực địa và lịch sử ngắm sao',
+    displaySection: 'Hiển thị & Bầu trời',
+    displayDesc: 'Đèn đỏ ban đêm, chân trời núi đồi, lưới tọa độ, quầng sao',
+    unitsSection: 'Ngôn ngữ & Hệ đơn vị',
+    unitsDesc: 'Tiếng Việt/English, định dạng tọa độ, đơn vị khoảng cách',
+    aboutSection: 'Thông tin ứng dụng',
+    aboutDesc: 'Phiên bản Aetheria, dữ liệu sao Hipparcos, bản quyền',
+
+    // Profile Details
+    stargazerAccount: 'Tài khoản Nhà Thiên Văn',
+    verifiedObserver: 'Hồ sơ quan sát viên',
+    guestMode: 'Chế độ khách (Ngoại tuyến)',
+    observerName: 'Tên quan sát viên',
+    callsign: 'Hô hiệu thiên văn',
+    rank: 'Cấp bậc danh dự',
+    joinedDate: 'Ngày gia nhập',
+    saveProfile: 'Lưu hồ sơ',
+    cancel: 'Hủy',
+    favoriteObjects: 'MỤC TIÊU YÊU THÍCH',
+    loggedObservations: 'BẢN GHI ĐÃ LƯU',
+    currentLocation: 'Vị trí quan sát hiện tại',
+    noFavorites: 'Chưa có thiên thể yêu thích nào. Hãy đánh dấu sao từ bản đồ hoặc thanh tìm kiếm!',
+
+    // Journal Details
+    logNewObservation: 'Ghi nhật ký quan sát mới',
+    selectStar: 'Chọn thiên thể quan sát',
+    equipmentUsed: 'Thiết bị quan sát',
+    nakedEye: 'Mắt thường',
+    binoculars: 'Ống nhòm thiên văn',
+    refractor: 'Kính khúc xạ (Refractor)',
+    reflector: 'Kính phản xạ (Reflector)',
+    seeingConditions: 'Điều kiện khí quyển (Seeing)',
+    seeingPristine: 'Rất tốt (Bầu trời trong vắt)',
+    seeingGood: 'Tốt (Ít sương mờ)',
+    seeingModerate: 'Trung bình (Ô nhiễm sáng nhẹ)',
+    fieldNotes: 'Ghi chú thực địa (điều kiện bầu trời, kính thiên văn, thời tiết)...',
+    recordEntry: 'Lưu bản ghi quan sát',
+
+    // Display & Sky Appearance Details
+    nightVisionMode: 'Chế độ Đèn đỏ (Night Vision)',
+    nightVisionDesc: 'Bảo vệ thị giác thích nghi bóng tối khi quan sát ngoài trời',
+    horizonSilhouette: 'Bóng đen Núi đồi & Nhà cửa chân trời',
+    horizonSilhouetteDesc: 'Mô phỏng chân trời thực tế 360° với rặng núi, rừng thông và đài thiên văn',
+    constellationLines: 'Đường nối chòm sao',
+    constellationLabels: 'Tên chòm sao',
+    starLabels: 'Tên các ngôi sao sáng',
+    gridLines: 'Lưới tọa độ Alt-Az / Thiên cầu',
+    groundHorizon: 'Mặt đất & Vòng chân trời',
+    starGlowIntensity: 'Độ sáng quầng phát quang (Star Glow/Bloom)',
+    magnitudeThreshold: 'Ngưỡng cấp sao biểu kiến (Magnitude Limit)',
+
+    // Units & Language Details
+    languageSwitcher: 'Ngôn ngữ giao diện (Language)',
+    coordFormat: 'Định dạng tọa độ',
+    decimalDeg: 'Độ thập phân (Ví dụ: 45.28°)',
+    dmsDeg: 'Độ/Phút/Giây (Ví dụ: 45° 16\' 48")',
+    distanceUnit: 'Đơn vị đo khoảng cách',
+    audioFeedback: 'Hiệu ứng âm thanh Sci-Fi (Audio)',
+    audioDesc: 'Âm thanh radar khi khóa mục tiêu và phản hồi chạm',
+
+    // About App
+    appVersion: 'Phiên bản Aetheria Planetarium',
+    starCatalogInfo: 'Danh mục dữ liệu sao',
+    starCatalogDesc: 'Hipparcos Catalog (ESA) & IAU 88 Constellations',
+    graphicsEngine: 'Đồ họa 3D',
+    graphicsEngineDesc: 'Three.js / React Three Fiber / WebGL',
+
+    // AR Star Tracker & Gyroscope
+    arTracker: 'AR Star Tracker',
+    arTrackerDesc: 'Theo dõi bầu trời thực tế bằng con quay hồi chuyển',
+    arTrackingActive: 'ĐANG BÁM HƯỚNG NHÌN THỰC TẾ',
+    arTrackingPaused: 'ĐÃ CHUYỂN VỀ XOAY THỦ CÔNG',
+    arPermissionTitle: 'Quyền truy cập cảm biến hướng',
+    arPermissionDesc: 'Cần cấp quyền con quay hồi chuyển để kích hoạt tính năng ngắm sao AR trên thiết bị di động.',
+    arGrantPermission: 'Cho phép cảm biến',
+    arDesktopNotice: 'Cảm biến con quay chỉ khả dụng trên điện thoại/máy tính bảng. Bạn có thể dùng chuột hoặc bật chế độ mô phỏng.',
+    arSimulateDemo: 'Chạy mô phỏng AR',
+    arStopSimulation: 'Dừng mô phỏng',
+
+    // PWA & Offline
+    pwaTitle: 'Cài đặt ứng dụng Aetheria',
+    pwaDesc: 'Ngắm sao toàn màn hình mượt mà và hoạt động 100% offline giữa rừng núi không cần sóng 4G/Wifi.',
+    pwaInstallBtn: 'Cài đặt ngay',
+    pwaIosTip: 'Trên Safari: Nhấn nút Chia sẻ [⎋] rồi chọn "Thêm vào Màn hình chính" (+).',
+    pwaOfflineReady: 'Đã lưu cache ngoại tuyến (Offline Ready)',
+    pwaUpdateAvailable: 'Đã có phiên bản mới của Aetheria',
+    pwaUpdateBtn: 'Cập nhật ngay',
+  },
+
+  en: {
+    // Brand & Header
+    brandTitle: 'Aetheria',
+    brandSubtitle: 'ZENITH 3D',
+    planetariumSim: 'PLANETARIUM SIMULATOR',
+    starwatchRemastered: 'SPACE EDITION',
+    mode2D: '2D Sky Map',
+    mode3D: '3D Zenith Dome',
+    searchPlaceholder: 'Search star or constellation (Sirius, Orion, Vega...)...',
+    searchKbd: 'Ctrl K',
+    gpsSync: 'Sync GPS',
+    customCoords: 'Custom Coordinates',
+    account: 'Settings & Account',
+    tapToOpenControls: 'Tap to open controls',
+
+    // Bottom Navigation
+    navSky2d: '2D Sky',
+    navDome3d: '3D Dome',
+    navControls: 'Controls',
+    navSearch: 'Search',
+    navAccount: 'Settings',
+
+    // Star Bottom Sheet & Info Panel
+    targetIn3D: 'Target & Ray-Trace in 3D Dome',
+    targetRayTraceShort: 'Ray-Trace 3D',
+    apparentMagnitude: 'Apparent Magnitude',
+    distance: 'Distance',
+    spectralClass: 'Spectral Class',
+    celestialCoords: 'Celestial Coordinates',
+    altitude: 'Altitude (Alt)',
+    azimuth: 'Azimuth (Az)',
+    altitudeH: 'Altitude (h)',
+    azimuthA: 'Azimuth (A)',
+    lightYears: 'light-years',
+    parsecs: 'parsecs',
+    constellation: 'Constellation',
+    deepSpace: 'Deep Space',
+    bookmarkStar: 'Bookmark star',
+    logToJournal: 'Log to Observation Journal',
+    locked: 'LOCKED',
+    zenith: 'ZENITH',
+    visible: 'Visible',
+    belowHorizon: 'Below Horizon',
+    lockCameraRayTrace: 'Lock Camera & Ray-Trace in 3D Dome',
+    bayerFlamsteed: 'Bayer / Flamsteed Designation',
+
+    // Sidebar & Controls
+    controlsTitle: 'Controls',
+    tabLocation: 'Location',
+    tabTime: 'Time',
+    tabLayers: 'Layers',
+    tabCatalog: 'Catalog',
+    play: 'Play',
+    pause: 'Pause',
+    resetTime: 'Real-time',
+    skyLayersTitle: 'Sky Layers & Overlays',
+    brightestOnly: 'Brightest Only (1.0)',
+    nakedEyeLimit: 'Naked Eye Limit (6.5)',
+    observerCoords: 'Observer Coordinates',
+    latitude: 'LATITUDE (°)',
+    longitude: 'LONGITUDE (°)',
+    worldObservatories: 'World Class Observatories',
+    astronomicalEpoch: 'Astronomical Epoch',
+    syncNow: 'Sync Now',
+    localTimestamp: 'LOCAL TIMESTAMP',
+    celestialTimeWarp: 'Celestial Time Warp',
+    currentRate: 'Current Rate:',
+    paused: 'PAUSED',
+    realTimeRate: 'REAL-TIME (1x)',
+    speedUnit: 'SPEED',
+    landmarksTitle: 'Key Celestial Landmarks',
+    landmarksDesc: 'Click any landmark below to target it in the 3D Zenith Dome:',
+
+    // Search Modal
+    searchCelestialTitle: 'Search Celestial Bodies',
+    close: 'Close',
+    noResults: 'No celestial bodies matching',
+    quickFilters: 'Quick filters:',
+    brightestStars: 'Brightest Stars',
+    majorConstellations: 'Major Constellations',
+
+    // Account & Settings Hub
+    settingsHubTitle: 'Settings & Account',
+    back: 'Back',
+    profileSection: 'Observer Profile',
+    profileDesc: 'Personal information, callsign and astronomical rank',
+    favoritesSection: 'Saved Targets',
+    favoritesDesc: 'Bookmarked celestial bodies and stars',
+    journalSection: 'Observation Journal',
+    journalDesc: 'Field notes, sightings log, and observing history',
+    displaySection: 'Display & Sky Appearance',
+    displayDesc: 'Night vision red mode, horizon silhouette, grid, star glow',
+    unitsSection: 'Language & Units',
+    unitsDesc: 'English/Vietnamese, coordinate format, distance units',
+    aboutSection: 'About & Credits',
+    aboutDesc: 'Aetheria version, Hipparcos star data, technologies',
+
+    // Profile Details
+    stargazerAccount: 'Stargazer Account',
+    verifiedObserver: 'Verified Observer Profile',
+    guestMode: 'Guest Mode (Offline)',
+    observerName: 'Observer Name',
+    callsign: 'Astronomical Callsign',
+    rank: 'Honorary Rank',
+    joinedDate: 'Joined Date',
+    saveProfile: 'Save Profile',
+    cancel: 'Cancel',
+    favoriteObjects: 'FAVORITE TARGETS',
+    loggedObservations: 'LOGGED OBSERVATIONS',
+    currentLocation: 'Current Observation Coordinates',
+    noFavorites: 'No saved targets yet. Bookmark stars from the sky map or search bar!',
+
+    // Journal Details
+    logNewObservation: 'Log New Observation',
+    selectStar: 'Select Target Star',
+    equipmentUsed: 'Observing Equipment',
+    nakedEye: 'Naked Eye',
+    binoculars: 'Astronomical Binoculars',
+    refractor: 'Refractor Telescope',
+    reflector: 'Reflector Telescope',
+    seeingConditions: 'Atmospheric Seeing',
+    seeingPristine: 'Pristine (Crystal clear sky)',
+    seeingGood: 'Good (Minimal haze)',
+    seeingModerate: 'Moderate (Light pollution)',
+    fieldNotes: 'Field notes (seeing conditions, telescope, atmosphere)...',
+    recordEntry: 'Record Observation Entry',
+
+    // Display & Sky Appearance Details
+    nightVisionMode: 'Night Vision Red Mode',
+    nightVisionDesc: 'Protects dark adaptation during outdoor stargazing',
+    horizonSilhouette: 'Horizon Silhouette (Mountains & Buildings)',
+    horizonSilhouetteDesc: 'Realistic 360° horizon with mountains, pines, and observatory dome',
+    constellationLines: 'Constellation Lines',
+    constellationLabels: 'Constellation Names',
+    starLabels: 'Prominent Star Names',
+    gridLines: 'Alt-Az & Celestial Grid',
+    groundHorizon: 'Ground & Horizon Ring',
+    starGlowIntensity: 'Star Glow / Bloom Intensity',
+    magnitudeThreshold: 'Magnitude Limit',
+
+    // Units & Language Details
+    languageSwitcher: 'Interface Language',
+    coordFormat: 'Coordinate Format',
+    decimalDeg: 'Decimal Degrees (e.g. 45.28°)',
+    dmsDeg: 'Degrees/Minutes/Seconds (e.g. 45° 16\' 48")',
+    distanceUnit: 'Distance Unit',
+    audioFeedback: 'Sci-Fi Sound Effects',
+    audioDesc: 'Radar locking sound and haptic touch feedback',
+
+    // About App
+    appVersion: 'Aetheria Planetarium Version',
+    starCatalogInfo: 'Star Catalog Data',
+    starCatalogDesc: 'Hipparcos Catalog (ESA) & IAU 88 Constellations',
+    graphicsEngine: '3D Graphics Engine',
+    graphicsEngineDesc: 'Three.js / React Three Fiber / WebGL',
+
+    // AR Star Tracker & Gyroscope
+    arTracker: 'AR Star Tracker',
+    arTrackerDesc: 'Track real sky orientation using device gyroscope',
+    arTrackingActive: 'LIVE TRACKING REAL SKY',
+    arTrackingPaused: 'SWITCHED TO MANUAL CONTROL',
+    arPermissionTitle: 'Motion Sensor Permission',
+    arPermissionDesc: 'Motion sensor permission is required to enable AR star tracking on mobile devices.',
+    arGrantPermission: 'Grant Permission',
+    arDesktopNotice: 'Gyroscope sensor is only available on mobile/tablet. You can use mouse or enable demo simulation.',
+    arSimulateDemo: 'Demo AR Simulation',
+    arStopSimulation: 'Stop Simulation',
+
+    // PWA & Offline
+    pwaTitle: 'Install Aetheria App',
+    pwaDesc: 'Install for a native full-screen experience and 100% offline star gazing in remote dark-sky locations.',
+    pwaInstallBtn: 'Install Now',
+    pwaIosTip: 'On Safari: Tap the Share button [⎋] then choose "Add to Home Screen" (+).',
+    pwaOfflineReady: 'Offline Cache Ready',
+    pwaUpdateAvailable: 'New version of Aetheria available',
+    pwaUpdateBtn: 'Update Now',
+  },
+};
+
+/**
+ * Từ điển chuyển đổi mã chòm sao IAU sang tiếng Việt và tiếng Anh chuẩn quốc tế.
+ * Không dịch tên sao (Sirius, Vega, Altair... giữ nguyên theo yêu cầu).
+ */
+export const CONSTELLATION_NAMES: Record<string, { vi: string; en: string }> = {
+  ORI: { vi: 'Lạp Hộ (Orion)', en: 'Orion' },
+  UMA: { vi: 'Đại Hùng (Bắc Đẩu)', en: 'Ursa Major' },
+  UMI: { vi: 'Tiểu Hùng', en: 'Ursa Minor' },
+  CAS: { vi: 'Thiên Hậu', en: 'Cassiopeia' },
+  CYG: { vi: 'Thiên Nga', en: 'Cygnus' },
+  LYR: { vi: 'Thiên Cầm', en: 'Lyra' },
+  AQL: { vi: 'Thiên Ưng', en: 'Aquila' },
+  SCO: { vi: 'Bọ Cạp (Thiên Yết)', en: 'Scorpius' },
+  TAU: { vi: 'Kim Ngưu', en: 'Taurus' },
+  CMA: { vi: 'Đại Khuyển', en: 'Canis Major' },
+  CMI: { vi: 'Tiểu Khuyển', en: 'Canis Minor' },
+  LEO: { vi: 'Sư Tử', en: 'Leo' },
+  GEM: { vi: 'Song Tử', en: 'Gemini' },
+  VIR: { vi: 'Xử Nữ', en: 'Virgo' },
+  PEG: { vi: 'Phi Mã', en: 'Pegasus' },
+  CRU: { vi: 'Nam Thập Tự', en: 'Crux' },
+  CAR: { vi: 'Thuyền Để', en: 'Carina' },
+  CEN: { vi: 'Bán Nhân Mã', en: 'Centaurus' },
+  AND: { vi: 'Tiên Nữ', en: 'Andromeda' },
+  BOO: { vi: 'Mục Phu', en: 'Boötes' },
+  AUR: { vi: 'Ngự Phu', en: 'Auriga' },
+  HER: { vi: 'Vũ Tiên', en: 'Hercules' },
+  OPH: { vi: 'Xà Phu', en: 'Ophiuchus' },
+  SGR: { vi: 'Nhân Mã', en: 'Sagittarius' },
+  AQR: { vi: 'Bảo Bình', en: 'Aquarius' },
+  PSC: { vi: 'Song Ngư', en: 'Pisces' },
+  ARI: { vi: 'Bạch Dương', en: 'Aries' },
+  CNC: { vi: 'Cự Giải', en: 'Cancer' },
+  LIB: { vi: 'Thiên Bình', en: 'Libra' },
+  CAP: { vi: 'Ma Kết', en: 'Capricornus' },
+  PER: { vi: 'Anh Tiên', en: 'Perseus' },
+  PUP: { vi: 'Thuyền Vĩ', en: 'Puppis' },
+  VEL: { vi: 'Thuyền Phàm', en: 'Vela' },
+  ERI: { vi: 'Ba Giang', en: 'Eridanus' },
+  HYA: { vi: 'Trường Xà', en: 'Hydra' },
+  DRA: { vi: 'Thiên Long', en: 'Draco' },
+  CEP: { vi: 'Tiên Vương', en: 'Cepheus' },
+  PAV: { vi: 'Khổng Tước', en: 'Pavo' },
+  TUC: { vi: 'Đỗ Quyên', en: 'Tucana' },
+  GRU: { vi: 'Thiên Hạc', en: 'Grus' },
+  COL: { vi: 'Thiên Nga', en: 'Columba' },
+  PHE: { vi: 'Phượng Hoàng', en: 'Phoenix' },
+  MON: { vi: 'Kỳ Lân', en: 'Monoceros' },
+};
+
+/**
+ * Hàm lấy tên chòm sao theo ngôn ngữ được chọn
+ */
+export function getConstellationName(conCode?: string, lang: Language = 'vi'): string {
+  if (!conCode) return lang === 'vi' ? 'Vũ trụ sâu' : 'Deep Space';
+  const clean = conCode.trim();
+  const upper = clean.toUpperCase();
+
+  if (upper === 'DEEP SPACE' || upper === 'DEEP SKY OBJECT' || upper === 'DEEP SKY') {
+    return lang === 'vi' ? 'Vũ trụ sâu' : 'Deep Space';
+  }
+
+  // Tra cứu theo mã viết tắt 3 ký tự
+  if (CONSTELLATION_NAMES[upper]) {
+    return CONSTELLATION_NAMES[upper][lang];
+  }
+
+  // Tra cứu theo tên đầy đủ nếu có
+  for (const item of Object.values(CONSTELLATION_NAMES)) {
+    if (item.en.toUpperCase() === upper || item.vi.toUpperCase() === upper) {
+      return item[lang];
+    }
+  }
+
+  return clean;
+}
