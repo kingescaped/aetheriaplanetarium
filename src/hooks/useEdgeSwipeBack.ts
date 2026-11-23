@@ -1,20 +1,21 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { useMotionValue, animate, AnimationPlaybackControls } from 'framer-motion';
+import { useMotionValue, useTransform, animate, AnimationPlaybackControls, MotionValue } from 'framer-motion';
 import { soundFx } from '../utils/audio';
 
 export interface UseEdgeSwipeBackOptions {
   /** Callback được gọi khi vuốt mép trái thành công (đóng modal hoặc quay lại) */
   onBack: () => void;
-  /** Độ rộng vùng cảm ứng tính từ cạnh trái màn hình (px), mặc định 30px */
+  /** Độ rộng vùng cảm ứng tính từ cạnh trái màn hình (px), mặc định 32px */
   edgeWidth?: number;
-  /** Khoảng cách vuốt tối thiểu để kích hoạt (px), mặc định 100px */
+  /** Khoảng cách vuốt tối thiểu để kích hoạt (px), hạ xuống 60px để phản hồi tức thì */
   threshold?: number;
   /** Bật/tắt cử chỉ, mặc định true */
   enabled?: boolean;
 }
 
 export interface UseEdgeSwipeBackResult {
-  x: ReturnType<typeof useMotionValue<number>>;
+  x: MotionValue<number>;
+  backdropOpacity: MotionValue<number>;
   handlers: {
     onTouchStart: (e: React.TouchEvent) => void;
     onTouchMove: (e: React.TouchEvent) => void;
@@ -22,25 +23,29 @@ export interface UseEdgeSwipeBackResult {
     onTouchCancel: (e: React.TouchEvent) => void;
   };
   style: {
-    x: ReturnType<typeof useMotionValue<number>>;
+    x: MotionValue<number>;
+    willChange: string;
   };
 }
 
 /**
- * Custom Hook: Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS
- * - Chỉ kích hoạt khi touchstart trong khoảng `edgeWidth` (mặc định <= 30px).
- * - Khóa hướng vuốt để không xung đột với cuộn danh sách dọc.
- * - Hỗ trợ hiệu ứng kéo bám tay (interactive translation) và spring animation khi thả tay.
+ * Custom Hook: Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS Native
+ * - Phản hồi siêu tốc 120fps, không delay, không khựng.
+ * - Backdrop mờ dần để lộ màn hình phía sau ngay trong lúc vuốt.
+ * - Sử dụng đường cong gia tốc Apple Cubic-Bezier [0.32, 0.72, 0, 1] thay cho spring chậm.
  */
 export function useEdgeSwipeBack({
   onBack,
-  edgeWidth = 30,
-  threshold = 100,
+  edgeWidth = 32,
+  threshold = 60,
   enabled = true,
 }: UseEdgeSwipeBackOptions): UseEdgeSwipeBackResult {
   const x = useMotionValue(0);
   const onBackRef = useRef(onBack);
   onBackRef.current = onBack;
+
+  // Backdrop opacity: giảm mượt mà từ 1 xuống 0 khi vuốt từ 0 đến 250px
+  const backdropOpacity = useTransform(x, [0, 250], [1, 0.15]);
 
   const isSwipingRef = useRef(false);
   const startXRef = useRef(0);
@@ -49,7 +54,6 @@ export function useEdgeSwipeBack({
   const isHorizontalRef = useRef<boolean | null>(null);
   const animControlsRef = useRef<AnimationPlaybackControls | null>(null);
 
-  // Dọn dẹp animation khi unmount
   useEffect(() => {
     return () => {
       if (animControlsRef.current) {
@@ -63,7 +67,7 @@ export function useEdgeSwipeBack({
       if (!enabled || e.touches.length !== 1) return;
       const touch = e.touches[0];
 
-      // 1. Chỉ kích hoạt nếu điểm chạm bắt đầu trong khoảng edgeWidth tính từ mép trái màn hình
+      // 1. Chỉ kích hoạt nếu chạm trong phạm vi edgeWidth từ mép trái màn hình
       if (touch.clientX <= edgeWidth) {
         if (animControlsRef.current) {
           animControlsRef.current.stop();
@@ -85,13 +89,12 @@ export function useEdgeSwipeBack({
       const deltaX = touch.clientX - startXRef.current;
       const deltaY = touch.clientY - startYRef.current;
 
-      // 2. Khóa hướng vuốt ban đầu: Nếu vuốt dọc nhiều hơn thì hủy để cho phép cuộn bình thường
+      // 2. Khóa hướng vuốt ban đầu
       if (isHorizontalRef.current === null) {
-        if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
           if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
             isHorizontalRef.current = true;
           } else {
-            // Là cuộn dọc hoặc vuốt sang trái -> Hủy cử chỉ mép trái
             isHorizontalRef.current = false;
             isSwipingRef.current = false;
             return;
@@ -102,7 +105,6 @@ export function useEdgeSwipeBack({
       }
 
       if (isHorizontalRef.current && deltaX > 0) {
-        // Cập nhật vị trí trượt theo ngón tay
         x.set(deltaX);
       }
     },
@@ -122,26 +124,25 @@ export function useEdgeSwipeBack({
       const deltaTime = Date.now() - startTimeRef.current;
       const velocityX = currentX / Math.max(deltaTime, 1); // px/ms
 
-      // 3. Nếu kéo qua ngưỡng threshold (100px) hoặc vung tay nhanh (flick) sang phải
-      if (currentX >= threshold || (currentX >= 40 && velocityX > 0.45)) {
+      // 3. Nếu kéo qua ngưỡng 60px hoặc vẩy tay nhanh sang phải
+      if (currentX >= threshold || (currentX >= 30 && velocityX > 0.3)) {
         soundFx.playTabClick();
-        const targetX = typeof window !== 'undefined' ? window.innerWidth : 500;
+        const targetX = typeof window !== 'undefined' ? window.innerWidth : 450;
 
+        // Hoàn tất animation lướt ra cực nhanh (180ms), chuẩn tốc độ Apple UINavigationController
         animControlsRef.current = animate(x, targetX, {
-          type: 'spring',
-          damping: 26,
-          stiffness: 280,
+          duration: 0.18,
+          ease: [0.32, 0.72, 0, 1],
           onComplete: () => {
             x.set(0);
             onBackRef.current();
           },
         });
       } else {
-        // Chưa đủ khoảng cách -> Bật đàn hồi (spring back) trở lại vị trí cũ
+        // Chưa đủ ngưỡng -> trả về vị trí ban đầu trong 120ms
         animControlsRef.current = animate(x, 0, {
-          type: 'spring',
-          damping: 28,
-          stiffness: 350,
+          duration: 0.14,
+          ease: [0.25, 1, 0.5, 1],
         });
       }
 
@@ -152,6 +153,7 @@ export function useEdgeSwipeBack({
 
   return {
     x,
+    backdropOpacity,
     handlers: {
       onTouchStart: handleTouchStart,
       onTouchMove: handleTouchMove,
@@ -160,6 +162,7 @@ export function useEdgeSwipeBack({
     },
     style: {
       x,
+      willChange: 'transform',
     },
   };
 }

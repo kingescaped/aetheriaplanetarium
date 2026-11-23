@@ -117,10 +117,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     }
   };
 
-  const { handlers: swipeHandlers, style: swipeStyle } = useEdgeSwipeBack({
+  const { handlers: swipeHandlers, style: swipeStyle, backdropOpacity } = useEdgeSwipeBack({
     onBack: handleSwipeBack,
-    edgeWidth: 30,
-    threshold: 100,
+    edgeWidth: 32,
+    threshold: 60,
     enabled: isOpen,
   });
 
@@ -723,10 +723,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    // On Mobile: bottom-[calc(3.75rem+max(env(safe-area-inset-bottom),16px))] so BottomNav remains 100% visible and accessible!
-    <div 
+    // On Mobile: bottom-[calc(3.75rem+max(env(safe-area-inset-bottom,0px),34px))] so BottomNav remains 100% visible and accessible!
+    <motion.div 
       onClick={onClose}
-      className="fixed top-0 left-0 right-0 bottom-[calc(3.75rem+max(env(safe-area-inset-bottom),16px))] md:bottom-0 md:inset-0 z-30 md:z-50 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-2xl animate-in fade-in duration-200"
+      style={{ opacity: backdropOpacity }}
+      className="fixed top-0 left-0 right-0 bottom-[calc(3.75rem+max(env(safe-area-inset-bottom,0px),34px))] md:bottom-0 md:inset-0 z-30 md:z-50 md:flex md:items-center md:justify-center md:p-4 bg-black/60 backdrop-blur-xl"
     >
       <motion.div 
         {...swipeHandlers}
@@ -867,6 +868,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };

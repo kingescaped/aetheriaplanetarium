@@ -48,68 +48,49 @@
 }
 
 /* Header Safe Area:
-   - Base fallback: 16px (1rem)
-   - Legacy iOS 11.0: constant(safe-area-inset-top)
-   - Modern iOS WebKit Dynamic Island (54px) & Notch (47px): env(safe-area-inset-top, 0px) + 8px
+   - Trên mọi màn hình di động: Bắt buộc đệm tối thiểu 54px để né hoàn toàn Dynamic Island & Tai thỏ
+   - Nếu env(safe-area-inset-top) lớn hơn 54px (ví dụ Pro Max): tự động cộng thêm 8px
 */
 .header-safe-area {
-  padding-top: 1rem;
-  padding-top: calc(constant(safe-area-inset-top) + 0.5rem);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
-  min-height: calc(env(safe-area-inset-top, 0px) + 3.75rem);
+  padding-top: 54px;
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 8px), 54px);
+  min-height: calc(max(env(safe-area-inset-top, 0px), 48px) + 3.5rem);
 }
 
 /* BottomNav Safe Area:
-   - Base fallback: 12px bottom
-   - iOS Home Indicator (34px): env(safe-area-inset-bottom, 0px) + 12px
+   - Trên mọi màn hình di động: Bắt buộc đệm tối thiểu 34px (độ cao thanh vuốt Home Indicator iOS)
+   - Đảm bảo các nút bấm và chữ không bao giờ bị đè lấn
 */
 .bottom-nav-safe-area {
-  padding-top: 0.5rem;
-  padding-bottom: 0.75rem;
-  padding-bottom: calc(constant(safe-area-inset-bottom) + 0.75rem);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
-  min-height: calc(env(safe-area-inset-bottom, 0px) + 4.25rem);
-}
-
-/* Bảo hiểm 100% cho mọi dòng iPhone có Notch / Dynamic Island (kể cả khi env() chưa kịp trả về) */
-.ios-notch-device .header-safe-area,
-.ios-standalone .header-safe-area {
-  padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.5rem), 3.5rem) !important;
-}
-
-.ios-notch-device .bottom-nav-safe-area,
-.ios-standalone .bottom-nav-safe-area {
-  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.75rem), 2.25rem) !important;
-  min-height: max(calc(env(safe-area-inset-bottom, 0px) + 4.25rem), 5.75rem) !important;
+  padding-top: 8px;
+  padding-bottom: 34px;
+  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 8px), 34px);
+  min-height: calc(3.75rem + max(env(safe-area-inset-bottom, 0px), 34px));
 }
 
 .bottom-nav-safe-area > button {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
-/* iOS Standard Navigation Bar Uniform Variable Classes */
+/* iOS Standard Navigation Bar (UINavigationBar trong Modals & Drawer) */
 .ios-nav-bar {
-  padding-top: max(env(safe-area-inset-top, 0px), 0px);
-  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 0px));
-}
-
-.ios-notch-device .ios-nav-bar {
-  padding-top: max(env(safe-area-inset-top, 0px), 2.75rem);
-  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 2.75rem));
+  padding-top: 48px;
+  padding-top: max(env(safe-area-inset-top, 0px), 48px);
+  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 48px));
 }
 
 .ios-nav-center {
-  top: max(env(safe-area-inset-top, 0px), 0px);
-}
-
-.ios-notch-device .ios-nav-center {
-  top: max(env(safe-area-inset-top, 0px), 2.75rem);
+  top: max(env(safe-area-inset-top, 0px), 48px);
 }
 
 @media (min-width: 768px) {
   .header-safe-area {
     padding-top: 0.75rem !important;
+    min-height: auto !important;
+  }
+  .bottom-nav-safe-area {
+    padding-bottom: 0.75rem !important;
     min-height: auto !important;
   }
   .ios-nav-bar {
@@ -123,25 +104,18 @@
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), 16px));
-}
-
-.ios-notch-device .star-bottom-sheet,
-.ios-standalone .star-bottom-sheet {
-  bottom: max(calc(5.25rem + env(safe-area-inset-bottom, 0px)), 6.75rem);
+  bottom: calc(5.25rem + max(env(safe-area-inset-bottom, 0px), 34px));
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(4.25rem + max(env(safe-area-inset-bottom, 0px), 16px));
-}
-
-.ios-notch-device .sidebar-mobile-bound,
-.ios-standalone .sidebar-mobile-bound {
-  bottom: max(calc(4.5rem + env(safe-area-inset-bottom, 0px)), 5.75rem);
+  bottom: calc(4.25rem + max(env(safe-area-inset-bottom, 0px), 34px));
 }
 
 @media (min-width: 768px) {
+  .star-bottom-sheet {
+    bottom: 5.5rem !important;
+  }
   .sidebar-mobile-bound {
     bottom: 3.5rem !important;
   }

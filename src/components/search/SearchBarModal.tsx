@@ -27,10 +27,10 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   const t = TRANSLATIONS[lang];
 
   // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS
-  const { handlers: swipeHandlers, style: swipeStyle } = useEdgeSwipeBack({
+  const { handlers: swipeHandlers, style: swipeStyle, backdropOpacity } = useEdgeSwipeBack({
     onBack: onClose,
-    edgeWidth: 30,
-    threshold: 100,
+    edgeWidth: 32,
+    threshold: 60,
     enabled: isOpen,
   });
 
@@ -77,7 +77,10 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
     .slice(0, 16); // Results
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/85 md:bg-black/60 backdrop-blur-xl animate-in fade-in duration-200">
+    <motion.div 
+      style={{ opacity: backdropOpacity }}
+      className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/75 md:bg-black/60 backdrop-blur-xl"
+    >
       {/* Full screen on mobile (rounded-none h-full), Glassmorphic dialog on desktop (md:rounded-3xl md:h-auto) */}
       <motion.div 
         {...swipeHandlers}
@@ -226,6 +229,6 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
           )}
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
