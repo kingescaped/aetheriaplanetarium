@@ -20,6 +20,7 @@ import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
 import { PROMINENT_STARS } from '../../data/stars';
 import { IOSNavigationBar } from './IOSNavigationBar';
 import { IOSSwitch } from './IOSSwitch';
+import { MobilePageScreen } from './MobilePageScreen';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -71,103 +72,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onSettingsChange({ ...settings, timeSpeed: 1 });
   };
 
-  return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      {isOpen && (
-        <div
-          onClick={onToggle}
-          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-in fade-in"
-        />
-      )}
+  const tabNavigation = (
+    <div className="flex items-center justify-between p-1 bg-slate-950/60 border-b border-white/5 select-none shrink-0">
+      <div className="grid grid-cols-4 gap-1 flex-1">
+        <button
+          onClick={() => setActiveTab('observation')}
+          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
+            activeTab === 'observation'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <MapPin className="w-3.5 h-3.5 mb-0.5 shrink-0" />
+          <span className="truncate max-w-full text-center leading-tight">{t.tabLocation}</span>
+        </button>
 
-      <aside
-        className={`fixed md:absolute top-0 left-0 md:left-4 z-50 md:z-20 transition-all duration-300 ease-in-out flex pointer-events-auto ${
-          isOpen 
-            ? 'w-80 sm:w-96 translate-x-0 sidebar-mobile-bound md:top-16 md:bottom-14' 
-            : '-translate-x-full md:translate-x-0 md:w-11 md:top-16 md:h-auto pointer-events-none md:pointer-events-auto'
-        }`}
+        <button
+          onClick={() => setActiveTab('time')}
+          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
+            activeTab === 'time'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 mb-0.5 shrink-0" />
+          <span className="truncate max-w-full text-center leading-tight">{t.tabTime}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('layers')}
+          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
+            activeTab === 'layers'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 mb-0.5 shrink-0" />
+          <span className="truncate max-w-full text-center leading-tight">{t.tabLayers}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
+            activeTab === 'catalog'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <StarIcon className="w-3.5 h-3.5 mb-0.5 shrink-0" />
+          <span className="truncate max-w-full text-center leading-tight">{t.tabCatalog}</span>
+        </button>
+      </div>
+
+      {/* Desktop Close Button */}
+      <button
+        onClick={onToggle}
+        className="hidden md:flex p-1.5 ml-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer items-center justify-center shrink-0"
+        title={lang === 'vi' ? 'Đóng bảng điều khiển' : 'Close Controls'}
       >
-        {/* Container with Glassmorphism */}
-        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border-r md:border border-white/10 shadow-glass ${isOpen ? 'h-full' : 'h-auto'}`}>
-          {/* Mobile iOS Navigation Bar */}
-          <div className="md:hidden">
-            <IOSNavigationBar
-              title={t.controlsTitle}
-              backLabel={lang === 'vi' ? 'Bản đồ' : 'Map'}
-              onBack={onToggle}
-              onClose={onToggle}
-            />
-          </div>
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
 
-        {isOpen ? (
-          <>
-            {/* Tab Navigation - Ultra Compact */}
-            <div className="flex items-center justify-between p-1 bg-slate-950/60 border-b border-white/5 select-none">
-              <div className="grid grid-cols-4 gap-1 flex-1">
-              <button
-                onClick={() => setActiveTab('observation')}
-                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
-                  activeTab === 'observation'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5 mb-0.5 shrink-0" />
-                <span className="truncate max-w-full text-center leading-tight">{t.tabLocation}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('time')}
-                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
-                  activeTab === 'time'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5 mb-0.5 shrink-0" />
-                <span className="truncate max-w-full text-center leading-tight">{t.tabTime}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('layers')}
-                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
-                  activeTab === 'layers'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 mb-0.5 shrink-0" />
-                <span className="truncate max-w-full text-center leading-tight">{t.tabLayers}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('catalog')}
-                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg text-[10.5px] font-medium transition-all ${
-                  activeTab === 'catalog'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-glow-cyan'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                <StarIcon className="w-3.5 h-3.5 mb-0.5 shrink-0" />
-                <span className="truncate max-w-full text-center leading-tight">{t.tabCatalog}</span>
-              </button>
-            </div>
-
-            {/* Desktop Close Button */}
-            <button
-              onClick={onToggle}
-              className="hidden md:flex p-1.5 ml-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer items-center justify-center shrink-0"
-              title={lang === 'vi' ? 'Đóng bảng điều khiển' : 'Close Controls'}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-            {/* Scrollable Tab Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
-              {/* TAB 1: LOCATION */}
-              {activeTab === 'observation' && (
+  const tabContent = (
+    <>
+      {/* TAB 1: LOCATION */}
+      {activeTab === 'observation' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-slate-300">
                     <span className="font-semibold uppercase tracking-wider text-[11px] text-cyan-400 font-hud">
@@ -524,55 +495,89 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
               )}
-            </div>
-          </>
-        ) : (
-          /* Mini vertical icon bar when collapsed - Compact Dock */
-          <div className="py-2.5 flex flex-col items-center space-y-2">
-            <button
-              onClick={() => {
-                setActiveTab('observation');
-                onToggle();
-              }}
-              className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-              title={t.tabLocation}
-            >
-              <MapPin className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('time');
-                onToggle();
-              }}
-              className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-              title={t.tabTime}
-            >
-              <Clock className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('layers');
-                onToggle();
-              }}
-              className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-              title={t.tabLayers}
-            >
-              <Layers className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('catalog');
-                onToggle();
-              }}
-              className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-              title={t.tabCatalog}
-            >
-              <StarIcon className="w-4 h-4" />
-            </button>
+    </>
+  );
+
+  return (
+    <>
+      {/* 1. Mobile Full-Screen Layout: Unified iOS Page Screen */}
+      <div className="md:hidden">
+        <MobilePageScreen
+          title={t.controlsTitle}
+          backLabel={lang === 'vi' ? 'Bản đồ' : 'Map'}
+          onBack={onToggle}
+          onClose={onToggle}
+          isOpen={isOpen}
+          contentClassName="p-0 flex flex-col"
+        >
+          {tabNavigation}
+          <div className="flex-1 p-4 space-y-4 font-sans text-xs">
+            {tabContent}
           </div>
-        )}
+        </MobilePageScreen>
       </div>
-    </aside>
-  </>
-);
+
+      {/* 2. Desktop Collapsible Drawer Layout */}
+      <aside
+        className={`hidden md:flex md:absolute top-16 left-4 z-20 transition-all duration-300 ease-in-out pointer-events-auto ${
+          isOpen ? 'w-80 sm:w-96 bottom-14' : 'w-11 h-auto pointer-events-auto'
+        }`}
+      >
+        <div className={`relative w-full flex flex-col md:rounded-2xl glass-panel overflow-hidden border border-white/10 shadow-glass ${isOpen ? 'h-full' : 'h-auto'}`}>
+          {isOpen ? (
+            <>
+              {tabNavigation}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+                {tabContent}
+              </div>
+            </>
+          ) : (
+            /* Mini vertical icon bar when collapsed - Compact Dock */
+            <div className="py-2.5 flex flex-col items-center space-y-2">
+              <button
+                onClick={() => {
+                  setActiveTab('observation');
+                  onToggle();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                title={t.tabLocation}
+              >
+                <MapPin className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('time');
+                  onToggle();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                title={t.tabTime}
+              >
+                <Clock className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('layers');
+                  onToggle();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                title={t.tabLayers}
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('catalog');
+                  onToggle();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                title={t.tabCatalog}
+              >
+                <StarIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
 };

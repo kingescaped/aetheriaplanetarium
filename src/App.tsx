@@ -71,8 +71,20 @@ export function App() {
 
   // UI Panels State (Sidebar closed by default on mobile)
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
-    return typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+    return typeof window !== 'undefined' ? window.innerWidth >= 768 : false;
   });
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [selectedStarId, setSelectedStarId] = useState<string | number>('sirius');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAccountOpen, setIsAccountOpen] = useState<boolean>(false);
@@ -244,10 +256,15 @@ export function App() {
     );
   };
 
+  // Check if any modal/drawer is open (to hide Header and HUD on mobile to prevent overlap)
+  const isAnyModalOpen = isMobile 
+    ? (isAccountOpen || isSearchOpen || isSidebarOpen) 
+    : (isAccountOpen || isSearchOpen);
+
   return (
     <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
-      {/* Top Header: Chỉ hiển thị ở Bản đồ 2D và Vòm 3D khi không mở Cài đặt hoặc Tìm kiếm */}
-      {!isAccountOpen && !isSearchOpen && (
+      {/* Top Header: Chỉ hiển thị ở Bản đồ 2D và Vòm 3D khi không mở Cài đặt, Tìm kiếm hoặc Bảng điều khiển Mobile */}
+      {!isAnyModalOpen && (
         <Header
           viewMode={viewMode}
           setViewMode={(mode) => {
@@ -369,8 +386,8 @@ export function App() {
         />
       </div>
 
-      {/* Mobile Telemetry HUD Card: Nằm ngay dưới phần đồng hồ giờ theo đúng yêu cầu */}
-      {selectedStar && !isAccountOpen && !isSearchOpen && (
+      {/* Mobile Telemetry HUD Card: Nằm ngay dưới phần đồng hồ giờ khi không mở Modal */}
+      {selectedStar && !isAnyModalOpen && (
         <div 
           className="md:hidden fixed right-2.5 z-30 max-w-[210px] pointer-events-auto"
           style={{ top: 'calc(62px + env(safe-area-inset-top, 0px))' }}
@@ -383,7 +400,7 @@ export function App() {
       {/* Tab này chỉ hiện ở Bản đồ 2D và Vòm 3D, khi vào Cài đặt hoặc Tìm kiếm thì ẩn hoàn toàn */}
       <StarBottomSheet
         star={selectedStar}
-        isOpen={!!selectedStarId && !isAccountOpen && !isSearchOpen}
+        isOpen={!!selectedStarId && !isAnyModalOpen}
         onClose={() => setSelectedStarId('')}
         onFocusStar={(star) => {
           soundFx.playTargetRayTrace();
