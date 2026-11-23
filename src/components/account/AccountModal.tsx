@@ -736,7 +736,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       <motion.div 
         {...rootSwipeHandlers}
         style={{ ...rootSwipeStyle }}
-        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#060c1c] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
+        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#060c1c] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+var(--sab))] md:pb-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ===================== MOBILE LAYOUT ===================== */}

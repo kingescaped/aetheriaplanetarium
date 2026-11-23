@@ -43,12 +43,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 w-full bg-[#030712]/85 backdrop-blur-xl border-t border-white/10 z-40 md:hidden"
-      style={{
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
-    >
+    <nav className="fixed bottom-0 left-0 w-full z-40 bg-[#030712]/85 backdrop-blur-xl border-t border-white/10 safe-pb safe-h-bottom md:hidden">
       <div className="w-full h-[64px] flex items-center justify-around">
         {/* 1. 2D Sky Map */}
         <button

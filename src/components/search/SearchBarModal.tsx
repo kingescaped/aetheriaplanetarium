@@ -77,24 +77,19 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
     .slice(0, 16); // Results
 
   return (
-    <motion.div 
+    <motion.div
       style={{ opacity: backdropOpacity }}
       className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/75 md:bg-black/60 backdrop-blur-xl"
     >
       {/* Full screen on mobile (rounded-none h-full), Glassmorphic dialog on desktop (md:rounded-3xl md:h-auto) */}
-      <motion.div 
+      <motion.div
         {...swipeHandlers}
         style={{ ...swipeStyle }}
         className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col bg-[#060c1c]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar with explicit 'X' button and safe area inset */}
-        <header 
-          className="w-full shrink-0 border-b border-white/10 bg-[#030712]/80 backdrop-blur-xl z-40"
-          style={{
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-          }}
-        >
+        <header className="w-full shrink-0 border-b border-white/10 bg-[#030712]/80 backdrop-blur-xl z-40 safe-pt safe-h-header">
           <div className="w-full h-[56px] flex items-center px-4 relative">
             {/* Back button on mobile */}
             <button
@@ -155,11 +150,10 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               soundFx.playTabClick();
               setSelectedCategory('all');
             }}
-            className={`px-2.5 py-1 rounded-xl transition-all ${
-              selectedCategory === 'all'
+            className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'all'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
                 : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             {lang === 'vi' ? 'Tất cả' : 'All'}
           </button>
@@ -169,11 +163,10 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               soundFx.playTabClick();
               setSelectedCategory('bright');
             }}
-            className={`px-2.5 py-1 rounded-xl transition-all ${
-              selectedCategory === 'bright'
+            className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'bright'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
                 : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             {t.brightestStars} (Mag &lt; 1.5)
           </button>
@@ -183,21 +176,20 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               soundFx.playTabClick();
               setSelectedCategory('constellation');
             }}
-            className={`px-2.5 py-1 rounded-xl transition-all ${
-              selectedCategory === 'constellation'
+            className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'constellation'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
                 : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             {t.majorConstellations}
           </button>
         </div>
 
         {/* Results List */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto p-2.5 md:p-3 divide-y divide-white/5 overscroll-contain"
           style={{
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+            paddingBottom: 'calc(var(--sab) + 24px)',
           }}
         >
           {filteredStars.length > 0 ? (

@@ -50,9 +50,8 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
 
   return (
     <header
-      className={`w-full shrink-0 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 z-40 select-none ${className}`}
+      className={`w-full shrink-0 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 z-40 select-none safe-pt safe-h-header ${className}`}
       style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
         ...style,
       }}
     >

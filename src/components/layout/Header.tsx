@@ -46,13 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   return (
-    <header 
-      className="fixed top-0 left-0 right-0 w-full shrink-0 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 z-40"
-      style={{ 
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}
-    >
-      <div className="w-full h-[56px] flex items-center justify-between px-4 relative">
+    <header className="fixed top-0 left-0 w-full z-40 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 safe-pt safe-h-header">
+      <div className="w-full h-[56px] flex items-center justify-between px-4">
         {/* Brand & Title: Clicking 'AETHERIA' triggers the Controls drawer! */}
         <button
           onClick={onOpenControls}

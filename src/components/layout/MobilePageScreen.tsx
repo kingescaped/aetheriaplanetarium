@@ -79,7 +79,7 @@ export const MobilePageScreen: React.FC<MobilePageScreenProps> = ({
         <div
           className={`flex-1 overflow-y-auto w-full overscroll-contain ${contentClassName}`}
           style={{
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+            paddingBottom: 'calc(var(--sab) + 24px)',
           }}
         >
           {children}

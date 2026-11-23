@@ -41,20 +41,26 @@
    ======================================================== */
 
 :root {
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
+  /* Nếu env() lỗi, tự động dùng 47px (Dynamic Island) và 34px (Home Indicator) */
+  --sat: env(safe-area-inset-top, 47px);
+  --sab: env(safe-area-inset-bottom, 34px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
 }
 
+.safe-pt { padding-top: var(--sat) !important; }
+.safe-pb { padding-bottom: var(--sab) !important; }
+.safe-h-header { height: calc(56px + var(--sat)) !important; }
+.safe-h-bottom { height: calc(64px + var(--sab)) !important; }
+
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(64px + var(--sab) + 16px);
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(64px + var(--sab));
 }
 
 @media (min-width: 768px) {
