@@ -246,32 +246,34 @@ export function App() {
 
   return (
     <div className={`w-screen h-[100dvh] overflow-hidden relative bg-[#030712] text-slate-100 select-none ${preferences.nightVisionMode ? 'night-vision' : ''}`}>
-      {/* Top Header */}
-      <Header
-        viewMode={viewMode}
-        setViewMode={(mode) => {
-          soundFx.playTabClick();
-          setViewMode(mode);
-          setIsAccountOpen(false);
-        }}
-        location={location}
-        currentDate={currentDate}
-        onOpenSearch={() => {
-          soundFx.playModalTransition();
-          setIsSearchOpen(true);
-        }}
-        onGetGeolocation={handleGetGeolocation}
-        isLocating={isLocating}
-        onOpenAccount={() => {
-          soundFx.playModalTransition();
-          setIsAccountOpen(true);
-        }}
-        onOpenControls={() => {
-          soundFx.playModalTransition();
-          setIsSidebarOpen((prev) => !prev);
-        }}
-        lang={lang}
-      />
+      {/* Top Header: Chỉ hiển thị ở Bản đồ 2D và Vòm 3D khi không mở Cài đặt hoặc Tìm kiếm */}
+      {!isAccountOpen && !isSearchOpen && (
+        <Header
+          viewMode={viewMode}
+          setViewMode={(mode) => {
+            soundFx.playTabClick();
+            setViewMode(mode);
+            setIsAccountOpen(false);
+          }}
+          location={location}
+          currentDate={currentDate}
+          onOpenSearch={() => {
+            soundFx.playModalTransition();
+            setIsSearchOpen(true);
+          }}
+          onGetGeolocation={handleGetGeolocation}
+          isLocating={isLocating}
+          onOpenAccount={() => {
+            soundFx.playModalTransition();
+            setIsAccountOpen(true);
+          }}
+          onOpenControls={() => {
+            soundFx.playModalTransition();
+            setIsSidebarOpen((prev) => !prev);
+          }}
+          lang={lang}
+        />
+      )}
 
       {/* Main Viewport Area (Container for 2D Sky Map & 3D Zenith Dome) */}
       <main className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">

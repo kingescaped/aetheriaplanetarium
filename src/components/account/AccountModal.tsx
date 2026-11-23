@@ -723,21 +723,24 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    // On Mobile: bottom-[calc(3.75rem+max(env(safe-area-inset-bottom,0px),34px))] so BottomNav remains 100% visible and accessible!
     <motion.div 
       onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       style={{ opacity: backdropOpacity }}
-      className="fixed top-0 left-0 right-0 bottom-[calc(3.75rem+max(env(safe-area-inset-bottom,0px),34px))] md:bottom-0 md:inset-0 z-30 md:z-50 md:flex md:items-center md:justify-center md:p-4 bg-black/60 backdrop-blur-xl"
+      className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
     >
       <motion.div 
         {...swipeHandlers}
         style={{ ...swipeStyle }}
-        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* iOS-Style UINavigationBar: Centered Title, Shortened Back Button, Standard HIG */}
         <IOSNavigationBar
-          title={activeSection !== null ? currentSectionMeta?.title : t.settingsHubTitle}
+          title={activeSection !== null ? currentSectionMeta?.title : (lang === 'vi' ? 'Cài đặt' : 'Settings')}
           backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
           onBack={activeSection !== null ? () => setActiveSection(null) : undefined}
           largeTitle={activeSection === null}
@@ -747,8 +750,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 soundFx.playTabClick();
                 onClose();
               }}
-              className="hidden md:flex p-2 rounded-xl bg-white/10 hover:bg-white/20 active:opacity-60 text-slate-300 hover:text-white transition-all items-center justify-center cursor-pointer"
-              title="Đóng cài đặt (Esc)"
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:opacity-60 text-slate-300 hover:text-white transition-all flex items-center justify-center cursor-pointer"
+              title={lang === 'vi' ? 'Đóng cài đặt (Esc)' : 'Close settings (Esc)'}
             >
               <X className="w-5 h-5" />
             </button>
