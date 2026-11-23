@@ -69,8 +69,8 @@ export const AetheriaSplashScreen: React.FC<AetheriaSplashScreenProps> = ({
           transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#060c1c] select-none pointer-events-auto overflow-hidden"
           style={{
-            paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
-            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+            paddingTop: 'var(--sat, 47px)',
+            paddingBottom: 'var(--sab, 34px)',
           }}
         >
           {/* Cosmic Background Glows */}

@@ -23,12 +23,16 @@ import { getLST, equatorialToHorizontal, batchComputeHorizontalCoordsInPlace } f
 import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
+import { useSafeAreaCalibration } from './hooks/useSafeAreaCalibration';
 import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
 import { AetheriaSplashScreen } from './components/common/AetheriaSplashScreen';
 
 export function App() {
   // PWA Service Worker & Install State
   const pwa = usePWA();
+
+  // JS-based Safe Area calibration: overrides frozen CSS env() values on iOS PWA
+  useSafeAreaCalibration();
 
   // App Initialization & Safe Area Calibration Splash Screen
   const [isAppReady, setIsAppReady] = useState<boolean>(false);
@@ -408,7 +412,7 @@ export function App() {
       {selectedStar && !isAnyModalOpen && (
         <div 
           className="md:hidden fixed right-2.5 z-30 max-w-[210px] pointer-events-auto"
-          style={{ top: 'calc(62px + env(safe-area-inset-top, 0px))' }}
+          style={{ top: 'calc(var(--sat, 47px) + 62px)' }}
         >
           <StarTelemetryHUD star={selectedStar} lang={lang} />
         </div>
