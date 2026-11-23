@@ -36,55 +36,114 @@
   }
 }
 
-/* Safe Area Inset utilities for iPhone Dynamic Island & Home Indicator */
-.safe-top {
-  padding-top: max(0.75rem, env(safe-area-inset-top));
+/* ========================================================
+   ROCK-SOLID SAFE AREA INSETS FOR IPHONE (SAFARI & PWA)
+   ======================================================== */
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
-.safe-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+/* Header Safe Area:
+   - Base fallback: 16px (1rem)
+   - Legacy iOS 11.0: constant(safe-area-inset-top)
+   - Modern iOS WebKit Dynamic Island (54px) & Notch (47px): env(safe-area-inset-top, 0px) + 8px
+*/
+.header-safe-area {
+  padding-top: 1rem;
+  padding-top: calc(constant(safe-area-inset-top) + 0.5rem);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  min-height: calc(env(safe-area-inset-top, 0px) + 3.75rem);
 }
 
-.safe-left {
-  padding-left: max(0.75rem, env(safe-area-inset-left));
+/* BottomNav Safe Area:
+   - Base fallback: 12px bottom
+   - iOS Home Indicator (34px): env(safe-area-inset-bottom, 0px) + 12px
+*/
+.bottom-nav-safe-area {
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  padding-bottom: calc(constant(safe-area-inset-bottom) + 0.75rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  min-height: calc(env(safe-area-inset-bottom, 0px) + 4.25rem);
 }
 
-.safe-right {
-  padding-right: max(0.75rem, env(safe-area-inset-right));
+/* Bảo hiểm 100% cho mọi dòng iPhone có Notch / Dynamic Island (kể cả khi env() chưa kịp trả về) */
+.ios-notch-device .header-safe-area,
+.ios-standalone .header-safe-area {
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.5rem), 3.5rem) !important;
+}
+
+.ios-notch-device .bottom-nav-safe-area,
+.ios-standalone .bottom-nav-safe-area {
+  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.75rem), 2.25rem) !important;
+  min-height: max(calc(env(safe-area-inset-bottom, 0px) + 4.25rem), 5.75rem) !important;
+}
+
+.bottom-nav-safe-area > button {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 /* iOS Standard Navigation Bar Uniform Variable Classes */
 .ios-nav-bar {
-  padding-top: env(safe-area-inset-top, 0px);
-  height: calc(3.75rem + env(safe-area-inset-top, 0px));
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 0px));
+}
+
+.ios-notch-device .ios-nav-bar {
+  padding-top: max(env(safe-area-inset-top, 0px), 2.75rem);
+  height: calc(3.75rem + max(env(safe-area-inset-top, 0px), 2.75rem));
 }
 
 .ios-nav-center {
-  top: env(safe-area-inset-top, 0px);
+  top: max(env(safe-area-inset-top, 0px), 0px);
+}
+
+.ios-notch-device .ios-nav-center {
+  top: max(env(safe-area-inset-top, 0px), 2.75rem);
 }
 
 @media (min-width: 768px) {
+  .header-safe-area {
+    padding-top: 0.75rem !important;
+    min-height: auto !important;
+  }
   .ios-nav-bar {
-    padding-top: 0px;
-    height: 4rem;
+    padding-top: 0px !important;
+    height: 4rem !important;
   }
   .ios-nav-center {
-    top: 0px;
+    top: 0px !important;
   }
 }
 
 /* Star Bottom Sheet Floating Position */
 .star-bottom-sheet {
-  bottom: calc(4.75rem + max(env(safe-area-inset-bottom), 16px));
+  bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), 16px));
+}
+
+.ios-notch-device .star-bottom-sheet,
+.ios-standalone .star-bottom-sheet {
+  bottom: max(calc(5.25rem + env(safe-area-inset-bottom, 0px)), 6.75rem);
 }
 
 /* Sidebar Drawer Bounded Above Mobile BottomNav */
 .sidebar-mobile-bound {
-  bottom: calc(3.75rem + max(env(safe-area-inset-bottom), 16px));
+  bottom: calc(4.25rem + max(env(safe-area-inset-bottom, 0px), 16px));
 }
+
+.ios-notch-device .sidebar-mobile-bound,
+.ios-standalone .sidebar-mobile-bound {
+  bottom: max(calc(4.5rem + env(safe-area-inset-bottom, 0px)), 5.75rem);
+}
+
 @media (min-width: 768px) {
   .sidebar-mobile-bound {
-    bottom: 3.5rem;
+    bottom: 3.5rem !important;
   }
 }
 

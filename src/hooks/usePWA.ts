@@ -88,6 +88,11 @@ export function usePWA(): UsePWAResult {
       const update = registerSW({
         onNeedRefresh() {
           setNeedRefresh(true);
+          try {
+            update(true);
+          } catch (e) {
+            console.warn('Auto update error:', e);
+          }
         },
         onOfflineReady() {
           setIsOfflineReady(true);

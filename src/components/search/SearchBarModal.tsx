@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Sparkles, Filter, ChevronLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Star } from '../../types/celestial';
 import { Language, TRANSLATIONS } from '../../utils/i18n';
 import { soundFx } from '../../utils/audio';
+import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 
 interface SearchBarModalProps {
   isOpen: boolean;
@@ -23,6 +25,14 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'bright' | 'constellation'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[lang];
+
+  // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS
+  const { handlers: swipeHandlers, style: swipeStyle } = useEdgeSwipeBack({
+    onBack: onClose,
+    edgeWidth: 30,
+    threshold: 100,
+    enabled: isOpen,
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -69,7 +79,9 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/85 md:bg-black/60 backdrop-blur-xl animate-in fade-in duration-200">
       {/* Full screen on mobile (rounded-none h-full), Glassmorphic dialog on desktop (md:rounded-3xl md:h-auto) */}
-      <div 
+      <motion.div 
+        {...swipeHandlers}
+        style={{ ...swipeStyle }}
         className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col safe-top safe-bottom"
         onClick={(e) => e.stopPropagation()}
       >
@@ -213,7 +225,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

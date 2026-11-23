@@ -29,6 +29,8 @@ import { IOSSwitch } from '../layout/IOSSwitch';
 import { UsePWAResult } from '../../hooks/usePWA';
 import { Download, CheckCircle2 } from 'lucide-react';
 import { AetheriaStarLogo } from '../common/AetheriaLogo';
+import { motion } from 'framer-motion';
+import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -102,6 +104,25 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS:
+  // - Khi đang ở mục con (activeSection !== null): vuốt mép trái sẽ quay lại Hub cài đặt chính
+  // - Khi đang ở Hub cài đặt chính: vuốt mép trái sẽ đóng Modal cài đặt
+  const handleSwipeBack = () => {
+    if (activeSection !== null) {
+      soundFx.playTabClick();
+      setActiveSection(null);
+    } else {
+      onClose();
+    }
+  };
+
+  const { handlers: swipeHandlers, style: swipeStyle } = useEdgeSwipeBack({
+    onBack: handleSwipeBack,
+    edgeWidth: 30,
+    threshold: 100,
+    enabled: isOpen,
+  });
 
   if (!isOpen) return null;
 
@@ -702,12 +723,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    // On Mobile: bottom-[60px] so BottomNav remains 100% visible and accessible!
+    // On Mobile: bottom-[calc(3.75rem+max(env(safe-area-inset-bottom),16px))] so BottomNav remains 100% visible and accessible!
     <div 
       onClick={onClose}
-      className="fixed top-0 left-0 right-0 bottom-[60px] md:bottom-0 md:inset-0 z-30 md:z-50 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-2xl animate-in fade-in duration-200"
+      className="fixed top-0 left-0 right-0 bottom-[calc(3.75rem+max(env(safe-area-inset-bottom),16px))] md:bottom-0 md:inset-0 z-30 md:z-50 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-2xl animate-in fade-in duration-200"
     >
-      <div 
+      <motion.div 
+        {...swipeHandlers}
+        style={{ ...swipeStyle }}
         className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -843,7 +866,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             {renderSectionContent(desktopTab)}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

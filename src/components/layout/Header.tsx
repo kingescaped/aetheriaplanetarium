@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-3 md:px-5 pt-[max(env(safe-area-inset-top),16px)] pb-2.5 md:pt-3 md:pb-3 pointer-events-none transition-all">
+    <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-3 md:px-5 pb-2 md:pt-3 md:pb-3 header-safe-area pointer-events-none transition-all">
       {/* Brand & Title: Clicking 'AETHERIA' triggers the Controls drawer! */}
       <button
         onClick={onOpenControls}
