@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center space-x-1.5">
               <h1 className="text-xs md:text-base font-bold tracking-wider text-white uppercase font-sans group-hover:text-cyan-300 transition-colors flex items-center gap-1">
-                <span>{t.brandTitle}</span>
+                <span>AETHERIA v2.6</span>
                 <span className="text-cyan-400 font-light text-[9px] md:text-xs tracking-widest px-1 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">
                   {t.brandSubtitle}
                 </span>

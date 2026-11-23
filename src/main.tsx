@@ -7,10 +7,10 @@ import './index.css';
 const isIos = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 const isPwa = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
 
-if (isIos && isPwa) {
-  // Bỏ qua env() bị lỗi của Apple, ép thông số cứng an toàn cho iPhone (Tai thỏ / Dynamic Island)
-  document.documentElement.style.setProperty('--sat', '47px');
-  document.documentElement.style.setProperty('--sab', '34px');
+if (isIos) {
+  // Ép luôn cho cả Safari và PWA trên iOS để test
+  document.documentElement.style.setProperty('--sat', '47px', 'important');
+  document.documentElement.style.setProperty('--sab', '34px', 'important');
 } else {
   // Môi trường Web thường
   document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top, 0px)');
@@ -23,3 +23,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 );
+
+// --- Bắt đầu: Service Worker Kill Switch ---
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+      console.log('Service Worker unregistered to clear zombie cache.');
+    }
+  });
+}
+// --- Kết thúc ---
