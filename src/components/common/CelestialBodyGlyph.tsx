@@ -99,6 +99,18 @@ function renderDeepSkyGlyph(type: DeepSkyType, gradId: string): React.ReactNode 
   );
 }
 
+function renderSatelliteGlyph(accentColor: string): React.ReactNode {
+  return (
+    <g>
+      <line x1="5" y1="11" x2="27" y2="21" stroke={accentColor} strokeWidth="1.6" opacity="0.65" />
+      <rect x="4" y="8" width="6.5" height="9" rx="1.2" transform="rotate(-24 7.25 12.5)" fill="#0284c7" stroke={accentColor} strokeWidth="1.1" />
+      <rect x="21.5" y="15" width="6.5" height="9" rx="1.2" transform="rotate(-24 24.75 19.5)" fill="#0284c7" stroke={accentColor} strokeWidth="1.1" />
+      <rect x="13" y="13" width="6" height="6" rx="1.5" fill="#f8fafc" stroke={accentColor} strokeWidth="1.3" />
+      <circle cx="16" cy="16" r="1.4" fill={accentColor} className="animate-star-twinkle" />
+    </g>
+  );
+}
+
 export const CelestialBodyGlyph: React.FC<CelestialBodyGlyphProps> = ({
   star,
   size = 28,
@@ -114,6 +126,9 @@ export const CelestialBodyGlyph: React.FC<CelestialBodyGlyphProps> = ({
   if (star.solarSystemData) {
     kind = star.solarSystemData.bodyId;
     content = renderSolarGlyph(star, gradId, clipId);
+  } else if (star.satelliteData) {
+    kind = 'satellite';
+    content = renderSatelliteGlyph(star.color || '#34d399');
   } else if (star.deepSkyData) {
     kind = `dso:${star.deepSkyData.dsoType}`;
     content = renderDeepSkyGlyph(star.deepSkyData.dsoType, gradId);

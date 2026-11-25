@@ -26,7 +26,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   lang = 'vi',
 }) => {
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'solar' | 'dso' | 'bright' | 'constellation'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'solar' | 'satellites' | 'dso' | 'bright' | 'constellation'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[lang];
 
@@ -68,6 +68,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
     .filter((s) => {
       // Category filter
       if (selectedCategory === 'solar' && !s.solarSystemData) return false;
+      if (selectedCategory === 'satellites' && s.bodyType !== 'satellite') return false;
       if (selectedCategory === 'dso' && s.bodyType !== 'dso') return false;
       if (selectedCategory === 'bright' && s.mag > 1.5) return false;
       if (selectedCategory === 'constellation' && !s.con) return false;
@@ -79,6 +80,9 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
         (s.properName && s.properName.toLowerCase().includes(q)) ||
         (s.solarSystemData?.nameEn.toLowerCase().includes(q)) ||
         (s.solarSystemData?.nameVi.toLowerCase().includes(q)) ||
+        (s.satelliteData?.nameEn.toLowerCase().includes(q)) ||
+        (s.satelliteData?.nameVi.toLowerCase().includes(q)) ||
+        (s.satelliteData && String(s.satelliteData.noradId).includes(q)) ||
         (s.deepSkyData?.catalogCode.toLowerCase().includes(q)) ||
         (s.deepSkyData?.ngcCode?.toLowerCase().includes(q)) ||
         (s.deepSkyData?.nameEn.toLowerCase().includes(q)) ||
@@ -183,6 +187,19 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
           <button
             onClick={() => {
               soundFx.playTabClick();
+              setSelectedCategory('satellites');
+            }}
+            className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'satellites'
+              ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              }`}
+          >
+            {t.filterSatellites}
+          </button>
+
+          <button
+            onClick={() => {
+              soundFx.playTabClick();
               setSelectedCategory('dso');
             }}
             className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'dso'
@@ -250,11 +267,13 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
                         ? lang === 'vi'
                           ? star.solarSystemData.subtitleVi
                           : star.solarSystemData.subtitleEn
-                        : star.deepSkyData
-                          ? `${getDeepSkyTypeLabel(star.deepSkyData.dsoType, lang)}${star.deepSkyData.ngcCode ? ` • ${star.deepSkyData.ngcCode}` : ''}`
-                          : star.con
-                            ? `${star.con} ${t.constellation}`
-                            : 'Deep Sky'}{' '}
+                        : star.satelliteData
+                          ? `NORAD ${star.satelliteData.noradId} • ${Math.round(star.satelliteData.altitudeKm)} km`
+                          : star.deepSkyData
+                            ? `${getDeepSkyTypeLabel(star.deepSkyData.dsoType, lang)}${star.deepSkyData.ngcCode ? ` • ${star.deepSkyData.ngcCode}` : ''}`
+                            : star.con
+                              ? `${star.con} ${t.constellation}`
+                              : 'Deep Sky'}{' '}
                       • {t.apparentMagnitude}: <span className="text-cyan-300">{star.mag}</span>
                     </div>
                   </div>
@@ -268,9 +287,11 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
                   <span>
                     {star.solarSystemData
                       ? formatCelestialDistance(star, lang).primary
-                      : star.dist
-                        ? `${star.dist} ly`
-                        : ''}
+                      : star.satelliteData
+                        ? `${star.satelliteData.velocityKms} km/s`
+                        : star.dist
+                          ? `${star.dist} ly`
+                          : ''}
                   </span>
                 </div>
               </button>

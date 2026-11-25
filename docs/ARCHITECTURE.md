@@ -42,6 +42,8 @@ E:\AetheriaPlanetarium\
 │   │   │   ├── deepSkyOverlay2D.ts     # Ký hiệu 6 loại hình thái DSO (Messier/NGC) trên 2D
 │   │   │   ├── eclipticOverlay2D.ts    # Đường hoàng đạo nét đứt, vạch chia 30° & 4 điểm phân/chí 2D
 │   │   │   ├── equatorialGridOverlay2D.ts # Lưới tọa độ Xích đạo (RA 2h, Dec 30°, NCP/SCP) trên 2D
+│   │   │   ├── milkyWayOverlay2D.ts    # Dải Ngân Hà 2D Canvas (vùng lõi Nhân Mã & rãnh bụi Great Rift)
+│   │   │   ├── satelliteOverlay2D.ts   # Quỹ đạo & điểm đánh dấu ISS/Thiên Cung/Hubble trên 2D
 │   │   │   ├── skyWeatherOverlay2D.ts  # Lớp sương mù & mây khí quyển 2D Canvas
 │   │   │   ├── solarSystemOverlay2D.ts # Vẽ Mặt Trời, pha Mặt Trăng & 7 hành tinh trên 2D
 │   │   │   └── twilightSky2D.ts        # Nền bầu trời Ban ngày/Chạng vạng & hào quang Mặt Trời 2D
@@ -68,19 +70,23 @@ E:\AetheriaPlanetarium\
 │   │       ├── EquatorialGrid3D.tsx    # Lưới Xích đạo 3D (RA/Dec, Xích đạo trời 0° Eq, NCP/SCP)
 │   │       ├── GroundHorizon3D.tsx
 │   │       ├── HorizonSilhouette3D.tsx
+│   │       ├── MilkyWay3D.tsx          # Vòm GLSL Dải Ngân Hà FBM 4 tầng theo ma trận J2000 A_G
+│   │       ├── Satellites3D.tsx        # Quỹ đạo & tàu vũ trụ 3D (ISS, Thiên Cung CSS, Hubble)
 │   │       ├── SolarSystem3D.tsx       # Mặt Trời, shader pha Mặt Trăng & 7 hành tinh 3D
 │   │       ├── StarPoints3D.tsx
 │   │       ├── TargetSimulation3D.tsx
 │   │       └── ZenithDomeCanvas.tsx
-│   ├── data/                           # constellations.ts (88 IAU), stars.ts (5.200+ sao), messierCatalog.ts (110), ngcHighlights.ts (15)
+│   ├── data/                           # constellations.ts (88 IAU), stars.ts (5.200+ sao), messierCatalog.ts (110), ngcHighlights.ts (15), satelliteFallbackTles.ts
 │   ├── hooks/
 │   │   ├── useAstronomyWeather.ts      # Hook debounce tọa độ, cache & nội suy dự báo theo giờ
 │   │   ├── useDeviceOrientation.ts     # Cảm biến la bàn AR & xin quyền iOS
 │   │   ├── useEdgeSwipeBack.ts         # Hook cử chỉ vuốt mép trái/phải giới hạn 28px chuẩn iOS
-│   │   └── usePWA.ts                   # Đăng ký Workbox SW (chỉ Production) & trạng thái cài đặt
+│   │   ├── usePWA.ts                   # Đăng ký Workbox SW (chỉ Production) & trạng thái cài đặt
+│   │   └── useSatelliteTles.ts         # Hook đồng bộ TLE CORS nền (trễ 10s, cache TTL 6h)
 │   ├── services/
+│   │   ├── celestrak.ts                # Client TLE CORS (tle.ivanstanojevic.me) & cache localStorage
 │   │   └── openMeteo.ts                # Client Open-Meteo /v1/forecast & cache localStorage
-│   ├── types/                          # account.ts, atmosphere.ts, celestial.ts, deepSky.ts, solarSystem.ts, weather.ts
+│   ├── types/                          # account.ts, atmosphere.ts, celestial.ts, deepSky.ts, satellite.ts, solarSystem.ts, weather.ts
 │   ├── utils/
 │   │   ├── astronomy.ts                # LST, Alt-Az, batchComputeHorizontalCoordsInPlace
 │   │   ├── audio.ts                    # Bộ tổng hợp âm thanh Web Audio API
@@ -90,6 +96,9 @@ E:\AetheriaPlanetarium\
 │   │   ├── ecliptic.ts                 # Tính đường hoàng đạo theo độ nghiêng thực Astronomy.e_tilt
 │   │   ├── equatorialGrid.ts           # Sinh lưới kinh tuyến RA (2h) & vĩ tuyến Dec (±30°, ±60°, 0° Eq)
 │   │   ├── i18n.ts                     # Từ điển song ngữ VI / EN
+│   │   ├── milkyWay.ts                 # Chuyển đổi tọa độ Thiên hà J2000 & suy giảm tầm nhìn Ngân Hà
+│   │   ├── satelliteOrbit.ts           # Giải TLE, lan truyền quỹ đạo J2, tọa độ ECI/SEZ & bóng Trái Đất
+│   │   ├── satellites.ts               # Tính cung bay [-6p..+6p] & dự báo đỉnh bay qua 24h cho ISS/CSS/HST
 │   │   ├── seeingModel.ts              # Tính chỉ số Seeing, độ mờ bầu trời & nội suy theo giờ
 │   │   ├── skyCapture.ts               # Định dạng tên file PNG, metadata watermark & Web Share Sheet API
 │   │   ├── skyCaptureCanvas.ts         # Ghép ảnh chụp bầu trời + logo 8 cánh & watermark thích ứng DPR
@@ -102,6 +111,8 @@ E:\AetheriaPlanetarium\
 │   └── main.tsx                        # Khởi chạy React & hiệu chuẩn viewport
 ├── tests/
 │   ├── deepSkyEcliptic.test.ts         # Kiểm thử 125 DSO, đường hoàng đạo & độ lệch Mặt Trời
+│   ├── milkyWay.test.ts                # Kiểm thử ma trận J2000 Dải Ngân Hà & độ mờ ban ngày/mây
+│   ├── satellites.test.ts              # Kiểm thử TLE, lan truyền J2 ISS/Tiangong/HST & dự báo bay qua 24h
 │   ├── solarSystem.test.ts             # Kiểm thử đơn vị Ephemeris 9 thiên thể & pha trăng (`node --test`)
 │   ├── twilightEquatorialCapture.test.ts # Kiểm thử Chạng vạng 5 pha, Lưới Xích đạo & Metadata chụp ảnh
 │   └── weather.test.ts                 # Kiểm thử đơn vị Seeing Model & parser Open-Meteo (`node --test`)
@@ -142,6 +153,10 @@ Vị trí mọi ngôi sao được tính động theo tọa độ địa lý (`l
 - `computeTwilightState()` đọc góc cao/phương vị Mặt Trời trực tiếp từ `astronomy-engine` (độc lập lớp `showSolarSystem`), phân loại 5 pha khí quyển và phối hợp qua `combineSkyAttenuation()` cùng suy giảm mây Open-Meteo để vẽ nền 2D (`twilightSky2D.ts`) và shader 3D (`AtmosphereDome3D.tsx`).
 - `computeEquatorialGrid()` dựng 12 kinh tuyến RA (`2h`), 5 vĩ tuyến Dec (`0° Eq`, `±30°`, `±60°`) và hai cực thiên cầu `NCP/SCP` trên cả 2D và 3D.
 - `SkyCaptureModal` (tải lazy) nhận bản sao canvas tức thì từ `SkyMap2D` hoặc `CanvasCaptureBridge` (`gl.render(scene, camera)` không giữ `preserveDrawingBuffer`), cho phép gạt `<IOSSwitch />` bật/tắt watermark (logo Aetheria 8 cánh, tọa độ, thời gian, pha bầu trời, mục tiêu đang khóa) trước khi chia sẻ qua Web Share Sheet (`navigator.share({ files })`) trên iOS/mobile hoặc tải xuống PNG trên desktop.
+
+### H. Dải Ngân Hà Động & Theo dõi Vệ tinh Thời gian thực ([milkyWay.ts](file:///e:/AetheriaPlanetarium/src/utils/milkyWay.ts), [satelliteOrbit.ts](file:///e:/AetheriaPlanetarium/src/utils/satelliteOrbit.ts), [satellites.ts](file:///e:/AetheriaPlanetarium/src/utils/satellites.ts), [celestrak.ts](file:///e:/AetheriaPlanetarium/src/services/celestrak.ts))
+- **Dải Ngân Hà J2000 (`showMilkyWay`, mặc định bật):** Dùng ma trận IAU/Hipparcos J2000 `A_G` biến đổi qua lại giữa tọa độ Thiên hà `(l, b)` và Xích đạo `(RA, Dec)` để lấy mẫu dải 72 điểm trên `SkyMap2D` (`milkyWayOverlay2D.ts`) với vùng phình lõi Nhân Mã & rãnh bụi Great Rift, đồng bộ hoàn toàn với shader GLSL 4 tầng FBM trên `MilkyWay3D.tsx` (`renderOrder={-5}`) và tự suy giảm theo mây + pha chạng vạng.
+- **Vệ tinh Nhân tạo TLE/J2 (`showSatellites`, mặc định bật):** `useSatelliteTles` nạp TLE nội bộ cập nhật cho **ISS (`25544`)**, **Thiên Cung CSS (`48274`)**, **Hubble (`20580`)** rồi đồng bộ nền trễ `10.000ms` qua `tle.ivanstanojevic.me` (cache `aetheria_sat_tles_v1` TTL 6 giờ, Workbox `satellite-tle-api`). `satelliteOrbit.ts` lan truyền quỹ đạo Newton-Raphson Kepler kèm nhiễu loạn thế kỷ $J_2$ → ECI → SEZ địa phương & kiểm tra bóng Trái Đất (`computeSunDirectionEci` tính 1 lần mỗi lượt); `satellites.ts` dựng cung bay `[-6p..+6p]` và dự báo đỉnh bay qua 24h hỗ trợ tua thẳng tới đỉnh bay qua từ thẻ thông tin.
 
 ---
 

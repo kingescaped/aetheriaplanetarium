@@ -514,6 +514,44 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               />
             </div>
 
+            {/* Milky Way Galactic Band */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
+              <div className="flex items-center space-x-3">
+                <Sparkles className="w-4 h-4 text-indigo-300" />
+                <div>
+                  <div className="text-xs text-white font-medium">{t.showMilkyWay}</div>
+                  <div className="text-[10px] text-slate-400">{t.showMilkyWayDesc}</div>
+                </div>
+              </div>
+              <IOSSwitch
+                checked={settings.showMilkyWay}
+                color="purple"
+                ariaLabel={t.showMilkyWay}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({ ...prev, showMilkyWay: checked }))
+                }
+              />
+            </div>
+
+            {/* ISS & Satellites Tracker */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
+              <div className="flex items-center space-x-3">
+                <Compass className="w-4 h-4 text-emerald-400" />
+                <div>
+                  <div className="text-xs text-white font-medium">{t.showSatellites}</div>
+                  <div className="text-[10px] text-slate-400">{t.showSatellitesDesc}</div>
+                </div>
+              </div>
+              <IOSSwitch
+                checked={settings.showSatellites}
+                color="emerald"
+                ariaLabel={t.showSatellites}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({ ...prev, showSatellites: checked }))
+                }
+              />
+            </div>
+
             {/* Coordinates Grid */}
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
               <div className="flex items-center space-x-3">

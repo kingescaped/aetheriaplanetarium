@@ -78,3 +78,20 @@ export interface CaptureWatermarkInfo {
   timeLine: string;
   targetLine: string | null;
 }
+
+export interface MilkyWaySample {
+  lDeg: number;
+  alt: number;
+  az: number;
+  northAlt: number;
+  northAz: number;
+  southAlt: number;
+  southAz: number;
+  widthDeg: number;
+  intensity: number;
+  bulgeFactor: number;
+}
+
+export interface MilkyWayOverlayData {
+  samples: MilkyWaySample[];
+}

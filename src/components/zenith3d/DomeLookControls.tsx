@@ -16,6 +16,7 @@ interface DomeLookControlsProps {
   stars?: Star[];
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
+  satelliteBodies?: Star[];
   magnitudeLimit?: number;
   onSelectStar?: (star: Star) => void;
   recenterTrigger?: number;
@@ -33,6 +34,7 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
   stars,
   solarBodies,
   deepSkyBodies,
+  satelliteBodies,
   magnitudeLimit = 6.5,
   onSelectStar,
   recenterTrigger = 0,
@@ -42,11 +44,13 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
   const starsRef = useRef<Star[] | undefined>(stars);
   const solarBodiesRef = useRef<Star[] | undefined>(solarBodies);
   const deepSkyBodiesRef = useRef<Star[] | undefined>(deepSkyBodies);
+  const satelliteBodiesRef = useRef<Star[] | undefined>(satelliteBodies);
   const magLimitRef = useRef<number>(magnitudeLimit);
   const onSelectStarRef = useRef<((star: Star) => void) | undefined>(onSelectStar);
   starsRef.current = stars;
   solarBodiesRef.current = solarBodies;
   deepSkyBodiesRef.current = deepSkyBodies;
+  satelliteBodiesRef.current = satelliteBodies;
   magLimitRef.current = magnitudeLimit;
   onSelectStarRef.current = onSelectStar;
 
@@ -187,6 +191,19 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
         let closestStar: Star | null = null;
         let minAngularDist = Infinity;
         const starVec = new THREE.Vector3();
+
+        const currentSats = satelliteBodiesRef.current ?? [];
+        for (let i = 0; i < currentSats.length; i++) {
+          const s = currentSats[i];
+          if (s.alt !== undefined && s.alt < -2) continue;
+          const [sx, sy, sz] = altAzToVector3(s.alt ?? 45, s.az ?? 0, DOME_RADIUS);
+          starVec.set(sx - camera.position.x, sy - camera.position.y, sz - camera.position.z).normalize();
+          const angle = Math.acos(Math.max(-1, Math.min(1, rayDir.dot(starVec))));
+          if (angle < 0.095 && angle < minAngularDist) {
+            minAngularDist = angle;
+            closestStar = s;
+          }
+        }
 
         const currentSolar = solarBodiesRef.current ?? [];
         for (let i = 0; i < currentSolar.length; i++) {

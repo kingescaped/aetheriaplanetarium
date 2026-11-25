@@ -54,6 +54,21 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/tle\.ivanstanojevic\.me\/api\/tle\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'satellite-tle-api',
+              networkTimeoutSeconds: 6,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 12,
+                maxAgeSeconds: 60 * 60 * 6, // 6 hours
+              },
+            },
+          },
         ],
       },
       devOptions: {

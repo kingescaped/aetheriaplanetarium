@@ -9,6 +9,7 @@ import {
   getMoonPhaseLabel,
 } from '../../utils/solarSystemFormat';
 import { formatAngularSize, getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
+import { predictNextSatellitePass } from '../../utils/satellites';
 import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 import { StarTelemetryHUD } from './StarTelemetryHUD';
 
@@ -16,6 +17,7 @@ interface InfoPanelProps {
   star: Star | null;
   onClose: () => void;
   onFocusStar: (star: Star) => void;
+  onJumpToDate?: (date: Date) => void;
   location: ObserverLocation;
   currentDate: Date;
   lang?: Language;
@@ -25,17 +27,23 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   star,
   onClose,
   onFocusStar,
+  onJumpToDate,
   location,
   currentDate,
   lang = 'vi',
 }) => {
   const solar = star?.solarSystemData;
   const dso = star?.deepSkyData;
+  const sat = star?.satelliteData;
   const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`;
   const riseSet = useMemo(() => {
     if (!solar) return null;
     return computeBodyRiseSet(solar.bodyId, currentDate, location);
   }, [solar?.bodyId, dateKey, location.latitude, location.longitude]);
+  const nextPass = useMemo(() => {
+    if (!sat) return null;
+    return predictNextSatellitePass(sat.tleRecord, currentDate, location, 24);
+  }, [sat?.id, sat?.tleRecord.line1, dateKey, location.latitude, location.longitude]);
 
   if (!star) return null;
 
@@ -89,11 +97,13 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                     ? lang === 'vi'
                       ? solar.subtitleVi
                       : solar.subtitleEn
-                    : dso
-                      ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
-                      : star.con
-                        ? `${t.constellation} ${constellationName}`
-                        : t.deepSpace}
+                    : sat
+                      ? `NORAD ${sat.noradId} • ${lang === 'vi' ? sat.subtitleVi : sat.subtitleEn}`
+                      : dso
+                        ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
+                        : star.con
+                          ? `${t.constellation} ${constellationName}`
+                          : t.deepSpace}
                 </div>
               </div>
             </div>
@@ -124,19 +134,66 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
               </div>
             </div>
 
-            {/* Distance */}
+            {/* Distance / Slant Range */}
             <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
-              <div className="text-[10px] text-slate-400 font-hud uppercase">{t.distance}</div>
+              <div className="text-[10px] text-slate-400 font-hud uppercase">
+                {sat ? t.satRange : t.distance}
+              </div>
               <div className="text-sm font-bold font-mono text-purple-300 mt-0.5">
-                {distInfo.primary}
+                {sat ? `${sat.rangeKm.toLocaleString()} km` : distInfo.primary}
               </div>
               <div className="text-[9px] text-slate-400 mt-0.5">
-                {distInfo.secondary}
+                {sat ? `${t.satAltitude}: ${sat.altitudeKm} km` : distInfo.secondary}
               </div>
             </div>
           </div>
 
-          {solar ? (
+          {sat ? (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-hud block">{t.satVelocity}</span>
+                  <span className="font-mono font-bold text-emerald-300">{sat.velocityKms} km/s</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-hud block">{t.satPeriod}</span>
+                  <span className="font-mono text-cyan-200">{sat.periodMin} min ({sat.inclinationDeg}°)</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                <span className="text-[10px] text-slate-400 font-hud">{t.satVisibility}</span>
+                <span className={`font-sans text-[11px] font-semibold ${sat.isSunlit ? 'text-amber-300' : 'text-slate-400'}`}>
+                  {sat.isSunlit ? t.satSunlit : t.satShadow}
+                </span>
+              </div>
+              <div className="pt-1 border-t border-white/5 space-y-1.5">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400 font-hud uppercase">{t.satNextPass}</span>
+                  <span className="font-mono text-slate-500">
+                    {sat.source === 'celestrak' || sat.source === 'cache' ? t.satTleLive : t.satTleOffline}
+                  </span>
+                </div>
+                {nextPass ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-mono text-[11px] text-cyan-200">
+                      {formatRiseSetClock(nextPass.peakTimeMs, lang)} • {t.satPeakAlt} {nextPass.maxAltDeg}°
+                    </div>
+                    {onJumpToDate && (
+                      <button
+                        type="button"
+                        onClick={() => onJumpToDate(new Date(nextPass.peakTimeMs))}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-[10.5px] font-semibold cursor-pointer shrink-0"
+                      >
+                        {t.satJumpToPass}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-[10.5px] text-slate-400">{t.satNoPass24h}</div>
+                )}
+              </div>
+            </div>
+          ) : solar ? (
             <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
               {solar.moonPhaseName && (
                 <div className="flex items-center justify-between text-slate-200">

@@ -6,10 +6,13 @@ import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
 import type { EclipticOverlayData } from '../../types/deepSky';
 import type { EquatorialGridData, TwilightState } from '../../types/atmosphere';
 import { AtmosphereDome3D } from './AtmosphereDome3D';
+import { MilkyWay3D } from './MilkyWay3D';
+import { computeMilkyWayVisibility } from '../../utils/milkyWay';
 import { EquatorialGrid3D } from './EquatorialGrid3D';
 import { CanvasCaptureBridge } from './CanvasCaptureBridge';
 import { StarPoints3D } from './StarPoints3D';
 import { SolarSystem3D } from './SolarSystem3D';
+import { Satellites3D } from './Satellites3D';
 import { DeepSky3D } from './DeepSky3D';
 import { EclipticLine3D } from './EclipticLine3D';
 import { CloudVeil3D } from './CloudVeil3D';
@@ -41,6 +44,7 @@ interface ZenithDomeCanvasProps {
   skyAttenuation?: SkyVisualAttenuation;
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
+  satelliteBodies?: Star[];
   eclipticData?: EclipticOverlayData | null;
   twilightState?: TwilightState;
   equatorialGridData?: EquatorialGridData | null;
@@ -63,6 +67,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   skyAttenuation,
   solarBodies = [],
   deepSkyBodies = [],
+  satelliteBodies = [],
   eclipticData = null,
   twilightState,
   equatorialGridData = null,
@@ -182,6 +187,12 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
       >
         <CanvasCaptureBridge captureRef={captureRef} />
         <AtmosphereDome3D twilightState={twilightState} />
+        <MilkyWay3D
+          visible={settings.showMilkyWay}
+          latitudeDeg={location.latitude}
+          lstDeg={lst}
+          visibility={computeMilkyWayVisibility(skyAttenuation, twilightState)}
+        />
 
         {/* Soft cosmic ambient illumination */}
         <ambientLight intensity={0.25} />
@@ -198,6 +209,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           stars={stars}
           solarBodies={solarBodies}
           deepSkyBodies={settings.showDeepSky ? deepSkyBodies : undefined}
+          satelliteBodies={settings.showSatellites ? satelliteBodies : undefined}
           magnitudeLimit={settings.magnitudeLimit}
           onSelectStar={onSelectStar}
           recenterTrigger={recenterTrigger}
@@ -276,6 +288,15 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         {settings.showSolarSystem && (
           <SolarSystem3D
             bodies={solarBodies}
+            showLabels={settings.showStarLabels && !hideHtmlOverlays}
+            skyAttenuation={skyAttenuation}
+          />
+        )}
+
+        {/* 4.7. Live Satellite & Space Station Passes (ISS, Tiangong, Hubble) */}
+        {settings.showSatellites && (
+          <Satellites3D
+            bodies={satelliteBodies}
             showLabels={settings.showStarLabels && !hideHtmlOverlays}
             skyAttenuation={skyAttenuation}
           />

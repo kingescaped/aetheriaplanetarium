@@ -22,6 +22,7 @@ import {
   getMoonPhaseLabel,
 } from '../../utils/solarSystemFormat';
 import { formatAngularSize, getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
+import { predictNextSatellitePass } from '../../utils/satellites';
 import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 
 interface StarBottomSheetProps {
@@ -29,6 +30,7 @@ interface StarBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   onFocusStar: (star: Star) => void;
+  onJumpToDate?: (date: Date) => void;
   isFavorite: boolean;
   onToggleFavorite: (starId: string | number) => void;
   onOpenJournal?: (star: Star) => void;
@@ -44,6 +46,7 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
   isOpen,
   onClose,
   onFocusStar,
+  onJumpToDate,
   isFavorite,
   onToggleFavorite,
   onOpenJournal,
@@ -58,6 +61,7 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
   const t = TRANSLATIONS[lang];
   const solar = star?.solarSystemData;
   const dso = star?.deepSkyData;
+  const sat = star?.satelliteData;
   const dateHourKey = currentDate
     ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`
     : '';
@@ -65,6 +69,10 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
     if (!solar || !location || !currentDate) return null;
     return computeBodyRiseSet(solar.bodyId, currentDate, location);
   }, [solar?.bodyId, dateHourKey, location?.latitude, location?.longitude]);
+  const nextPass = useMemo(() => {
+    if (!sat || !location || !currentDate) return null;
+    return predictNextSatellitePass(sat.tleRecord, currentDate, location, 24);
+  }, [sat?.id, sat?.tleRecord.line1, dateHourKey, location?.latitude, location?.longitude]);
 
   if (!isOpen || !star) return null;
 
@@ -74,9 +82,11 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
     ? lang === 'vi'
       ? solar.subtitleVi
       : solar.subtitleEn
-    : dso
-      ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
-      : constellationName;
+    : sat
+      ? `NORAD ${sat.noradId} • ${Math.round(sat.altitudeKm)} km`
+      : dso
+        ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
+        : constellationName;
   const distInfo = formatCelestialDistance(star, lang);
 
   const handleFocus = () => {
@@ -284,6 +294,13 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
                           : 'G2V'}
                     </div>
                   </div>
+                ) : sat ? (
+                  <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
+                    <div className="text-[9px] text-slate-400 font-hud uppercase">{t.satVelocity}</div>
+                    <div className="text-[11px] font-bold font-mono text-emerald-300 mt-0.5 truncate">
+                      {sat.velocityKms} km/s
+                    </div>
+                  </div>
                 ) : dso ? (
                   <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
                     <div className="text-[9px] text-slate-400 font-hud uppercase">{t.dsoType}</div>
@@ -305,12 +322,43 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
                 )}
 
                 <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
-                  <div className="text-[9px] text-slate-400 font-hud uppercase">{t.distance}</div>
+                  <div className="text-[9px] text-slate-400 font-hud uppercase">
+                    {sat ? t.satRange : t.distance}
+                  </div>
                   <div className="text-[11px] font-bold font-mono text-purple-300 mt-0.5">
-                    {distInfo.primary}
+                    {sat ? `${sat.rangeKm.toLocaleString()} km` : distInfo.primary}
                   </div>
                 </div>
               </div>
+
+              {sat && (
+                <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 space-y-1.5 font-mono text-[10px] text-slate-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>{t.satAltitude}: <strong className="text-emerald-300">{sat.altitudeKm} km</strong></span>
+                    <span className={sat.isSunlit ? 'text-amber-300' : 'text-slate-400'}>
+                      {sat.isSunlit ? t.satSunlit : t.satShadow}
+                    </span>
+                  </div>
+                  {nextPass ? (
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+                      <span className="text-cyan-200">
+                        {formatRiseSetClock(nextPass.peakTimeMs, lang)} • {nextPass.maxAltDeg}°
+                      </span>
+                      {onJumpToDate && (
+                        <button
+                          type="button"
+                          onClick={() => onJumpToDate(new Date(nextPass.peakTimeMs))}
+                          className="px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 font-sans font-semibold text-[10px]"
+                        >
+                          {t.satJumpToPass}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 font-sans">{t.satNoPass24h}</div>
+                  )}
+                </div>
+              )}
 
               {dso && (
                 <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 grid grid-cols-2 gap-1.5 font-mono text-[10px] text-slate-200">

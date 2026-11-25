@@ -35,6 +35,7 @@
 - [x] Vòm thiên đỉnh 3D (`ZenithDomeCanvas.tsx`): bán kính cầu $r=500$, rặng núi & đài thiên văn bóng đen 360° (`HorizonSilhouette3D.tsx`).
 - [x] Thuật toán Angular Distance Raycasting chính xác (`DomeLookControls.tsx`) và vòng ngắm Holographic đa tầng (`TargetSimulation3D.tsx`).
 - [x] Tối ưu hóa GPU `Points BufferGeometry` với Vertex Shader lọc cấp sao (`uMagLimit`) và `batchComputeHorizontalCoordsInPlace` đạt 60 FPS với 5.200+ sao.
+- [x] Dải Ngân Hà động (`showMilkyWay` mặc định BẬT) theo ma trận thiên hà IAU J2000 trên 2D Canvas (`milkyWayOverlay2D.ts`) & Vòm GLSL 3D (`MilkyWay3D.tsx`) kèm vùng lõi Nhân Mã và rãnh bụi Great Rift, mờ tự động theo mây & ban ngày.
 
 ---
 
@@ -51,6 +52,7 @@
 - [x] Mô phỏng Bầu trời Ban ngày & 4 pha Chạng vạng (`showAtmosphereTwilight` mặc định BẬT) dựa theo góc Mặt Trời `astronomy-engine` kèm hào quang chân trời 2D/GLSL 3D và làm mờ sao hài hòa với thời tiết.
 - [x] Bổ sung Lưới tọa độ Xích đạo RA / Dec (`showEquatorialGrid` mặc định TẮT: 12 kinh tuyến 2h, 5 vĩ tuyến kèm Xích đạo trời `0° Eq` & cực `NCP/SCP`) trên 2D & 3D.
 - [x] Tính năng Chụp & Xuất ảnh Bầu trời 2D/3D (`SkyCaptureModal`, `CanvasCaptureBridge` không dùng `preserveDrawingBuffer`): công tắc `<IOSSwitch />` bật/tắt Watermark (mặc định BẬT), Web Share Sheet trên iOS/mobile và fallback tải file PNG trên desktop.
+- [x] Theo dõi Vệ tinh nhân tạo & Trạm ISS thời gian thực (`showSatellites` mặc định BẬT): TLE ISS (`25544`), Thiên Cung CSS (`48274`), Hubble (`20580`), bộ lan truyền quỹ đạo $J_2$, đường bay 2D/3D, lọc tìm kiếm, dự báo bay qua đỉnh 24h và nút tua tới đỉnh bay qua.
 
 ---
 
@@ -63,7 +65,7 @@
 ## 📦 5. Tối ưu Hóa Build & Hiệu Năng (Performance & Packaging)
 
 - [x] TypeScript `tsc --noEmit` sạch 100% không lỗi, `vite build` tách chunk (`vendor-three`, `vendor-astronomy`, `vendor-react`, `vendor-framer`, `vendor-icons`) và tách hoàn toàn `vendor-three` khỏi bundle 2D ban đầu.
-- [x] Unit test Node (`node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts tests/twilightEquatorialCapture.test.ts`): `24/24` pass qua 8 suites.
-- [x] Workbox precache `dist/sw.js` (25 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
-- [x] Audit chỉ số Google Lighthouse (`vite preview` bản Twilight & Xuất ảnh: Desktop `Perf 99`, Mobile `Perf 73` ở `benchmarkIndex=2557.5`, A11y/BP/SEO `100`; trên GitHub Pages `957dc15`: Desktop `Perf 97`, A11y/BP/SEO `100` ở cả Mobile & Desktop).
+- [x] Unit test Node (`node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts tests/twilightEquatorialCapture.test.ts tests/milkyWay.test.ts tests/satellites.test.ts`): `33/33` pass qua 10 suites.
+- [x] Workbox precache `dist/sw.js` (25 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API và TLE API (`satellite-tle-api`).
+- [x] Audit chỉ số Google Lighthouse (`vite preview` bản Dải Ngân Hà & Vệ tinh TLE: Desktop `Perf 99`, Mobile `Perf 78`, A11y/BP/SEO `100`; trên GitHub Pages `957dc15`: Desktop `Perf 97`, A11y/BP/SEO `100` ở cả Mobile & Desktop).
 - [x] Kiểm thử thực địa trên thiết bị iOS thực tế (Standalone PWA, safe-area, Open-Meteo, Hệ Mặt Trời 2D/3D, AR & offline).

@@ -19,6 +19,7 @@ import {
   Sunset,
   Globe2,
   Orbit,
+  Satellite,
   X
 } from 'lucide-react';
 import { CelestialSettings, ObserverLocation, Star } from '../../types/celestial';
@@ -45,6 +46,7 @@ interface SidebarProps {
   selectedStar: Star | null;
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
+  satelliteBodies?: Star[];
   twilightState?: TwilightState;
   lang?: Language;
 }
@@ -138,6 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedStar,
   solarBodies = [],
   deepSkyBodies = [],
+  satelliteBodies = [],
   twilightState,
   lang = 'vi',
 }) => {
@@ -586,6 +589,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
 
+            {/* Milky Way Galactic Band */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-indigo-300" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showMilkyWay}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showMilkyWay}
+                color="purple"
+                ariaLabel={t.showMilkyWay}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showMilkyWay: checked,
+                  }))
+                }
+              />
+            </div>
+
+            {/* ISS & Bright Satellites (TLE) */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Satellite className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showSatellites}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showSatellites}
+                color="emerald"
+                ariaLabel={t.showSatellites}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showSatellites: checked,
+                  }))
+                }
+              />
+            </div>
+
             {/* Equatorial Coordinate Grid (RA / Dec) */}
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
               <div className="flex items-center space-x-2">
@@ -703,6 +744,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                       <div className="text-[9px] font-mono text-slate-400 mt-0.5">
                         Alt {(body.alt ?? 0).toFixed(0)}°
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {satelliteBodies.length > 0 && (
+            <div className="space-y-2 pb-2 border-b border-white/10">
+              <span className="font-semibold uppercase tracking-wider text-[11px] text-emerald-300 font-hud block">
+                {t.satellitesCatalogTitle}
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {satelliteBodies.map((satBody) => {
+                  const meta = satBody.satelliteData!;
+                  const isSelected = selectedStar?.id === satBody.id;
+                  return (
+                    <button
+                      key={satBody.id}
+                      onClick={() => onSelectStar(satBody)}
+                      className={`px-2 py-1.5 rounded-xl text-left transition-all border ${
+                        isSelected
+                          ? 'bg-emerald-500/20 border-emerald-400/60 text-white'
+                          : 'bg-slate-900/50 hover:bg-slate-800/70 border-white/10 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium truncate">
+                        <CelestialBodyGlyph star={satBody} size={16} />
+                        <span className="truncate">{satBody.name}</span>
+                      </div>
+                      <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+                        {Math.round(meta.altitudeKm)} km • Alt {(satBody.alt ?? 0).toFixed(0)}°
                       </div>
                     </button>
                   );

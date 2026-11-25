@@ -2,12 +2,19 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
 import type { EclipticOverlayData } from '../../types/deepSky';
-import type { EquatorialGridData, TwilightState } from '../../types/atmosphere';
+import type {
+  EquatorialGridData,
+  MilkyWayOverlayData,
+  TwilightState,
+} from '../../types/atmosphere';
 import type { Language } from '../../utils/i18n';
 import { drawTwilightSky2D, drawTwilightHorizonGlow2D } from './twilightSky2D';
+import { drawMilkyWay2D } from './milkyWayOverlay2D';
+import { computeMilkyWayVisibility } from '../../utils/milkyWay';
 import { drawEquatorialGrid2D } from './equatorialGridOverlay2D';
 import { drawSkyWeatherOverlay2D } from './skyWeatherOverlay2D';
 import { drawSolarSystem2D, type ProjectedSolarBody } from './solarSystemOverlay2D';
+import { drawSatellites2D, type ProjectedSatellite } from './satelliteOverlay2D';
 import { drawEclipticOverlay2D } from './eclipticOverlay2D';
 import { drawDeepSky2D, type ProjectedDeepSky } from './deepSkyOverlay2D';
 import {
@@ -34,9 +41,11 @@ interface SkyMap2DProps {
   skyAttenuation?: SkyVisualAttenuation;
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
+  satelliteBodies?: Star[];
   eclipticData?: EclipticOverlayData | null;
   twilightState?: TwilightState;
   equatorialGridData?: EquatorialGridData | null;
+  milkyWayData?: MilkyWayOverlayData | null;
   captureRef?: React.MutableRefObject<(() => HTMLCanvasElement | null) | null>;
   lang?: Language;
 }
@@ -62,9 +71,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   skyAttenuation,
   solarBodies = [],
   deepSkyBodies = [],
+  satelliteBodies = [],
   eclipticData = null,
   twilightState,
   equatorialGridData = null,
+  milkyWayData = null,
   captureRef,
   lang = 'vi',
 }) => {
@@ -79,10 +90,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   const [hoveredStar, setHoveredStar] = useState<Star | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Cached projected stars, deep sky & Solar System bodies for hit testing
+  // Cached projected stars, deep sky, Solar System & satellites for hit testing
   const projectedStarsRef = useRef<ProjectedStar[]>([]);
   const projectedSolarRef = useRef<ProjectedSolarBody[]>([]);
   const projectedDeepSkyRef = useRef<ProjectedDeepSky[]>([]);
+  const projectedSatRef = useRef<ProjectedSatellite[]>([]);
 
   // Reset view to default
   const handleResetView = () => {
@@ -211,6 +223,19 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     ctx.clip();
 
     drawTwilightHorizonGlow2D(ctx, cx + pan.x, cy + pan.y, currentRadius, twilightState);
+
+    if (settings.showMilkyWay && milkyWayData) {
+      drawMilkyWay2D(
+        ctx,
+        milkyWayData,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        currentRadius,
+        computeMilkyWayVisibility(skyAttenuation, twilightState)
+      );
+    }
 
     // 4. Draw Coordinate Grid (Alt-Azimuthal Grid)
     if (settings.showGridLines) {
@@ -403,6 +428,20 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       )
       : [];
 
+    projectedSatRef.current = settings.showSatellites
+      ? drawSatellites2D(
+        ctx,
+        satelliteBodies,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        currentRadius,
+        skyAttenuation,
+        settings.showStarLabels
+      )
+      : [];
+
     if (weatherSample && skyAttenuation && skyAttenuation.hazeOpacity > 0.02) {
       drawSkyWeatherOverlay2D(
         ctx,
@@ -414,9 +453,10 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       );
     }
 
-    // 8. Draw Highlight Ring for Selected Star, Deep Sky Object or Solar System Body
+    // 8. Draw Highlight Ring for Selected Star, Satellite, DSO or Solar System Body
     if (selectedStar) {
       const selectedProj =
+        projectedSatRef.current.find((p) => p.star.id === selectedStar.id) ??
         projectedSolarRef.current.find((p) => p.star.id === selectedStar.id) ??
         projectedDeepSkyRef.current.find((p) => p.star.id === selectedStar.id) ??
         projectedMap.get(selectedStar.id);
@@ -454,9 +494,10 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       }
     }
 
-    // 9. Draw Highlight for Hovered Star or Deep Sky Object
+    // 9. Draw Highlight for Hovered Star, Satellite or Deep Sky Object
     if (hoveredStar && (!selectedStar || hoveredStar.id !== selectedStar.id)) {
       const hProj =
+        projectedSatRef.current.find((p) => p.star.id === hoveredStar.id) ??
         projectedSolarRef.current.find((p) => p.star.id === hoveredStar.id) ??
         projectedDeepSkyRef.current.find((p) => p.star.id === hoveredStar.id) ??
         projectedMap.get(hoveredStar.id);
@@ -528,9 +569,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     skyAttenuation,
     solarBodies,
     deepSkyBodies,
+    satelliteBodies,
     eclipticData,
     twilightState,
     equatorialGridData,
+    milkyWayData,
     lang,
   ]);
 
@@ -566,16 +609,27 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       });
     }
 
-    // Check hit Solar System body first, then Deep Sky Object, then star
+    // Check hit Satellite first, then Solar System, then DSO, then star
     let closest: Star | null = null;
     let minDist = 18;
 
-    for (const proj of projectedSolarRef.current) {
+    for (const proj of projectedSatRef.current) {
       if (!proj.visible) continue;
       const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
       if (dist < minDist) {
         minDist = dist;
         closest = proj.star;
+      }
+    }
+
+    if (!closest) {
+      for (const proj of projectedSolarRef.current) {
+        if (!proj.visible) continue;
+        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = proj.star;
+        }
       }
     }
 
@@ -656,15 +710,25 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         y: mouseY - pan.y,
       });
 
-      // Hit test on touch (Solar System bodies first, then DSOs, then stars)
+      // Hit test on touch (Satellites, Solar System, DSOs, then stars)
       let closest: Star | null = null;
       let minDist = 24;
-      for (const proj of projectedSolarRef.current) {
+      for (const proj of projectedSatRef.current) {
         if (!proj.visible) continue;
         const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
         if (dist < minDist) {
           minDist = dist;
           closest = proj.star;
+        }
+      }
+      if (!closest) {
+        for (const proj of projectedSolarRef.current) {
+          if (!proj.visible) continue;
+          const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = proj.star;
+          }
         }
       }
       if (!closest) {
