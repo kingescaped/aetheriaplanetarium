@@ -51,6 +51,41 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+
+  // Track container dimensions asynchronously to avoid forced synchronous reflow on React commit
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = (w: number, h: number) => {
+      const nextW = Math.round(w);
+      const nextH = Math.round(h);
+      if (nextW <= 0 || nextH <= 0) return;
+      setCanvasSize((prev) =>
+        prev.width === nextW && prev.height === nextH ? prev : { width: nextW, height: nextH }
+      );
+    };
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          updateSize(entry.contentRect.width, entry.contentRect.height);
+        }
+      });
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
+
+    const handleResize = () => updateSize(container.clientWidth, container.clientHeight);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Pan & Zoom view state
   const [zoom, setZoom] = useState<number>(1.0);
@@ -109,19 +144,20 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   // Main Canvas Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || canvasSize.width <= 0 || canvasSize.height <= 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Handle High-DPI screen clarity
-    const dpr = window.devicePixelRatio || 1;
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+    const rafId = requestAnimationFrame(() => {
+      // Handle High-DPI screen clarity without forcing synchronous layout reads on commit
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvasSize.width;
+      const height = canvasSize.height;
 
-    if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-    }
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
 
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -435,7 +471,10 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       ctx.restore();
     }
 
-    ctx.restore();
+      ctx.restore();
+    });
+
+    return () => cancelAnimationFrame(rafId);
   }, [
     stars,
     location,
@@ -449,6 +488,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     weatherSample,
     skyAttenuation,
     solarBodies,
+    canvasSize,
   ]);
 
   // Mouse Move Event (Hover detection & Alt/Az coordinate reporting)
