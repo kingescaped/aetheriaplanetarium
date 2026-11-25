@@ -5,6 +5,7 @@ import { Star } from '../../types/celestial';
 import { Language, TRANSLATIONS } from '../../utils/i18n';
 import { soundFx } from '../../utils/audio';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
+import { TopSafeBar } from '../layout/TopSafeBar';
 
 interface SearchBarModalProps {
   isOpen: boolean;
@@ -26,17 +27,18 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[lang];
 
-  // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS
+  // Strict left-edge (28px) swipe-to-go-back matching iOS navigation
   const { handlers: swipeHandlers, style: swipeStyle, backdropOpacity } = useEdgeSwipeBack({
     onBack: onClose,
-    edgeWidth: 32,
-    threshold: 60,
+    edge: 'left',
     enabled: isOpen,
   });
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 80);
+      inputRef.current?.focus();
+      const rafId = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(rafId);
     } else {
       setQuery('');
       setSelectedCategory('all');
@@ -78,19 +80,17 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
 
   return (
     <motion.div
-      style={{ opacity: backdropOpacity }}
-      className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/75 md:bg-black/60 backdrop-blur-xl"
+      style={{ opacity: backdropOpacity, height: 'var(--visual-vh, 100%)' }}
+      className="absolute top-0 left-0 right-0 z-[60] flex items-start justify-center md:pt-16 p-0 md:px-4 bg-black/75 md:bg-black/60 backdrop-blur-xl"
+      onClick={onClose}
     >
-      {/* Full screen on mobile (rounded-none h-full), Glassmorphic dialog on desktop (md:rounded-3xl md:h-auto) */}
       <motion.div
         {...swipeHandlers}
         style={{ ...swipeStyle }}
-        className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col bg-[#060c1c]"
+        className="relative w-full h-full md:h-auto md:max-h-[80vh] md:max-w-xl md:rounded-3xl glass-panel md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col bg-[#030712]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Search Input Bar with explicit 'X' button and safe area inset */}
-        <header className="w-full shrink-0 border-b border-white/10 bg-[#030712]/80 backdrop-blur-xl z-40 safe-pt safe-h-header">
-          <div className="w-full h-[56px] flex items-center px-4 relative">
+        <TopSafeBar disableDesktopSafeTop padding="compact">
             {/* Back button on mobile */}
             <button
               onClick={() => {
@@ -109,7 +109,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               placeholder={t.searchPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none font-sans"
+              className="w-full bg-transparent text-base md:text-sm text-white placeholder-slate-400 focus:outline-none font-sans"
             />
 
             {query && (
@@ -135,11 +135,9 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
             >
               <X className="w-4 h-4" />
             </button>
-          </div>
-        </header>
+        </TopSafeBar>
 
-        {/* Quick Filter Chips */}
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-white/5 bg-slate-950/40 overflow-x-auto text-xs shrink-0">
+        <div className="flex items-center gap-1.5 safe-px md:px-4 py-2 border-b border-white/5 bg-slate-950/40 overflow-x-auto text-xs shrink-0 touch-pan-x">
           <span className="text-[10px] text-slate-500 font-hud mr-1 flex items-center gap-1">
             <Filter className="w-3 h-3 text-cyan-400" />
             <span>{t.quickFilters}</span>
@@ -185,12 +183,8 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
           </button>
         </div>
 
-        {/* Results List */}
         <div
-          className="flex-1 overflow-y-auto p-2.5 md:p-3 divide-y divide-white/5 overscroll-contain"
-          style={{
-            paddingBottom: 'calc(var(--sab) + 24px)',
-          }}
+          className="flex-1 overflow-y-auto py-2.5 safe-px-compact md:p-3 divide-y divide-white/5 overscroll-contain touch-pan-y pb-[calc(var(--sab)+24px)] md:pb-3"
         >
           {filteredStars.length > 0 ? (
             filteredStars.map((star) => (

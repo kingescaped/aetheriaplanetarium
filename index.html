@@ -4,18 +4,19 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/pwa-icon.svg" />
-  <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
   <!-- Mobile-First Native App Meta Tags -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <!-- Trạng thái trong suốt liền mạch: Status Bar nổi trực tiếp lên nền Header mờ -->
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="color-scheme" content="dark" />
   <meta name="apple-mobile-web-app-title" content="Aetheria Planetarium" />
-  <!-- Khai báo Theme Color chuẩn xác cho Chrome, Android, Safari (đồng bộ hoàn hảo với Header #060c1c) -->
-  <meta name="theme-color" content="#060c1c" />
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#060c1c" />
+  <!-- Khai báo Theme Color chuẩn xác cho Chrome, Android, Safari (đồng bộ hoàn hảo với Header #030712) -->
+  <meta name="theme-color" content="#030712" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030712" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#030712" />
   <meta name="format-detection" content="telephone=no" />
 
   <!-- PWA Manifest -->
@@ -23,11 +24,28 @@
 
   <title>Aetheria Planetarium</title>
 
-  <!-- Synchronous background color: Đảm bảo WebKit iOS luôn phủ màu #060c1c dưới Status Bar ngay từ millisecond đầu tiên -->
+  <!-- Synchronous background color & color-scheme for iOS Standalone PWA -->
   <style>
     html,
     body {
-      background-color: #060c1c;
+      background-color: #030712;
+      color-scheme: dark;
+    }
+
+    #ios-status-bar-shield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--top-bar-pt, env(safe-area-inset-top, 0px));
+      background-color: #030712;
+      z-index: 90;
+    }
+
+    @media (min-width: 768px) {
+      #ios-status-bar-shield {
+        height: env(safe-area-inset-top, 0px);
+      }
     }
   </style>
 
@@ -39,7 +57,35 @@
     rel="stylesheet">
 </head>
 
-<body class="bg-[#060c1c] text-slate-100 overflow-hidden select-none font-sans antialiased overscroll-none touch-none">
+<body class="bg-[#030712] text-slate-100 overflow-hidden select-none font-sans antialiased overscroll-none touch-manipulation">
+  <div id="ios-status-bar-shield" aria-hidden="true"></div>
+  <script>
+    (function () {
+      var doc = document.documentElement;
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+      var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      var innerH = window.innerHeight;
+      var h = innerH;
+      if (isIOS && isStandalone) {
+        var probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;';
+        document.body.appendChild(probe);
+        var satPx = parseFloat(window.getComputedStyle(probe).paddingTop) || 0;
+        probe.remove();
+        if (satPx > 0) {
+          doc.classList.add('ios-standalone');
+          var screenH = isLandscape ? Math.min(window.screen.width, window.screen.height) : Math.max(window.screen.width, window.screen.height);
+          if (screenH - innerH >= 0 && screenH - innerH <= 110) {
+            h = screenH;
+          }
+        }
+      }
+      doc.style.setProperty('--app-height', h + 'px');
+      doc.style.setProperty('--visual-vh', h + 'px');
+    })();
+  </script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

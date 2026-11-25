@@ -43,14 +43,14 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   const spectralColor = getSpectralColor(star.spect);
 
   return (
-    <div className="absolute top-16 right-4 z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
+    <div className="absolute top-3 right-[max(1rem,var(--sar))] max-h-[calc(100%-var(--sab)-4.25rem)] overflow-y-auto overscroll-contain touch-manipulation z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
       {/* 1. Main Star Info Card */}
       <div className="rounded-2xl glass-panel border border-white/10 shadow-glass overflow-hidden">
         {/* Header with Star Glow */}
         <div className="relative p-4 pb-3 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
-              <div 
+              <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-lg"
                 style={{
                   backgroundColor: `${spectralColor}22`,
@@ -112,7 +112,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
           <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-slate-400 font-hud uppercase">{t.spectralClass}</span>
-              <span 
+              <span
                 className="px-2 py-0.5 rounded-md font-mono text-xs font-bold border"
                 style={{
                   backgroundColor: `${spectralColor}22`,

@@ -7,11 +7,13 @@ import { degToRad } from '../../utils/astronomy';
 interface GroundHorizon3DProps {
   showGround: boolean;
   showGrid: boolean;
+  showLabels?: boolean;
 }
 
 export const GroundHorizon3D: React.FC<GroundHorizon3DProps> = ({
   showGround,
   showGrid,
+  showLabels = true,
 }) => {
   // Cardinal points along the horizon perimeter (Alt = 0°)
   const cardinalMarkers = useMemo(() => {
@@ -126,9 +128,9 @@ export const GroundHorizon3D: React.FC<GroundHorizon3DProps> = ({
           </mesh>
 
           {/* 3D Cardinal Labels on Horizon Rim */}
-          {cardinalMarkers.map((marker) => (
+          {showLabels && cardinalMarkers.map((marker) => (
             <group key={marker.label} position={marker.position}>
-              <Html center distanceFactor={45} className="pointer-events-none select-none">
+              <Html center distanceFactor={45} zIndexRange={[10, 0]} className="pointer-events-none select-none">
                 <div
                   className="px-2 py-0.5 rounded-lg border font-mono font-bold text-xs tracking-wider shadow-lg backdrop-blur-md"
                   style={{
@@ -160,13 +162,13 @@ export const GroundHorizon3D: React.FC<GroundHorizon3DProps> = ({
           </lineSegments>
 
           {/* Altitude labels hovering on the North meridian */}
-          {[30, 60].map((alt) => {
+          {showLabels && [30, 60].map((alt) => {
             const altRad = degToRad(alt);
             const y = DOME_RADIUS * Math.sin(altRad);
             const z = -DOME_RADIUS * Math.cos(altRad);
             return (
               <group key={alt} position={[0, y, z]}>
-                <Html center distanceFactor={40} className="pointer-events-none">
+                <Html center distanceFactor={40} zIndexRange={[10, 0]} className="pointer-events-none">
                   <span className="text-[10px] font-mono text-purple-400 bg-space-950/70 px-1 rounded border border-purple-500/20">
                     Alt {alt}°
                   </span>
@@ -181,11 +183,13 @@ export const GroundHorizon3D: React.FC<GroundHorizon3DProps> = ({
               <sphereGeometry args={[0.6, 16, 16]} />
               <meshBasicMaterial color="#38bdf8" />
             </mesh>
-            <Html center distanceFactor={35} className="pointer-events-none">
-              <span className="text-[10px] font-hud font-bold text-cyan-300 bg-space-950/80 px-2 py-0.5 rounded-md border border-cyan-400/40 shadow-glow-cyan">
-                ZENITH (90°)
-              </span>
-            </Html>
+            {showLabels && (
+              <Html center distanceFactor={35} zIndexRange={[10, 0]} className="pointer-events-none">
+                <span className="text-[10px] font-hud font-bold text-cyan-300 bg-space-950/80 px-2 py-0.5 rounded-md border border-cyan-400/40 shadow-glow-cyan">
+                  ZENITH (90°)
+                </span>
+              </Html>
+            )}
           </group>
         </group>
       )}

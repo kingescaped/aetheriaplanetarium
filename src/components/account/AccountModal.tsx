@@ -27,9 +27,8 @@ import { soundFx } from '../../utils/audio';
 import { IOSNavigationBar } from '../layout/IOSNavigationBar';
 import { IOSSwitch } from '../layout/IOSSwitch';
 import { UsePWAResult } from '../../hooks/usePWA';
-import { Download, CheckCircle2 } from 'lucide-react';
-import { AetheriaStarLogo } from '../common/AetheriaLogo';
-import { motion, AnimatePresence, animate } from 'framer-motion';
+import { AboutSection } from './AboutSection';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 
 interface AccountModalProps {
@@ -105,25 +104,28 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Cử chỉ vuốt mép trái (Edge-swipe to go back) chuẩn iOS:
-  // 1. Khi đang ở Root Hub Cài đặt (activeSection === null): Vuốt mép trái sẽ đóng Modal cài đặt
+  // Strict left-edge (28px) swipe-to-back for both Settings root & sub-views
+  const handleCloseSection = () => {
+    soundFx.playTabClick();
+    setActiveSection(null);
+  };
+
   const { handlers: rootSwipeHandlers, style: rootSwipeStyle, backdropOpacity } = useEdgeSwipeBack({
     onBack: onClose,
-    edgeWidth: 32,
-    threshold: 60,
+    edge: 'left',
     enabled: isOpen && activeSection === null,
+  });
+
+  const { handlers: subSwipeHandlers, style: subSwipeStyle } = useEdgeSwipeBack({
+    onBack: handleCloseSection,
+    edge: 'left',
+    enabled: isOpen && activeSection !== null,
   });
 
   // Mở mục con với animation trượt mượt mà (AnimatePresence)
   const handleOpenSection = (section: SettingSection) => {
     soundFx.playTabClick();
     setActiveSection(section);
-  };
-
-  // Đóng mục con khi bấm nút Back (< Cài đặt): AnimatePresence trượt êm ra khỏi màn hình rồi mới unmount
-  const handleCloseSection = () => {
-    soundFx.playTabClick();
-    setActiveSection(null);
   };
 
   if (!isOpen) return null;
@@ -211,7 +213,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl glass-input text-xs"
+                    className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs"
                   />
                 </div>
                 <div>
@@ -220,7 +222,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     type="text"
                     value={callsignInput}
                     onChange={(e) => setCallsignInput(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs font-mono"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -330,7 +332,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   <select
                     value={selectedLogStarId}
                     onChange={(e) => setSelectedLogStarId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs font-mono"
                   >
                     {starsCatalog.filter((s) => s.name).map((s) => (
                       <option key={s.id} value={s.id} className="bg-slate-900 text-white">
@@ -346,7 +348,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     <select
                       value={equipment}
                       onChange={(e) => setEquipment(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 rounded-xl glass-input text-xs"
+                      className="w-full px-2.5 py-1.5 rounded-xl glass-input text-base md:text-xs"
                     >
                       <option value="Naked Eye" className="bg-slate-900">{t.nakedEye}</option>
                       <option value="Binoculars" className="bg-slate-900">{t.binoculars}</option>
@@ -360,7 +362,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     <select
                       value={seeing}
                       onChange={(e) => setSeeing(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 rounded-xl glass-input text-xs"
+                      className="w-full px-2.5 py-1.5 rounded-xl glass-input text-base md:text-xs"
                     >
                       <option value="Pristine" className="bg-slate-900">{t.seeingPristine}</option>
                       <option value="Good" className="bg-slate-900">{t.seeingGood}</option>
@@ -374,7 +376,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   placeholder={t.fieldNotes}
                   value={newLogNotes}
                   onChange={(e) => setNewLogNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs"
+                  className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs"
                 />
               </div>
 
@@ -539,10 +541,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 max="6.5"
                 step="0.1"
                 value={settings.magnitudeLimit}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
                 onChange={(e) =>
                   onSettingsChange({ ...settings, magnitudeLimit: parseFloat(e.target.value) })
                 }
-                className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-manipulation"
               />
             </div>
           </div>
@@ -564,8 +568,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     onLanguageChange('vi');
                   }}
                   className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${lang === 'vi'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
-                      : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
+                    ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
+                    : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
                     }`}
                 >
                   <span>🇻🇳</span>
@@ -578,8 +582,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     onLanguageChange('en');
                   }}
                   className={`py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 font-medium text-xs transition-all ${lang === 'en'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
-                      : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
+                    ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-glow-cyan'
+                    : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
                     }`}
                 >
                   <span>🇬🇧</span>
@@ -603,7 +607,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     soundFx.playTabClick();
                     onUpdatePreferences({ ...preferences, coordinateFormat: e.target.value as any });
                   }}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono bg-slate-950/80 border border-white/10 appearance-none cursor-pointer pr-8 text-cyan-300"
+                  className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs font-mono bg-slate-950/80 border border-white/10 appearance-none cursor-pointer pr-8 text-cyan-300"
                 >
                   <option value="DECIMAL" className="bg-slate-900">{t.decimalDeg}</option>
                   <option value="DMS" className="bg-slate-900">{t.dmsDeg}</option>
@@ -627,7 +631,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     soundFx.playTabClick();
                     onUpdatePreferences({ ...preferences, distanceUnit: e.target.value as any });
                   }}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono bg-slate-950/80 border border-white/10 appearance-none cursor-pointer pr-8 text-cyan-300"
+                  className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs font-mono bg-slate-950/80 border border-white/10 appearance-none cursor-pointer pr-8 text-cyan-300"
                 >
                   <option value="LY" className="bg-slate-900">{t.lightYears} (ly)</option>
                   <option value="PARSEC" className="bg-slate-900">{t.parsecs} (pc)</option>
@@ -658,64 +662,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         );
 
       case 'about':
-        return (
-          <div className="space-y-3.5">
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-400/40 flex items-center justify-center shadow-glow-cyan">
-                  <AetheriaStarLogo className="w-6 h-6 animate-pulse-subtle" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">Aetheria Planetarium</h4>
-                  <p className="text-[10px] text-cyan-400 font-mono">Zenith 3D Edition • v2.5.0</p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed pt-1">
-                {lang === 'vi'
-                  ? 'Ứng dụng mô phỏng thiên cầu thế hệ mới lấy cảm hứng từ Starwatch, kết hợp công nghệ WebGL 3D Zenith Dome với độ chính xác cơ học thiên văn quốc tế.'
-                  : 'Next-generation planetarium web app inspired by Starwatch, featuring 3D Zenith Dome hemisphere simulation and high-precision celestial mechanics.'}
-              </p>
-            </div>
-
-            <div className="divide-y divide-white/5 rounded-2xl bg-slate-900/40 border border-white/5 p-3 text-xs space-y-2">
-              <div className="pt-1 flex justify-between">
-                <span className="text-slate-400">{t.starCatalogInfo}</span>
-                <span className="text-slate-200 font-mono">{t.starCatalogDesc}</span>
-              </div>
-              <div className="pt-2 flex justify-between">
-                <span className="text-slate-400">{t.graphicsEngine}</span>
-                <span className="text-slate-200 font-mono">{t.graphicsEngineDesc}</span>
-              </div>
-              <div className="pt-2 flex justify-between">
-                <span className="text-slate-400">Build Platform</span>
-                <span className="text-slate-200 font-mono">React 18 / Tailwind / Vite</span>
-              </div>
-              <div className="pt-2 flex justify-between items-center">
-                <span className="text-slate-400">PWA Offline Cache</span>
-                <span className="text-emerald-400 font-mono flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {pwa?.isOfflineReady
-                    ? (lang === 'vi' ? 'Sẵn sàng ngoại tuyến' : 'Offline Ready')
-                    : (lang === 'vi' ? 'Đã kích hoạt SW' : 'Active')}
-                </span>
-              </div>
-            </div>
-
-            {/* PWA Install Button inside Settings if available */}
-            {pwa && !pwa.isInstalled && pwa.canInstall && (
-              <button
-                onClick={() => {
-                  soundFx.playToggle(true);
-                  pwa.promptInstall();
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-xs shadow-glow-cyan active:scale-95 hover:opacity-90 transition-all flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>{t.pwaInstallBtn}</span>
-              </button>
-            )}
-          </div>
-        );
+        return <AboutSection lang={lang} pwa={pwa} installLabel={t.pwaInstallBtn} />;
 
       default:
         return null;
@@ -729,28 +676,28 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onClose}
-      className="fixed inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#060c1c] md:bg-black/75 backdrop-blur-xl"
+      className="absolute inset-0 z-40 md:flex md:items-center md:justify-center md:p-4 bg-[#030712] md:bg-black/75 backdrop-blur-xl"
     >
       <motion.div
         {...rootSwipeHandlers}
         style={{ ...rootSwipeStyle }}
-        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#060c1c] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col pb-[calc(64px+var(--sab))] md:pb-0"
+        className="relative w-full h-full md:h-[85vh] md:max-w-4xl rounded-none md:rounded-3xl bg-[#030712] border-0 md:border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ===================== MOBILE LAYOUT ===================== */}
         <div className="md:hidden relative w-full h-full flex flex-col overflow-hidden">
           {/* 1. Level 0: Mobile Main Settings Hub (Luôn hiển thị ở lớp nền bên dưới) */}
-          <div className="w-full h-full flex flex-col overflow-hidden">
+          <div className="relative z-10 isolate w-full h-full flex flex-col overflow-hidden">
             <IOSNavigationBar
               title={lang === 'vi' ? 'Cài đặt' : 'Settings'}
             />
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
+            <div className="flex-1 overflow-y-auto py-4 safe-px space-y-4 overscroll-contain touch-manipulation">
               {/* Profile Card Banner */}
               <div
                 onClick={() => handleOpenSection('profile')}
                 className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer"
               >
-                <div className="w-13 h-13 rounded-2xl bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-xl font-bold font-hud text-cyan-300 flex-shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-xl font-bold font-hud text-cyan-300 flex-shrink-0">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -809,33 +756,30 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={{ left: 0, right: 0.7 }}
-                onDragEnd={(_, info) => {
-                  if (info.offset.x > 75 || info.velocity.x > 300) {
-                    handleCloseSection();
-                  }
-                }}
-                className="absolute inset-0 z-20 flex flex-col bg-[#060c1c] shadow-2xl"
+                className="absolute inset-0 z-30 isolate flex flex-col"
               >
-                <IOSNavigationBar
-                  title={currentSectionMeta?.title}
-                  backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
-                  onBack={handleCloseSection}
-                />
-                <div className="flex-1 overflow-y-auto p-4 pb-12 overscroll-contain">
-                  {renderSectionContent(activeSection)}
-                </div>
+                <motion.div
+                  {...subSwipeHandlers}
+                  style={subSwipeStyle}
+                  className="w-full h-full flex flex-col bg-[#030712] shadow-2xl"
+                >
+                  <IOSNavigationBar
+                    title={navSections.find((s) => s.id === activeSection)?.title}
+                    backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
+                    onBack={handleCloseSection}
+                  />
+                  <div className="flex-1 overflow-y-auto py-4 safe-px pb-8 overscroll-contain touch-manipulation">
+                    {renderSectionContent(activeSection)}
+                  </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* ===================== DESKTOP MASTER-DETAIL LAYOUT ===================== */}
         <div className="hidden md:flex flex-col flex-1 overflow-hidden">
-          {/* Desktop Navigation Bar with Close button */}
           <IOSNavigationBar
+            disableDesktopSafeTop
             title={desktopTab ? navSections.find((s) => s.id === desktopTab)?.title : (lang === 'vi' ? 'Cài đặt' : 'Settings')}
             trailing={
               <button
@@ -864,8 +808,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       setDesktopTab(item.id);
                     }}
                     className={`w-full p-3 rounded-2xl flex items-center justify-between text-left transition-all ${isSelected
-                        ? 'bg-cyan-500/20 border border-cyan-400/40 text-white shadow-glow-cyan'
-                        : 'hover:bg-white/5 text-slate-300 border border-transparent'
+                      ? 'bg-cyan-500/20 border border-cyan-400/40 text-white shadow-glow-cyan'
+                      : 'hover:bg-white/5 text-slate-300 border border-transparent'
                       }`}
                   >
                     <div className="flex items-center space-x-3 min-w-0">

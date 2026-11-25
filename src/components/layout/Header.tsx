@@ -1,6 +1,7 @@
 import React from 'react';
-import { Sparkles, Eye, Box, Search, Navigation2, Clock, User, Sliders } from 'lucide-react';
+import { Eye, Box, Search, Navigation2, Clock, User, Sliders } from 'lucide-react';
 import { AetheriaStarLogo } from '../common/AetheriaLogo';
+import { TopSafeBar } from './TopSafeBar';
 import { ViewMode, ObserverLocation } from '../../types/celestial';
 import { Language, TRANSLATIONS } from '../../utils/i18n';
 
@@ -46,23 +47,23 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   return (
-    <header className="fixed top-0 left-0 w-full z-40 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 safe-pt safe-h-header">
-      <div className="w-full h-[56px] flex items-center justify-between px-4">
+    <TopSafeBar bordered={false} padding="compact" innerClassName="md:safe-px">
+      <div className="w-full h-[36px] md:h-full px-1.5 md:px-0 rounded-2xl md:rounded-none bg-[#0b1222] md:bg-transparent border border-white/[0.09] md:border-0 shadow-[0_2px_10px_rgba(0,0,0,0.35)] md:shadow-none flex items-center justify-between">
         {/* Brand & Title: Clicking 'AETHERIA' triggers the Controls drawer! */}
         <button
           onClick={onOpenControls}
-          className="flex items-center space-x-2 md:space-x-3 pointer-events-auto text-left group p-1.5 -ml-1.5 rounded-2xl hover:bg-white/5 active:scale-98 transition-all cursor-pointer"
+          className="flex items-center space-x-2 md:space-x-3 pointer-events-auto text-left group p-0.5 -ml-0.5 md:p-1 md:-ml-1 rounded-xl md:rounded-2xl hover:bg-white/5 active:scale-98 transition-all cursor-pointer"
           title={t.tapToOpenControls}
         >
-          <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 via-indigo-500/30 to-purple-500/20 border border-cyan-400/40 shadow-glow-cyan backdrop-blur-md group-hover:border-cyan-300 transition-all">
-            <AetheriaStarLogo className="w-5 h-5 md:w-6 md:h-6 animate-pulse-subtle group-hover:scale-110 transition-transform" />
+          <div className="relative flex items-center justify-center w-[26px] h-[26px] md:w-10 md:h-10 rounded-lg md:rounded-xl bg-gradient-to-tr from-cyan-500/20 via-indigo-500/30 to-purple-500/20 border border-cyan-400/40 md:shadow-glow-cyan group-hover:border-cyan-300 transition-all">
+            <AetheriaStarLogo className="w-4 h-4 md:w-6 md:h-6 animate-pulse-subtle group-hover:scale-110 transition-transform" />
             <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 md:w-2.5 md:h-2.5 bg-emerald-400 rounded-full border-2 border-space-950 animate-ping" />
             <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 md:w-2.5 md:h-2.5 bg-emerald-400 rounded-full border-2 border-space-950" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
               <h1 className="text-xs md:text-base font-bold tracking-wider text-white uppercase font-sans group-hover:text-cyan-300 transition-colors flex items-center gap-1">
-                <span>AETHERIA v2.6</span>
+                <span>{t.brandTitle}</span>
                 <span className="text-cyan-400 font-light text-[9px] md:text-xs tracking-widest px-1 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">
                   {t.brandSubtitle}
                 </span>
@@ -76,12 +77,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Center: View Switcher (Desktop only, Mobile uses BottomNav) */}
-        <div className="hidden md:flex pointer-events-auto items-center p-1 rounded-2xl glass-panel shadow-2xl border border-white/10">
+        <div className="hidden md:flex pointer-events-auto items-center p-1 rounded-2xl bg-[#0c1224] shadow-2xl border border-white/10">
           <button
             onClick={() => setViewMode('2D_PLANETARIUM')}
             className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${viewMode === '2D_PLANETARIUM'
-                ? 'bg-gradient-to-r from-cyan-500/30 to-blue-600/30 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              ? 'bg-gradient-to-r from-cyan-500/30 to-blue-600/30 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -91,8 +92,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => setViewMode('3D_ZENITH_DOME')}
             className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 relative ${viewMode === '3D_ZENITH_DOME'
-                ? 'bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-cyan-500/30 text-purple-200 border border-purple-500/40 shadow-glow-purple'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              ? 'bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-cyan-500/30 text-purple-200 border border-purple-500/40 shadow-glow-purple'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
           >
             <Box className="w-3.5 h-3.5 text-purple-400" />
@@ -109,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Search Star/Constellation Button */}
           <button
             onClick={onOpenSearch}
-            className="flex items-center space-x-1.5 px-2.5 md:px-3 py-1.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-cyan-500/30 text-xs font-hud transition-all group"
+            className="flex items-center space-x-1.5 h-[26px] md:h-auto px-2 md:px-3 py-0.5 md:py-1.5 rounded-lg md:rounded-xl bg-[#121a2f] md:bg-[#0c1224] border border-white/10 text-slate-300 hover:text-white hover:border-cyan-500/30 text-xs font-hud transition-all group"
             title={t.searchPlaceholder}
           >
             <Search className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
@@ -123,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onGetGeolocation}
             disabled={isLocating}
-            className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 rounded-xl glass-panel text-xs text-slate-300 hover:text-cyan-300 transition-all font-hud"
+            className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-[#0c1224] border border-white/10 text-xs text-slate-300 hover:text-cyan-300 transition-all font-hud"
             title={t.gpsSync}
           >
             <Navigation2 className={`w-3.5 h-3.5 text-cyan-400 ${isLocating ? 'animate-spin' : ''}`} />
@@ -133,21 +134,21 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Astronomical Clock HUD */}
-          <div className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl glass-panel text-xs font-hud text-slate-200 border border-slate-700/50">
+          <div className="flex items-center space-x-1 h-[26px] md:h-auto px-2 md:px-2.5 py-0.5 md:py-1.5 rounded-lg md:rounded-xl bg-[#121a2f] md:bg-[#0c1224] text-xs font-hud text-slate-200 border border-white/10">
             <Clock className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-white font-semibold text-[11px] md:text-xs">{formattedTime}</span>
+            <span className="text-white font-semibold text-[11px] md:text-xs leading-none">{formattedTime}</span>
           </div>
 
           {/* Account Button (Desktop) */}
           <button
             onClick={onOpenAccount}
-            className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl glass-panel text-cyan-400 hover:text-white hover:border-cyan-400/40 hover:shadow-glow-cyan transition-all"
+            className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl bg-[#0c1224] border border-white/10 text-cyan-400 hover:text-white hover:border-cyan-400/40 hover:shadow-glow-cyan transition-all"
             title={t.account}
           >
             <User className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </header>
+    </TopSafeBar>
   );
 };

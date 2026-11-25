@@ -9,6 +9,7 @@ import { Language, TRANSLATIONS } from '../../utils/i18n';
 
 interface TargetSimulation3DProps {
   selectedStar: Star | null;
+  showLabel?: boolean;
   lang?: Language;
 }
 
@@ -60,6 +61,7 @@ const diffractionFlareShader = {
 
 export const TargetSimulation3D: React.FC<TargetSimulation3DProps> = ({
   selectedStar,
+  showLabel = true,
   lang = 'vi',
 }) => {
   const flareRef = useRef<THREE.ShaderMaterial>(null);
@@ -241,36 +243,39 @@ export const TargetSimulation3D: React.FC<TargetSimulation3DProps> = ({
         ))}
 
         {/* 6. Floating 3D Telemetry HUD Label Tag */}
-        <Html
-          position={[2.4, 1.6, 0]}
-          distanceFactor={24}
-          className="pointer-events-none select-none"
-        >
-          <div className="flex flex-col items-start gap-1 p-2.5 rounded-2xl glass-panel bg-slate-950/90 border border-cyan-400/50 shadow-glow-cyan backdrop-blur-xl min-w-[150px] animate-fade-in font-sans">
-            <div className="flex items-center justify-between w-full gap-2">
-              <span className="text-[12px] font-bold text-white tracking-wide truncate max-w-[110px]">
-                {selectedStar.name || `Star #${selectedStar.id}`}
-              </span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                {selectedStar.spect || 'A0'}
-              </span>
-            </div>
+        {showLabel && (
+          <Html
+            position={[2.4, 1.6, 0]}
+            distanceFactor={24}
+            zIndexRange={[10, 0]}
+            className="pointer-events-none select-none"
+          >
+            <div className="flex flex-col items-start gap-1 p-2.5 rounded-2xl glass-panel bg-slate-950/90 border border-cyan-400/50 shadow-glow-cyan backdrop-blur-xl min-w-[150px] animate-fade-in font-sans">
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="text-[12px] font-bold text-white tracking-wide truncate max-w-[110px]">
+                  {selectedStar.name || `Star #${selectedStar.id}`}
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                  {selectedStar.spect || 'A0'}
+                </span>
+              </div>
 
-            {selectedStar.properName && selectedStar.properName !== selectedStar.name && (
-              <span className="text-[10px] text-cyan-300/80 font-mono italic truncate max-w-[140px]">
-                {selectedStar.properName}
-              </span>
-            )}
+              {selectedStar.properName && selectedStar.properName !== selectedStar.name && (
+                <span className="text-[10px] text-cyan-300/80 font-mono italic truncate max-w-[140px]">
+                  {selectedStar.properName}
+                </span>
+              )}
 
-            <div className="text-[9px] text-slate-300 font-mono flex items-center gap-1.5 pt-1 border-t border-white/10 w-full">
-              <span>Mag: <strong className="text-white">{selectedStar.mag}</strong></span>
-              <span>•</span>
-              <span>Alt: <strong className="text-cyan-400">{Math.round(selectedStar.alt ?? 0)}°</strong></span>
-              <span>•</span>
-              <span>Az: <strong className="text-cyan-400">{Math.round(selectedStar.az ?? 0)}°</strong></span>
+              <div className="text-[9px] text-slate-300 font-mono flex items-center gap-1.5 pt-1 border-t border-white/10 w-full">
+                <span>Mag: <strong className="text-white">{selectedStar.mag}</strong></span>
+                <span>•</span>
+                <span>Alt: <strong className="text-cyan-400">{Math.round(selectedStar.alt ?? 0)}°</strong></span>
+                <span>•</span>
+                <span>Az: <strong className="text-cyan-400">{Math.round(selectedStar.az ?? 0)}°</strong></span>
+              </div>
             </div>
-          </div>
-        </Html>
+          </Html>
+        )}
       </Billboard>
     </group>
   );

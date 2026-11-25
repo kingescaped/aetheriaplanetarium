@@ -25,6 +25,7 @@ interface ZenithDomeCanvasProps {
   targetAzimuth?: number | null;
   isZenithRequested?: boolean;
   isFocusRequested?: boolean;
+  hideHtmlOverlays?: boolean;
   lang?: Language;
 }
 
@@ -38,6 +39,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   targetAzimuth,
   isZenithRequested,
   isFocusRequested,
+  hideHtmlOverlays = false,
   lang = 'vi',
 }) => {
   const t = TRANSLATIONS[lang];
@@ -150,7 +152,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           alpha: true,
           powerPreference: 'high-performance',
         }}
-        className="w-full h-full block"
+        className="w-full h-full block touch-none"
       >
         {/* Soft cosmic ambient illumination */}
         <ambientLight intensity={0.25} />
@@ -175,6 +177,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         <GroundHorizon3D
           showGround={settings.showGroundHorizon}
           showGrid={settings.showGridLines}
+          showLabels={!hideHtmlOverlays}
         />
 
         {/* 1.5. Black Horizon Silhouette (Mountains, Hills, Trees, Observatory Dome) */}
@@ -190,7 +193,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         <ConstellationLabels3D
           location={location}
           lst={lst}
-          visible={settings.showConstellationLabels}
+          visible={settings.showConstellationLabels && !hideHtmlOverlays}
         />
 
         {/* 4. GPU-Accelerated Starfield Points (In-Place Buffers, No Flickering) */}
@@ -202,7 +205,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         />
 
         {/* 5. Target Simulation (3D Holographic Reticle + Radar Beacon + Flare - Laser Removed) */}
-        <TargetSimulation3D selectedStar={selectedStar} lang={lang} />
+        <TargetSimulation3D selectedStar={selectedStar} showLabel={!hideHtmlOverlays} lang={lang} />
       </Canvas>
 
       {/* Floating AR Star Tracker Control Widget (Portaled on top of StarBottomSheet when active on mobile) */}
@@ -271,11 +274,10 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         )
       ) : (
         <div
-          className={`fixed md:absolute z-30 pointer-events-auto flex flex-col items-end md:items-center gap-2 transition-all duration-300 ${
-            selectedStar
-              ? 'right-3.5 bottom-[calc(4.75rem+var(--sab)+96px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
-              : 'right-3.5 bottom-[calc(4.75rem+var(--sab)+12px)] md:bottom-auto md:right-auto md:top-20 md:left-1/2 md:-translate-x-1/2'
-          }`}
+          className={`absolute z-30 pointer-events-auto flex flex-col items-end md:items-center gap-2 transition-all duration-300 ${selectedStar
+            ? 'right-[max(0.875rem,var(--sar))] bottom-32 md:bottom-auto md:right-auto md:top-4 md:left-1/2 md:-translate-x-1/2'
+            : 'right-[max(0.875rem,var(--sar))] bottom-12 md:bottom-auto md:right-auto md:top-4 md:left-1/2 md:-translate-x-1/2'
+            }`}
         >
           {!isGyroEnabled ? (
             <button
@@ -337,101 +339,101 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         </div>
       )}
 
-      {/* Floating 3D Navigation Guide Tip */}
       <div
-        className={`absolute bottom-20 md:bottom-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none px-4 py-1.5 rounded-full glass-panel-subtle text-[11px] font-sans text-slate-300 border border-white/5 items-center gap-2 shadow-glass ${
-          selectedStar ? 'hidden md:flex' : 'flex'
-        }`}
+        className={`absolute bottom-3 md:bottom-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none px-4 py-1.5 rounded-full glass-panel-subtle text-[11px] font-sans text-slate-300 border border-white/5 items-center gap-2 shadow-glass w-max max-w-[calc(100vw-2rem-var(--sal)-var(--sar))] ${selectedStar ? 'hidden md:flex' : 'flex'
+          }`}
       >
         <Crosshair className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />
         <span>
-          {isGyroEnabled 
+          {isGyroEnabled
             ? (lang === 'vi' ? 'Xoay máy hoặc vuốt kéo tự do để ngắm sao' : 'Tilt device or drag freely to explore night sky')
             : (lang === 'vi' ? 'Kéo ngón tay/chuột để xoay 360° & ngửa 90° thiên đỉnh' : 'Drag to look around 360° & 90° straight up to Zenith')}
         </span>
       </div>
 
-      {/* iOS Motion Sensor Permission Modal */}
-      {showPermissionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-sm rounded-3xl glass-panel border border-cyan-500/30 p-6 shadow-2xl space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto">
-              <Compass className="w-6 h-6 animate-pulse" />
+      {showPermissionModal &&
+        createPortal(
+          <div className="absolute inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-sm rounded-3xl glass-panel border border-cyan-500/30 p-6 shadow-2xl space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto">
+                <Compass className="w-6 h-6 animate-pulse" />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  {t.arPermissionTitle}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {t.arPermissionDesc}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  onClick={handleGrantPermission}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium text-xs shadow-glow-cyan active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{t.arGrantPermission}</span>
+                </button>
+                <button
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-medium text-xs transition-colors"
+                >
+                  {t.close}
+                </button>
+              </div>
             </div>
+          </div>,
+          document.getElementById('aetheria-app-shell') ?? document.body
+        )}
 
-            <div className="text-center space-y-2">
-              <h3 className="text-base font-bold text-white tracking-tight">
-                {t.arPermissionTitle}
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {t.arPermissionDesc}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                onClick={handleGrantPermission}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium text-xs shadow-glow-cyan active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>{t.arGrantPermission}</span>
-              </button>
-              <button
-                onClick={() => setShowPermissionModal(false)}
-                className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-medium text-xs transition-colors"
-              >
-                {t.close}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Desktop / Non-sensor Notice Modal */}
-      {showDesktopNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-sm rounded-3xl glass-panel border border-purple-500/30 p-6 shadow-2xl space-y-4">
-            <button
-              onClick={() => setShowDesktopNotice(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 mx-auto">
-              <Smartphone className="w-6 h-6" />
-            </div>
-
-            <div className="text-center space-y-2">
-              <h3 className="text-base font-bold text-white tracking-tight">
-                {lang === 'vi' ? 'Thiết bị & Cảm biến' : 'Sensor Compatibility'}
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {t.arDesktopNotice}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                onClick={() => {
-                  setShowDesktopNotice(false);
-                  toggleSimulation();
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium text-xs shadow-glow-purple active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <Play className="w-4 h-4" />
-                <span>{t.arSimulateDemo}</span>
-              </button>
+      {showDesktopNotice &&
+        createPortal(
+          <div className="absolute inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-sm rounded-3xl glass-panel border border-purple-500/30 p-6 shadow-2xl space-y-4">
               <button
                 onClick={() => setShowDesktopNotice(false)}
-                className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-medium text-xs transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
               >
-                {t.close}
+                <X className="w-4 h-4" />
               </button>
+
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 mx-auto">
+                <Smartphone className="w-6 h-6" />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  {lang === 'vi' ? 'Thiết bị & Cảm biến' : 'Sensor Compatibility'}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {t.arDesktopNotice}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowDesktopNotice(false);
+                    toggleSimulation();
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium text-xs shadow-glow-purple active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  <span>{t.arSimulateDemo}</span>
+                </button>
+                <button
+                  onClick={() => setShowDesktopNotice(false)}
+                  className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-medium text-xs transition-colors"
+                >
+                  {t.close}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.getElementById('aetheria-app-shell') ?? document.body
+        )}
     </div>
   );
 };

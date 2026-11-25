@@ -6,8 +6,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#060c1c",
-  "theme_color": "#060c1c",
+  "background_color": "#030712",
+  "theme_color": "#030712",
   "categories": [
     "education",
     "astronomy",
@@ -15,28 +15,34 @@
   ],
   "icons": [
     {
-      "src": "pwa-192x192.svg",
+      "src": "pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-192x192.svg",
+      "src": "pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "pwa-512x512.svg",
+      "src": "pwa-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-512x512.svg",
+      "src": "pwa-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

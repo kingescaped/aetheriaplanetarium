@@ -67,10 +67,13 @@ export const AetheriaSplashScreen: React.FC<AetheriaSplashScreenProps> = ({
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#060c1c] select-none pointer-events-auto overflow-hidden"
+          className="fixed top-0 left-0 right-0 z-[9999] flex flex-col items-center justify-center bg-[#030712] select-none pointer-events-auto overflow-hidden"
           style={{
-            paddingTop: 'var(--sat, 47px)',
-            paddingBottom: 'var(--sab, 34px)',
+            height: 'var(--app-height, 100vh)',
+            paddingTop: 'var(--sat, 0px)',
+            paddingBottom: 'var(--sab, 0px)',
+            paddingLeft: 'var(--sal, 0px)',
+            paddingRight: 'var(--sar, 0px)',
           }}
         >
           {/* Cosmic Background Glows */}
@@ -133,8 +136,10 @@ export const AetheriaSplashScreen: React.FC<AetheriaSplashScreenProps> = ({
             </div>
           </div>
 
-          {/* Bottom Telemetry Footer */}
-          <div className="absolute bottom-6 left-0 right-0 text-center text-[10px] font-mono text-slate-600 select-none">
+          <div
+            className="absolute left-0 right-0 text-center text-[10px] font-mono text-slate-600 select-none"
+            style={{ bottom: 'calc(var(--sab, 0px) + 16px)' }}
+          >
             WGS84 • HIPPARCOS 118K • 120FPS NATIVE
           </div>
         </motion.div>

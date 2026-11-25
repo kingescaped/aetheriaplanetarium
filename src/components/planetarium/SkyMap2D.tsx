@@ -585,13 +585,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         </div>
       )}
 
-      {/* 2D Map Floating Controls (Zoom & Reset) */}
-      {/* Khi có thẻ Telemetry HUD ở góc phải, tự động đẩy cụm nút xuống dưới thẻ để không bị che khuất */}
       <div
         className={`absolute z-20 flex flex-col space-y-2 pointer-events-auto transition-all duration-300 ${
           selectedStar
-            ? 'top-[205px] right-2.5 md:top-20 md:right-[405px]'
-            : 'top-20 right-3.5 md:right-5'
+            ? 'top-[138px] right-[max(0.625rem,var(--sar))] md:top-4 md:right-[calc(24rem+max(1rem,var(--sar))+12px)]'
+            : 'top-3 right-[max(0.875rem,var(--sar))] md:top-4 md:right-[max(1.25rem,var(--sar))]'
         }`}
       >
         <button

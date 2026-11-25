@@ -53,7 +53,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ pwa, lang = 
     // If update is available, always show update badge
     if (pwa.needRefresh) {
       return (
-        <div className="fixed top-16 right-4 z-50 animate-fade-in pointer-events-auto">
+        <div className="absolute top-2.5 right-[max(1rem,var(--sar))] z-50 animate-fade-in pointer-events-auto">
           <div className="flex items-center space-x-2 px-3.5 py-2 rounded-2xl bg-cyan-950/90 border border-cyan-400 text-white shadow-glow-cyan text-xs">
             <RefreshCw className="w-3.5 h-3.5 text-cyan-300 animate-spin" />
             <span className="font-mono text-[11px]">{t.pwaUpdateAvailable}</span>
@@ -71,7 +71,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ pwa, lang = 
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 pointer-events-auto animate-fade-in">
+    <div className="absolute bottom-3 md:bottom-6 left-[max(1rem,var(--sal))] right-[max(1rem,var(--sar))] md:left-auto md:right-[max(1.5rem,var(--sar))] md:max-w-md z-40 pointer-events-auto animate-fade-in">
       <div className="relative p-4 rounded-3xl glass-panel border border-cyan-500/30 bg-slate-950/90 shadow-2xl backdrop-blur-2xl space-y-3">
         {/* Dismiss Button */}
         <button
@@ -85,7 +85,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ pwa, lang = 
         <div className="flex items-start space-x-3 pr-6">
           {/* App Icon */}
           <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-950 to-slate-900 border border-cyan-400/40 p-1 flex-shrink-0 flex items-center justify-center shadow-glow-cyan">
-            <img src="/pwa-icon.svg" alt="Aetheria Star" className="w-7 h-7 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}pwa-icon.svg`} alt="Aetheria Star" className="w-7 h-7 object-contain" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>

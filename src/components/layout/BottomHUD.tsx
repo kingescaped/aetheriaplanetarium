@@ -18,7 +18,7 @@ export const BottomHUD: React.FC<BottomHUDProps> = ({
   onSetDirection,
 }) => {
   return (
-    <footer className="hidden md:flex absolute bottom-3 left-4 right-4 z-20 items-center justify-between pointer-events-none">
+    <footer className="hidden md:flex absolute bottom-[max(0.75rem,var(--sab))] left-[max(1rem,var(--sal))] right-[max(1rem,var(--sar))] z-20 items-center justify-between pointer-events-none">
       {/* Left: Cardinal Direction Jump Buttons */}
       <div className="flex items-center space-x-1 p-1 rounded-xl glass-panel pointer-events-auto border border-white/10 shadow-glass">
         <button

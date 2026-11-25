@@ -9,72 +9,102 @@
     -webkit-touch-callout: none;
   }
 
+  :root {
+    color-scheme: dark;
+    --sat: env(safe-area-inset-top, 0px);
+    --ios-top-blur-clearance: 0px;
+    --top-bar-pt: calc(var(--sat) + var(--ios-top-blur-clearance));
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --top-bar-row-h: 40px;
+    --bottom-nav-base-h: 52px;
+    --header-h: calc(var(--top-bar-row-h) + var(--top-bar-pt));
+    --bottom-nav-h: calc(var(--bottom-nav-base-h) + max(var(--sab), 6px));
+    --app-height: 100vh;
+    --visual-vh: 100vh;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --top-bar-row-h: 56px;
+    }
+  }
+
+  /* Compact mobile portrait clearance below iOS 26/27 forced PWA top blur */
+  @media (orientation: portrait) and (max-width: 767px) {
+    html.ios-standalone {
+      --ios-top-blur-clearance: 18px;
+    }
+  }
+
   html,
   body,
   #root {
     width: 100%;
-    min-height: 100%;
-    height: 100%;
+    height: var(--app-height, 100vh);
+    min-height: var(--app-height, 100vh);
+    max-height: var(--app-height, 100vh);
     margin: 0;
     padding: 0;
     overflow: hidden;
     overscroll-behavior: none;
-    overscroll-behavior-y: none;
-    touch-action: none;
+    touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    background-color: #030712;
+  }
+
+  canvas {
+    touch-action: none;
+  }
+
+  @media (pointer: coarse) {
+
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
 
   body {
-    background-color: #060c1c;
+    background-color: #030712;
     background-image:
       radial-gradient(circle at 50% 10%, rgba(30, 41, 89, 0.4) 0%, transparent 60%),
       radial-gradient(circle at 10% 90%, rgba(45, 27, 85, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 90% 80%, rgba(13, 40, 71, 0.35) 0%, transparent 50%),
-      linear-gradient(180deg, #060c1c 0%, #040814 40%, #030611 100%);
-    background-attachment: fixed;
+      linear-gradient(180deg, #030712 0%, #040814 45%, #02050e 100%);
     color: #e2e8f0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* ========================================================
-   ROCK-SOLID SAFE AREA INSETS FOR IPHONE (SAFARI & PWA)
-   ======================================================== */
-
-.safe-pt {
-  padding-top: var(--sat) !important;
-}
-
-.safe-pb {
-  padding-bottom: var(--sab) !important;
-}
-
-.safe-h-header {
-  height: calc(56px + var(--sat)) !important;
-}
-
-.safe-h-bottom {
-  height: calc(64px + var(--sab)) !important;
-}
-
-/* Star Bottom Sheet Floating Position */
-.star-bottom-sheet {
-  bottom: calc(64px + var(--sab) + 16px);
-}
-
-/* Sidebar Drawer Bounded Above Mobile BottomNav */
-.sidebar-mobile-bound {
-  bottom: calc(64px + var(--sab));
-}
-
-@media (min-width: 768px) {
-  .star-bottom-sheet {
-    bottom: 5.5rem !important;
+@layer components {
+  .safe-pt {
+    padding-top: var(--top-bar-pt);
   }
 
-  .sidebar-mobile-bound {
-    bottom: 3.5rem !important;
+  .safe-pb {
+    padding-bottom: max(var(--sab), 6px);
+  }
+
+  .safe-px {
+    padding-left: max(1rem, var(--sal));
+    padding-right: max(1rem, var(--sar));
+  }
+
+  .safe-px-compact {
+    padding-left: max(0.75rem, var(--sal));
+    padding-right: max(0.75rem, var(--sar));
+  }
+
+  .safe-h-header {
+    height: var(--header-h);
+  }
+
+  .safe-h-bottom {
+    height: var(--bottom-nav-h);
   }
 }
 

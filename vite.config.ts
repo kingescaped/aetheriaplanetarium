@@ -9,7 +9,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-icon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'manifest.json'],
       manifest: false, // Using public/manifest.json directly
       workbox: {
         skipWaiting: true,
@@ -43,7 +42,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],

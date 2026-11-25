@@ -42,6 +42,7 @@ export const ConstellationLabels3D: React.FC<ConstellationLabels3DProps> = ({
           <Html
             center
             distanceFactor={50}
+            zIndexRange={[10, 0]}
             className="pointer-events-none select-none transition-opacity duration-300"
           >
             <div className="px-2 py-0.5 rounded-md bg-slate-950/70 border border-cyan-500/20 backdrop-blur-xs text-[10px] font-sans font-medium text-cyan-300 shadow-glow-cyan whitespace-nowrap">

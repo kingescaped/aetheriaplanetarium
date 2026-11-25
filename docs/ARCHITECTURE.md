@@ -1,124 +1,125 @@
 # 🏛️ KIẾN TRÚC HỆ THỐNG DỰ ÁN AETHERIA (ARCHITECTURE)
 
-> **Tài liệu Kỹ thuật Dự án:** Cấu trúc Mã nguồn, Luồng Xử lý Lõi & Quy tắc Thiết kế  
-> **Phiên bản:** v2.5 Space Edition  
+> **Tài liệu Kỹ thuật Dự án:** Cấu trúc Mã nguồn, Luồng Xử lý Lõi & Quy chuẩn Thiết kế  
+> **Phiên bản:** v2.5.0 Zenith 3D Edition (Cập nhật 25/11/2026)
 
 ---
 
 ## 1. 📂 Cấu trúc Thư mục (Project Folder Structure)
 
-```
+```text
 E:\AetheriaPlanetarium\
-├── dist/                          # Thư mục build production (HTML, CSS, JS minified)
-├── docs/                          # Tài liệu kiến trúc và bàn giao kỹ thuật
-│   ├── HANDOVER.md                # Bản ghi bàn giao giữa các phiên làm việc
-│   └── ARCHITECTURE.md            # Tài liệu kiến trúc và quy chuẩn hệ thống
-├── public/                        # Tài nguyên tĩnh, PWA icons, manifest.json
-├── src/                           # Toàn bộ mã nguồn ứng dụng
-│   ├── components/                # Các thành phần giao diện phân tách theo miền nghiệp vụ
-│   │   ├── account/               # Quản lý hồ sơ quan sát viên, nhật ký, cài đặt
-│   │   │   └── AccountModal.tsx   # Modal cài đặt & tài khoản (Master-Detail trên Web, Stack trên Mobile)
-│   │   ├── layout/                # Các thành phần khung sườn ứng dụng
-│   │   │   ├── BottomHUD.tsx      # Thanh HUD hiển thị góc nhìn & la bàn (Desktop)
-│   │   │   ├── BottomNav.tsx      # Thanh điều hướng Tabview đáy màn hình (Mobile)
-│   │   │   ├── Header.tsx         # Thanh tiêu đề đỉnh màn hình (Logo, Chế độ 2D/3D, Đồng hồ)
-│   │   │   ├── InfoPanel.tsx      # Bảng thông tin chi tiết ngôi sao (Desktop)
-│   │   │   ├── IOSNavigationBar.tsx # Thanh UINavigationBar chuẩn iOS (dùng chung cho mọi Drawer/Modal)
-│   │   │   ├── IOSSwitch.tsx      # UISwitch pill Apple với âm thanh haptic
-│   │   │   ├── Sidebar.tsx        # Bảng điều khiển thiên văn bên trái (Vị trí, Thời gian, Lớp phủ, Mục sao)
-│   │   │   ├── StarBottomSheet.tsx# Thẻ bottom sheet vuốt chạm xem thông tin sao (Mobile)
-│   │   │   └── StarTelemetryHUD.tsx# Thẻ đo đạc Telemetry (Độ cao Alt, Phương vị Az, Cấp sao, Khoảng cách)
-│   │   ├── planetarium/           # Thành phần hiển thị Bản đồ sao 2D
-│   │   │   └── SkyMap2D.tsx       # Canvas 2D mô phỏng thiên cầu với Pan, Zoom, Grids, 88 chòm sao
-│   │   ├── search/                # Thành phần tìm kiếm thiên thể
-│   │   │   └── SearchBarModal.tsx # Modal tìm kiếm sao, chòm sao với bộ lọc nhanh
-│   │   └── zenith3d/              # Thành phần hiển thị Vòm Thiên Đỉnh 3D (Three.js)
-│   │       ├── CameraController.tsx    # Điều khiển camera Three.js (Fly, Orbit, Lock Target)
-│   │       ├── ConstellationLabels3D.tsx # Nhãn tên 3D chòm sao trong không gian
-│   │       ├── ConstellationLines3D.tsx  # Đường vẽ nối sao 3D
-│   │       ├── DomeLookControls.tsx      # Cử chỉ xoay 360° yaw và ngửa 90° Zenith trên Mobile/Desktop
-│   │       ├── GroundHorizon3D.tsx       # Lưới đĩa mặt đất và vòng phương vị chân trời
-│   │       ├── HorizonSilhouette3D.tsx   # Rặng núi, rừng thông và đài thiên văn bóng đen 360°
-│   │       ├── StarPoints3D.tsx          # Các điểm sao 3D với màu sắc quang phổ và quầng sáng
-│   │       ├── TargetSimulation3D.tsx    # Vòng ngắm Holographic 3D (Reticle, Radar beacon, Diffraction flare, HUD 3D)
-│   │       └── ZenithDomeCanvas.tsx      # Canvas R3F chính bao bọc toàn bộ cảnh thiên văn 3D
-│   ├── data/                      # Dữ liệu thiên văn cố định
-│   │   ├── constellations.ts      # Danh sách toạ độ và liên kết 88 chòm sao IAU
-│   │   └── stars.ts               # Danh mục các ngôi sao biểu kiến nổi bật (Hipparcos catalog)
-│   ├── types/                     # Định nghĩa kiểu dữ liệu TypeScript
-│   │   ├── account.ts             # Kiểu dữ liệu UserProfile, ObservationLog, UserPreferences
-│   │   └── celestial.ts           # Kiểu dữ liệu Star, ObserverLocation, CelestialSettings, ViewMode
-│   ├── utils/                     # Thư viện tiện ích và thuật toán
-│   │   ├── astronomy.ts           # Thuật toán tính Giờ thiên văn địa phương (LST), Alt-Az từ RA/Dec
-│   │   ├── audio.ts               # Bộ tạo âm thanh tổng hợp Web Audio API (Laser, Chime, Switch, Click)
-│   │   ├── coordinates3D.ts       # Chuyển đổi hệ tọa độ thiên cầu sang Vector3 (x, y, z) Three.js
-│   │   └── i18n.ts                # Hệ thống từ điển song ngữ (Anh - Việt) và 88 chòm sao IAU
-│   ├── App.tsx                    # Thành phần gốc chứa State Machine trung tâm của ứng dụng
-│   ├── index.css                  # Toàn bộ CSS cốt lõi, Glassmorphism, Safe-area Inset & Custom Classes
-│   └── main.tsx                   # Điểm khởi chạy React DOM
-├── index.html                     # File HTML gốc với cấu hình PWA Meta Tags, Viewport Fit Cover
-├── package.json                   # Khai báo dependencies và scripts
-├── tailwind.config.js             # Cấu hình hệ màu Space / Cosmic và hiệu ứng glow
-├── tsconfig.json                  # Cấu hình TypeScript compiler
-└── vite.config.ts                 # Cấu hình Vite bundler
+├── dist/                               # Bản build production (HTML, CSS, JS minified, sw.js)
+├── docs/                               # Tài liệu kiến trúc và bàn giao kỹ thuật
+│   ├── HANDOVER.md                     # Bản ghi bàn giao giữa các phiên làm việc
+│   └── ARCHITECTURE.md                 # Tài liệu kiến trúc và quy chuẩn hệ thống
+├── public/                             # Tài nguyên tĩnh, manifest.json, apple-touch-icon.png, pwa-192x192.png, pwa-512x512.png
+├── src/                                # Toàn bộ mã nguồn ứng dụng
+│   ├── components/
+│   │   ├── account/
+│   │   │   ├── AboutSection.tsx        # Mục Thông tin ứng dụng chuẩn iOS Inset Grouped
+│   │   │   └── AccountModal.tsx        # Modal cài đặt & tài khoản (Master-Detail Desktop, Stack Mobile)
+│   │   ├── common/
+│   │   │   ├── AetheriaLogo.tsx        # Logo ngôi sao 8 cánh (useId tránh trùng SVG gradient ID)
+│   │   │   └── AetheriaSplashScreen.tsx# Màn hình khởi tạo đồng bộ Safe Area (z-[9999])
+│   │   ├── layout/
+│   │   │   ├── BottomHUD.tsx           # Thanh HUD góc nhìn & la bàn (Desktop)
+│   │   │   ├── BottomNav.tsx           # Thanh điều hướng Tabview đáy màn hình (Mobile)
+│   │   │   ├── Header.tsx              # Thanh tiêu đề đỉnh (Capsule gọn trên Mobile, Full Bar trên Desktop)
+│   │   │   ├── InfoPanel.tsx           # Bảng thông tin sao chi tiết (Desktop)
+│   │   │   ├── IOSNavigationBar.tsx    # Thanh UINavigationBar dùng chung cho Drawer/Modal
+│   │   │   ├── IOSSwitch.tsx           # UISwitch pill Apple kèm âm thanh haptic
+│   │   │   ├── Sidebar.tsx             # Bảng điều khiển thiên văn bên trái (hỗ trợ vuốt mép phải đóng trên Mobile)
+│   │   │   ├── StarBottomSheet.tsx     # Thẻ bottom sheet xem thông tin sao (Mobile)
+│   │   │   ├── StarTelemetryHUD.tsx    # Thẻ đo đạc Telemetry (Alt, Az, Mag, Khoảng cách)
+│   │   │   └── TopSafeBar.tsx          # Vỏ thanh đỉnh thống nhất dùng chung cho mọi màn hình
+│   │   ├── planetarium/
+│   │   │   └── SkyMap2D.tsx            # Bản đồ sao 2D Canvas Alt-Azimuth
+│   │   ├── pwa/
+│   │   │   └── PWAInstallBanner.tsx    # Banner gợi ý cài đặt PWA & Offline Ready
+│   │   ├── search/
+│   │   │   └── SearchBarModal.tsx      # Modal tìm kiếm thiên thể (hỗ trợ vuốt mép trái đóng)
+│   │   └── zenith3d/                   # Vòm Thiên Đỉnh 3D (Three.js / R3F)
+│   │       ├── CameraController.tsx
+│   │       ├── ConstellationLabels3D.tsx
+│   │       ├── ConstellationLines3D.tsx
+│   │       ├── DomeLookControls.tsx
+│   │       ├── GroundHorizon3D.tsx
+│   │       ├── HorizonSilhouette3D.tsx
+│   │       ├── StarPoints3D.tsx
+│   │       ├── TargetSimulation3D.tsx
+│   │       └── ZenithDomeCanvas.tsx
+│   ├── data/                           # constellations.ts (88 chòm sao IAU), stars.ts (5.200+ sao)
+│   ├── hooks/
+│   │   ├── useDeviceOrientation.ts     # Cảm biến la bàn AR & xin quyền iOS
+│   │   ├── useEdgeSwipeBack.ts         # Hook cử chỉ vuốt mép trái/phải giới hạn 28px chuẩn iOS
+│   │   └── usePWA.ts                   # Đăng ký Workbox SW (chỉ Production) & trạng thái cài đặt
+│   ├── types/                          # account.ts, celestial.ts
+│   ├── utils/
+│   │   ├── astronomy.ts                # LST, Alt-Az, batchComputeHorizontalCoordsInPlace
+│   │   ├── audio.ts                    # Bộ tổng hợp âm thanh Web Audio API
+│   │   ├── coordinates3D.ts            # Hệ tọa độ thiên cầu 3D
+│   │   ├── i18n.ts                     # Từ điển song ngữ VI / EN
+│   │   └── viewport.ts                 # Hiệu chuẩn --app-height, --visual-vh & dọn blur iOS
+│   ├── App.tsx                         # State Machine & Two-Row App Shell
+│   ├── index.css                       # CSS tokens Safe Area, Glassmorphism, Dark Scheme
+│   └── main.tsx                        # Khởi chạy React & hiệu chuẩn viewport
+├── index.html                          # Entry HTML, PWA Meta Tags & #ios-status-bar-shield
+├── package.json
+├── tailwind.config.js
+├── tsconfig.json
+└── vite.config.ts
 ```
 
 ---
 
 ## 2. 🧠 Luồng Logic Cốt lõi (Core Logic Flow)
 
-### A. Thuật toán Tính toán Thiên văn Học (Celestial Mechanics)
-Mọi vị trí ngôi sao trên bầu trời được tính toán động phụ thuộc vào:
-1. **Tọa độ địa lý của người quan sát:** `latitude` ($\phi$), `longitude` ($\lambda$).
-2. **Thời gian thiên văn (Epoch):** `currentDate` (hỗ trợ cỗ máy thời gian tua nhanh, dừng, lùi thời gian).
-3. **Giờ thiên văn địa phương (Local Sidereal Time - LST):** Tính góc phương vị `Hour Angle (HA)` từ `Right Ascension (RA)`.
-4. **Hệ tọa độ Chân trời (Alt-Azimuth Coordinate System):**
-   - Độ cao góc `Altitude (h)`: $h \in [-90^\circ, 90^\circ]$ (Góc nhìn ngửa thẳng lên đỉnh đầu là $90^\circ$ Zenith).
-   - Phương vị `Azimuth (A)`: $A \in [0^\circ, 360^\circ]$ ($0^\circ$ là hướng Bắc, $90^\circ$ Đông, $180^\circ$ Nam, $270^\circ$ Tây).
-   - Tọa độ này được đồng bộ tức thì sang cả **Bản đồ 2D (chiếu phẳng)** và **Vòm 3D (hình cầu bán kính r=500 Three.js)**.
+### A. Thuật toán Thiên văn học (`Celestial Mechanics`)
+Vị trí mọi ngôi sao được tính động theo tọa độ địa lý (`latitude`, `longitude`), mốc thời gian (`currentDate`), Giờ thiên văn địa phương (`LST`) và hệ tọa độ Chân trời `Alt-Azimuth`, đồng bộ tức thì sang cả `SkyMap2D` và `ZenithDomeCanvas` (`r = 500`) với 0 cấp phát rác (`batchComputeHorizontalCoordsInPlace`).
 
-### B. Kiến trúc State Tập Trung trong [App.tsx](file:///e:/AetheriaPlanetarium/src/App.tsx)
-- `viewMode`: Chuyển đổi giữa `'2D_PLANETARIUM'` và `'3D_ZENITH_DOME'`.
-- `selectedStarId`: ID ngôi sao đang được chọn. Khi có sao được chọn:
-  - Trên 3D: Kích hoạt vòng ngắm Holographic 3D khóa mục tiêu ngôi sao (`TargetSimulation3D.tsx`).
-  - Trên Mobile: Hiển thị thẻ đo đạc Telemetry HUD ở góc trên (`StarTelemetryHUD.tsx`) và thẻ rút gọn vuốt chạm (`StarBottomSheet.tsx`) ở đáy. Cụm nút phóng to bản đồ 2D tự động trượt xuống để không bị che khuất.
-  - Trên Desktop: Hiển thị bảng điều khiển cánh phải (`InfoPanel.tsx`).
-- `isSidebarOpen`: Quản lý đóng mở bảng điều khiển thiên văn (cho phép click Logo trên Header để bật/tắt).
-- `isAccountOpen` & `isSearchOpen`: Quản lý modal Cài đặt và Tìm kiếm. Tự động ẩn thẻ sao khi người dùng mở các modal này để tránh chồng lấn màn hình.
+### B. Kiến trúc State Tập Trung & Cô lập Lớp (`Stacking Context`) trong [App.tsx](file:///e:/AetheriaPlanetarium/src/App.tsx)
+- Vùng không gian vẽ (`Workspace` và `<main>`) được cô lập qua `z-0 isolate`, truyền `hideHtmlOverlays={isAnyModalOpen || (isMobile && isSidebarOpen)}` sang `ZenithDomeCanvas` và giới hạn `zIndexRange={[10, 0]}` trên mọi nhãn Drei `<Html>` để không bao giờ xuyên lên trên `AccountModal`, `Sidebar`, hay `SearchBarModal`.
+- `<AetheriaSplashScreen />` (`z-[9999]`, `fixed top-0 left-0 right-0`) đặt ngang hàng với `#aetheria-app-shell` dưới `#root` để nằm trên `#ios-status-bar-shield` (`z-index: 90`).
+- Các lớp Level-0 (`relative z-10 isolate`) và Level-1 (`z-30 isolate`) trong `AccountModal` được cô lập tách biệt để thanh tiêu đề mục con (`< Cài đặt`) luôn hiển thị đúng trên đỉnh.
 
 ### C. Bộ Tổng hợp Âm thanh Web Audio API ([audio.ts](file:///e:/AetheriaPlanetarium/src/utils/audio.ts))
-Ứng dụng sử dụng bộ phát sóng âm tổng hợp tích hợp (Oscillator, BiquadFilter, GainEnvelope) trực tiếp từ trình duyệt:
-- `playStarSelect()`: Âm ngân sao chuông vũ trụ thanh thoát tần số cao ($1320\text{Hz} \to 1760\text{Hz}$).
-- `playTargetRayTrace()`: Âm tia laser đo đạc khoa học viễn tưởng ($880\text{Hz} \to 220\text{Hz}$).
-- `playTabClick()`: Âm chạm nhẹ tinh tế (Haptic tap $440\text{Hz}$).
-- `playToggle()`: Âm gạt công tắc quang học dứt khoát ($520\text{Hz} \leftrightarrow 680\text{Hz}$).
+- `playStarSelect()`, `playTargetRayTrace()`, `playTabClick()`, `playToggle()` tổng hợp trực tiếp bằng Oscillator / BiquadFilter / GainEnvelope (0ms trễ, không phụ thuộc file âm thanh ngoài).
 
 ---
 
 ## 3. 🎨 Quy chuẩn Thiết kế & Hệ thống Giao diện (Design System Rules)
 
 ### A. Bảng Màu Không Gian Sâu (Cosmic Color Palette)
-Được định nghĩa thống nhất trong `tailwind.config.js`:
-- **Nền chính (Space Deep):** `#030712` (Space 950 - Màu đen không gian vũ trụ sâu thẳm, chống chói mắt ban đêm).
-- **Màu nhấn viền & dữ liệu (Accent Cyan):** `#38bdf8` (Cyan 400 - Thể hiện các đường đo đạc, vĩ độ, kinh độ, sao loại A/B).
-- **Màu phụ (Cosmic Purple):** `#a855f7` (Purple 500 - Lưới Alt-Az, sao loại đặc biệt).
-- **Màu cảnh báo & Cấp bậc (Amber / Gold):** `#fbbf24` (Gold 400 - Ngôi sao loại G/K, nút yêu thích).
-- **Chế độ quan sát ban đêm (Night Vision Red Mode):** Lớp CSS `.night-vision` phủ filter đỏ đơn sắc bảo vệ võng mạc thích nghi bóng tối khi quan sát ngoài thực địa.
+- **Nền chính:** `#030712` (`space-950`, đồng bộ xuyên suốt HTML, `manifest.json`, `#ios-status-bar-shield`, `TopSafeBar`, `BottomNav`, và mọi modal).
+- **Accent Cyan:** `#38bdf8`, **Purple:** `#a855f7`, **Amber:** `#fbbf24`, và lớp `.night-vision` lọc đỏ bảo vệ mắt ban đêm.
 
-### B. Quy tắc Glassmorphism Đậm Chất iOS
-- Không dùng nền màu đặc thông thường. Luôn sử dụng:
-  - `.glass-panel`: Nền `rgba(12, 18, 36, 0.72)` + `backdrop-filter: blur(18px)` + viền `border: 1px solid rgba(255, 255, 255, 0.08)`.
-  - `.glass-input`: Nền `rgba(8, 14, 29, 0.6)` + viền trắng mờ mượt mà khi focus.
-- Bo góc tuân thủ Apple HIG: `rounded-2xl` cho thẻ/card, `rounded-3xl` cho modal/dialog lớn, `rounded-full` cho các pill badge.
+### B. Quy tắc Glassmorphism & Tối ưu Thị giác Mobile
+- Các thẻ nổi và bảng điều khiển dùng `.glass-panel` / `.glass-input`.
+- Các thanh neo mép màn hình (`TopSafeBar`, `BottomNav`) dùng nền đặc `#030712` (không dùng `backdrop-filter` trên thanh dính mép) để tránh xung đột lấy mẫu màu cạnh trên WebKit iOS.
 
-### C. Quy tắc An toàn Dynamic Island & Chân trang Mobile (Safe Area Insets)
-Tuyệt đối không hardcode lề cố định `top-0` hay `bottom-0` trên Mobile:
-- **Thanh điều hướng đỉnh:** Sử dụng `.ios-nav-bar` (`padding-top: env(safe-area-inset-top, 0px)` và chiều cao tự động bù phần notch).
-- **Chân trang Tabview:** Sử dụng `.safe-bottom` (`padding-bottom: max(0.75rem, env(safe-area-inset-bottom))`).
-- **Thanh Sidebar bên trái:** Cố định đáy qua `.sidebar-mobile-bound` (`bottom: calc(3.75rem + safe-bottom)`), không bao giờ được tràn qua mép trên thanh Tabview.
-- **Thẻ thông tin sao:** Cố định đáy qua `.star-bottom-sheet` (`bottom: calc(4.75rem + safe-bottom)`), luôn nổi cao hơn thanh Tabview 16px.
+### C. Kiến trúc App Shell & An toàn Safe Area ([index.css](file:///e:/AetheriaPlanetarium/src/index.css), [viewport.ts](file:///e:/AetheriaPlanetarium/src/utils/viewport.ts))
+- **Two-Row Flex Shell (`#aetheria-app-shell`):** Gắn `fixed top-0 left-0 right-0` với `height: var(--app-height, 100vh)` (không dùng `bottom: 0` hay `100dvh`). Trên iOS Standalone có `satPx > 0`, [index.html](file:///e:/AetheriaPlanetarium/index.html) (Frame-0) và `initViewportCalibration()` mở rộng `--app-height` bằng chiều cao màn hình vật lý để `BottomNav` (Row 2) luôn chạm sát đáy vật lý.
+- **Thống nhất thanh đỉnh qua `<TopSafeBar />`:** Toàn bộ màn hình đầu (`Header`, `IOSNavigationBar`, `SearchBarModal`) dùng [TopSafeBar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/TopSafeBar.tsx) đọc 3 CSS tokens:
+  - `--ios-top-blur-clearance`: `0px` mặc định; `18px` trên `html.ios-standalone` khi `@media (orientation: portrait) and (max-width: 767px)`.
+  - `--top-bar-pt: calc(var(--sat) + var(--ios-top-blur-clearance))` (dùng bởi `.safe-pt` và `#ios-status-bar-shield`).
+  - `--top-bar-row-h: 40px` (`56px` từ `md:` trở lên), tạo `--header-h: calc(var(--top-bar-row-h) + var(--top-bar-pt))`.
+- **Giới hạn nền tảng đã ghi nhận (iOS 26/27 `UIScrollEdgeEffect`):** WebKit iOS 26/27 ép phủ dải kính mờ OS ở cạnh trên các Home Screen PWA (`black-translucent` bị khai tử theo WebKit Bug 301994 / 317153). Dự án kết hợp `apple-mobile-web-app-status-bar-style="black"`, `#ios-status-bar-shield`, cơ chế sweep `#ios-blur-cover` + `#ios-blur-panel` (`rgba(255,255,255,0.01)`) và `--ios-top-blur-clearance: 18px` để giữ thanh trên gọn và sắc nét nhất có thể trong giới hạn trình duyệt web (muốn 0px tuyệt đối như app native cần bọc `WKWebView` để đặt `topEdgeEffect.isHidden = true`).
 
 ### D. Quy tắc Thành phần Điều khiển
-- **Không bao giờ dùng `<input type="checkbox">` thuần:** 100% sử dụng component `<IOSSwitch />`.
-- **Căn lề thanh tiêu đề:** Luôn dùng `<IOSNavigationBar />`. Khi có nút quay lại, tiêu đề tự động căn giữa. Khi không có nút quay lại, tiêu đề tự động căn trái.
-- **Thẻ có Dropdown / Select:** Áp dụng Autolayout dọc để nhãn và hộp chọn không bị chèn ép ép dòng chữ.
+- **100% `<IOSSwitch />`**, không dùng `<input type="checkbox">` thuần.
+- **Kích thước font input tối thiểu `16px`** trên màn hình cảm ứng (`@media (pointer: coarse)`) để iOS không tự phóng to viewport khi nhập liệu.
+- **Cần thêm màn hình mới?** Bọc phần đầu bằng `<TopSafeBar />` hoặc `<IOSNavigationBar />` để kế thừa trọn bộ Safe Area và blur clearance tự động.
+
+### E. Quy tắc Cử chỉ Vuốt Mép (`Edge-Swipe Back`) — [useEdgeSwipeBack.ts](file:///e:/AetheriaPlanetarium/src/hooks/useEdgeSwipeBack.ts)
+- **Tổng quan:** Hỗ trợ đóng drawer/modal hoặc quay lại màn hình trước trên iOS/mobile bằng thao tác kéo mượt 120fps theo ngón tay (`cubic-bezier [0.32, 0.72, 0, 1]`).
+- **Xác thực đầu vào & Điều kiện bắt buộc (Prerequisites / Validation):**
+  1. Cửa sổ đang mở (`enabled === true`); với `Sidebar`, thêm điều kiện viewport di động `< 768px`.
+  2. Chạm đơn 1 ngón (`touches.length === 1`), **không** bắt đầu từ `input`, `select`, `textarea` (tránh tranh chấp thanh trượt `range`).
+  3. Tọa độ chạm ban đầu (`clientX`) phải nằm trong **dải mép `28px`** (`EDGE_SWIPE_DEFAULTS.edgeWidth`) tính từ cạnh đúng của **chính cửa sổ đó** (`rect.left` hoặc `rect.right`), tuyệt đối không bắt vuốt giữa màn hình hay cạnh đối diện.
+  4. Khóa hướng khi dịch chuyển `> 8px` với tỉ lệ `|Δx| > |Δy| × 1.2` theo đúng chiều đóng; thả tay kích hoạt đóng khi kéo `>= 60px` hoặc vẩy `>= 30px` với vận tốc `> 0.3 px/ms`.
+- **Phân bổ cạnh theo từng cửa sổ:**
+  - [AccountModal.tsx](file:///e:/AetheriaPlanetarium/src/components/account/AccountModal.tsx) (Level-0 Cài đặt gốc & Level-1 Mục con): `edge: 'left'` → chạm sát mép trái màn hình (`<= 28px`), vuốt sang phải để đóng hoặc quay lại cấp Cài đặt.
+  - [SearchBarModal.tsx](file:///e:/AetheriaPlanetarium/src/components/search/SearchBarModal.tsx): `edge: 'left'` → chạm sát mép trái (`<= 28px`), vuốt sang phải để đóng.
+  - [Sidebar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/Sidebar.tsx) (`Bảng điều khiển`, drawer trượt từ trái): `edge: 'right'` → chạm sát mép phải của chính tấm drawer (`rect.right - clientX <= 28px`), vuốt sang trái để đóng.
+- **Cách áp dụng cho cửa sổ mới:** Import `useEdgeSwipeBack` từ [useEdgeSwipeBack.ts](file:///e:/AetheriaPlanetarium/src/hooks/useEdgeSwipeBack.ts), chọn `edge: 'left'` (modal/sheet trượt từ phải) hoặc `edge: 'right'` (drawer trượt từ trái) và gắn `{...handlers}` + `style` lên lớp nội dung nổi.

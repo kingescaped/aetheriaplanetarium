@@ -40,9 +40,10 @@ export function usePWA(): UsePWAResult {
 
     setIsInstalled(isStandalone);
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isAppleDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isTouchMac =
+      window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1;
+    const isAppleDevice = /iphone|ipad|ipod/.test(userAgent) || isTouchMac;
     setIsIOS(isAppleDevice);
 
     // Listen to changes in display mode
@@ -80,43 +81,25 @@ export function usePWA(): UsePWAResult {
     };
   }, []);
 
-  // 3. Register Service Worker with virtual:pwa-register
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-
-    // Tự động reload trang khi Service Worker phiên bản mới đã kích hoạt
-    let refreshing = false;
-    const handleControllerChange = () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || import.meta.env.DEV) {
+      return;
+    }
 
     try {
       const update = registerSW({
         onNeedRefresh() {
           setNeedRefresh(true);
-          try {
-            update(true);
-          } catch (e) {
-            console.warn('Auto update error:', e);
-          }
         },
         onOfflineReady() {
           setIsOfflineReady(true);
         },
       });
 
-      setUpdateSWFn(() => update);
+      setUpdateSWFn(() => () => update(true));
     } catch (err) {
       console.warn('PWA ServiceWorker registration notice:', err);
     }
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-    };
   }, []);
 
   // 4. Trigger install prompt

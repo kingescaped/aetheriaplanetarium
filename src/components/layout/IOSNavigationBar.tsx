@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
+import { TopSafeBar } from './TopSafeBar';
 
 export interface IOSNavigationBarProps {
   /** Tiêu đề của màn hình hiện tại (căn chính giữa màn hình chuẩn iOS) */
@@ -15,6 +16,8 @@ export interface IOSNavigationBarProps {
   onClose?: () => void;
   /** Hiển thị dạng tiêu đề lớn (Large Title) cho trang gốc */
   largeTitle?: boolean;
+  /** Bỏ safe-area top trên modal desktop căn giữa */
+  disableDesktopSafeTop?: boolean;
   /** Lớp CSS bổ sung */
   className?: string;
   /** Style bổ sung */
@@ -23,8 +26,7 @@ export interface IOSNavigationBarProps {
 
 /**
  * iOS Standard Navigation Bar (UINavigationBar)
- * Tuân thủ đúng chuẩn Apple Human Interface Guidelines:
- * - Bù lề an toàn: paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(56px + env(safe-area-inset-top))'
+ * Dùng chung vùng top an toàn qua TopSafeBar (--top-bar-pt + --top-bar-row-h).
  * - Leading: Chevron Left + Back label ngắn gọn với hiệu ứng active:opacity-40
  * - Center: Tiêu đề được căn giữa tuyệt đối (absolute centering), không bị xô lệch hay dính vào nút Back
  * - Trailing: Nút hành động hoặc nút đóng (X)
@@ -35,6 +37,7 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
   onBack,
   trailing,
   onClose,
+  disableDesktopSafeTop = false,
   className = '',
   style = {},
 }) => {
@@ -49,13 +52,13 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
   };
 
   return (
-    <header
-      className={`w-full shrink-0 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 z-40 select-none safe-pt safe-h-header ${className}`}
-      style={{
-        ...style,
-      }}
+    <TopSafeBar
+      disableDesktopSafeTop={disableDesktopSafeTop}
+      padding="compact"
+      innerClassName="justify-between"
+      className={className}
+      style={style}
     >
-      <div className="w-full h-[56px] flex items-center justify-between px-3 md:px-4 relative">
         {/* 1. Leading Area: Nút trở về (nếu có onBack) HOẶC Tiêu đề căn trái (nếu không có onBack và không căn giữa) */}
         <div className="flex items-center min-w-[70px] z-10">
           {onBack ? (
@@ -77,7 +80,7 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
 
         {/* 2. Center Area: Tiêu đề căn giữa tuyệt đối CHỈ HIỂN THỊ KHI CÓ nút trở về (onBack) */}
         {onBack && title && (
-          <div className="ios-nav-center absolute inset-x-0 top-0 h-full flex items-center justify-center pointer-events-none px-20">
+          <div className="ios-nav-center absolute inset-x-0 top-0 h-full flex items-center justify-center pointer-events-none px-[84px]">
             <h1 className="text-[16px] md:text-[17px] font-bold text-white tracking-tight truncate font-sans text-center">
               {title}
             </h1>
@@ -100,7 +103,6 @@ export const IOSNavigationBar: React.FC<IOSNavigationBarProps> = ({
             <div className="w-6" />
           )}
         </div>
-      </div>
-    </header>
+    </TopSafeBar>
   );
 };
