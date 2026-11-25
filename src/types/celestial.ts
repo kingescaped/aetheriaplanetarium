@@ -1,3 +1,5 @@
+import type { SolarSystemBodyMeta } from './solarSystem';
+
 export interface Star {
   id: string | number;
   name?: string;
@@ -15,6 +17,8 @@ export interface Star {
   z?: number; // 3D Dome Cartesian Z
   alt?: number; // Altitude in degrees (-90 to +90)
   az?: number;  // Azimuth in degrees (0 to 360)
+  bodyType?: 'star' | 'sun' | 'moon' | 'planet';
+  solarSystemData?: SolarSystemBodyMeta;
 }
 
 export interface ConstellationLine {
@@ -42,4 +46,6 @@ export interface CelestialSettings {
   starGlowIntensity: number;
   magnitudeLimit: number;
   timeSpeed: number; // 0 = paused, 1 = 1x real time, 60 = 1 min/sec, etc.
+  simulateSkyWeather: boolean;
+  showSolarSystem: boolean;
 }

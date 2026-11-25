@@ -16,19 +16,27 @@ export function initViewportCalibration(): () => void {
     window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-  const satProbe = document.createElement('div');
-  satProbe.setAttribute('aria-hidden', 'true');
-  satProbe.style.cssText =
-    'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;';
-  document.body.appendChild(satProbe);
+  let satProbe: HTMLDivElement | null = null;
 
-  const readSafeAreaTopPx = (): number =>
-    parseFloat(window.getComputedStyle(satProbe).paddingTop) || 0;
+  const ensureSatProbe = (): HTMLDivElement => {
+    if (!satProbe) {
+      satProbe = document.createElement('div');
+      satProbe.setAttribute('aria-hidden', 'true');
+      satProbe.style.cssText =
+        'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;';
+      document.body.appendChild(satProbe);
+    }
+    return satProbe;
+  };
+
+  const readSafeAreaTopPx = (): number => {
+    if (!isIOS || !isStandalone) return 0;
+    return parseFloat(window.getComputedStyle(ensureSatProbe()).paddingTop) || 0;
+  };
 
   const syncViewport = () => {
     const doc = document.documentElement;
-    const satPx = isIOS && isStandalone ? readSafeAreaTopPx() : 0;
-    doc.classList.toggle('ios-standalone', isIOS && isStandalone && satPx > 0);
+    const satPx = readSafeAreaTopPx();
 
     const innerH = window.innerHeight;
     const vv = window.visualViewport;
@@ -53,6 +61,7 @@ export function initViewportCalibration(): () => void {
       ? Math.round(vvH + (vv?.offsetTop ?? 0))
       : appHeight;
 
+    doc.classList.toggle('ios-standalone', isIOS && isStandalone && satPx > 0);
     doc.style.setProperty('--app-height', `${appHeight}px`);
     doc.style.setProperty('--visual-vh', `${visualVh}px`);
 
@@ -195,7 +204,8 @@ export function initViewportCalibration(): () => void {
     blurCover = null;
     blurPanel?.remove();
     blurPanel = null;
-    satProbe.remove();
+    satProbe?.remove();
+    satProbe = null;
     window.removeEventListener('load', handleLoad);
     window.removeEventListener('resize', syncViewport);
     window.removeEventListener('orientationchange', handleOrientationChange);

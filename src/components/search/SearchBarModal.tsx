@@ -6,6 +6,7 @@ import { Language, TRANSLATIONS } from '../../utils/i18n';
 import { soundFx } from '../../utils/audio';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 import { TopSafeBar } from '../layout/TopSafeBar';
+import { formatCelestialDistance } from '../../utils/solarSystemFormat';
 
 interface SearchBarModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   lang = 'vi',
 }) => {
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'bright' | 'constellation'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'solar' | 'bright' | 'constellation'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[lang];
 
@@ -64,6 +65,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   const filteredStars = starsCatalog
     .filter((s) => {
       // Category filter
+      if (selectedCategory === 'solar' && !s.solarSystemData) return false;
       if (selectedCategory === 'bright' && s.mag > 1.5) return false;
       if (selectedCategory === 'constellation' && !s.con) return false;
 
@@ -72,6 +74,8 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
       return (
         (s.name && s.name.toLowerCase().includes(q)) ||
         (s.properName && s.properName.toLowerCase().includes(q)) ||
+        (s.solarSystemData?.nameEn.toLowerCase().includes(q)) ||
+        (s.solarSystemData?.nameVi.toLowerCase().includes(q)) ||
         (s.con && s.con.toLowerCase().includes(q)) ||
         (s.bayerFlamsteed && s.bayerFlamsteed.toLowerCase().includes(q))
       );
@@ -159,6 +163,19 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
           <button
             onClick={() => {
               soundFx.playTabClick();
+              setSelectedCategory('solar');
+            }}
+            className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'solar'
+              ? 'bg-amber-500/20 text-amber-200 border border-amber-400/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              }`}
+          >
+            {t.filterSolarSystem}
+          </button>
+
+          <button
+            onClick={() => {
+              soundFx.playTabClick();
               setSelectedCategory('bright');
             }}
             className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'bright'
@@ -198,15 +215,25 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
                 className="w-full text-left p-3 rounded-2xl hover:bg-cyan-500/10 active:bg-cyan-500/20 transition-all flex items-center justify-between group"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-transform">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <div
+                    className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-transform"
+                    style={star.color ? { borderColor: `${star.color}66` } : undefined}
+                  >
+                    <Sparkles className="w-4 h-4 text-cyan-400" style={star.color ? { color: star.color } : undefined} />
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white group-hover:text-cyan-300">
                       {star.name || star.properName || `Star #${star.id}`}
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono">
-                      {star.con ? `${star.con} ${t.constellation}` : 'Deep Sky'} • {t.apparentMagnitude}: <span className="text-cyan-300">{star.mag}</span>
+                      {star.solarSystemData
+                        ? lang === 'vi'
+                          ? star.solarSystemData.subtitleVi
+                          : star.solarSystemData.subtitleEn
+                        : star.con
+                          ? `${star.con} ${t.constellation}`
+                          : 'Deep Sky'}{' '}
+                      • {t.apparentMagnitude}: <span className="text-cyan-300">{star.mag}</span>
                     </div>
                   </div>
                 </div>
@@ -216,7 +243,13 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
                     <span className="text-emerald-400 font-bold">Alt: {star.alt.toFixed(1)}°</span>
                   )}
                   <br />
-                  <span>{star.dist ? `${star.dist} ly` : ''}</span>
+                  <span>
+                    {star.solarSystemData
+                      ? formatCelestialDistance(star, lang).primary
+                      : star.dist
+                        ? `${star.dist} ly`
+                        : ''}
+                  </span>
                 </div>
               </button>
             ))

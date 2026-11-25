@@ -13,7 +13,7 @@ E:\AetheriaPlanetarium\
 ├── docs/                               # Tài liệu kiến trúc và bàn giao kỹ thuật
 │   ├── HANDOVER.md                     # Bản ghi bàn giao giữa các phiên làm việc
 │   └── ARCHITECTURE.md                 # Tài liệu kiến trúc và quy chuẩn hệ thống
-├── public/                             # Tài nguyên tĩnh, manifest.json, apple-touch-icon.png, pwa-192x192.png, pwa-512x512.png
+├── public/                             # Tài nguyên tĩnh, manifest.json, robots.txt, apple-touch-icon.png, pwa-192x192.png, pwa-512x512.png
 ├── src/                                # Toàn bộ mã nguồn ứng dụng
 │   ├── components/
 │   │   ├── account/
@@ -34,36 +34,55 @@ E:\AetheriaPlanetarium\
 │   │   │   ├── StarTelemetryHUD.tsx    # Thẻ đo đạc Telemetry (Alt, Az, Mag, Khoảng cách)
 │   │   │   └── TopSafeBar.tsx          # Vỏ thanh đỉnh thống nhất dùng chung cho mọi màn hình
 │   │   ├── planetarium/
-│   │   │   └── SkyMap2D.tsx            # Bản đồ sao 2D Canvas Alt-Azimuth
+│   │   │   ├── SkyMap2D.tsx            # Bản đồ sao 2D Canvas Alt-Azimuth
+│   │   │   ├── skyWeatherOverlay2D.ts  # Lớp sương mù & mây khí quyển 2D Canvas
+│   │   │   └── solarSystemOverlay2D.ts # Vẽ Mặt Trời, pha Mặt Trăng & 7 hành tinh trên 2D
 │   │   ├── pwa/
 │   │   │   └── PWAInstallBanner.tsx    # Banner gợi ý cài đặt PWA & Offline Ready
 │   │   ├── search/
 │   │   │   └── SearchBarModal.tsx      # Modal tìm kiếm thiên thể (hỗ trợ vuốt mép trái đóng)
+│   │   ├── weather/
+│   │   │   ├── WeatherBadge.tsx        # Badge thời tiết thu gọn (% mây & hạng Seeing)
+│   │   │   ├── WeatherDetailPanel.tsx  # Bảng chi tiết thời tiết & công tắc mô phỏng bầu trời
+│   │   │   ├── WeatherHourlyStrip.tsx  # Dải dự báo theo giờ đồng bộ đồng hồ thiên văn
+│   │   │   ├── WeatherMetricsCard.tsx  # Thẻ chỉ số Seeing, tầng mây, ẩm, sương, gió, tầm nhìn
+│   │   │   └── weatherDisplay.ts       # Bảng màu & bản dịch hạng Seeing dùng chung
 │   │   └── zenith3d/                   # Vòm Thiên Đỉnh 3D (Three.js / R3F)
 │   │       ├── CameraController.tsx
+│   │       ├── CloudVeil3D.tsx         # Vòm mây & sương khí quyển GLSL 3D
 │   │       ├── ConstellationLabels3D.tsx
 │   │       ├── ConstellationLines3D.tsx
 │   │       ├── DomeLookControls.tsx
 │   │       ├── GroundHorizon3D.tsx
 │   │       ├── HorizonSilhouette3D.tsx
+│   │       ├── SolarSystem3D.tsx       # Mặt Trời, shader pha Mặt Trăng & 7 hành tinh 3D
 │   │       ├── StarPoints3D.tsx
 │   │       ├── TargetSimulation3D.tsx
 │   │       └── ZenithDomeCanvas.tsx
 │   ├── data/                           # constellations.ts (88 chòm sao IAU), stars.ts (5.200+ sao)
 │   ├── hooks/
+│   │   ├── useAstronomyWeather.ts      # Hook debounce tọa độ, cache & nội suy dự báo theo giờ
 │   │   ├── useDeviceOrientation.ts     # Cảm biến la bàn AR & xin quyền iOS
 │   │   ├── useEdgeSwipeBack.ts         # Hook cử chỉ vuốt mép trái/phải giới hạn 28px chuẩn iOS
 │   │   └── usePWA.ts                   # Đăng ký Workbox SW (chỉ Production) & trạng thái cài đặt
-│   ├── types/                          # account.ts, celestial.ts
+│   ├── services/
+│   │   └── openMeteo.ts                # Client Open-Meteo /v1/forecast & cache localStorage
+│   ├── types/                          # account.ts, celestial.ts, solarSystem.ts, weather.ts
 │   ├── utils/
 │   │   ├── astronomy.ts                # LST, Alt-Az, batchComputeHorizontalCoordsInPlace
 │   │   ├── audio.ts                    # Bộ tổng hợp âm thanh Web Audio API
 │   │   ├── coordinates3D.ts            # Hệ tọa độ thiên cầu 3D
 │   │   ├── i18n.ts                     # Từ điển song ngữ VI / EN
+│   │   ├── seeingModel.ts              # Tính chỉ số Seeing, độ mờ bầu trời & nội suy theo giờ
+│   │   ├── solarSystem.ts              # Ephemeris Hệ Mặt Trời (astronomy-engine) & Rise/Set
+│   │   ├── solarSystemFormat.ts        # Định dạng khoảng cách km/AU, pha trăng & đồng hồ mọc/lặn
 │   │   └── viewport.ts                 # Hiệu chuẩn --app-height, --visual-vh & dọn blur iOS
 │   ├── App.tsx                         # State Machine & Two-Row App Shell
 │   ├── index.css                       # CSS tokens Safe Area, Glassmorphism, Dark Scheme
 │   └── main.tsx                        # Khởi chạy React & hiệu chuẩn viewport
+├── tests/
+│   ├── solarSystem.test.ts             # Kiểm thử đơn vị Ephemeris 9 thiên thể & pha trăng (`node --test`)
+│   └── weather.test.ts                 # Kiểm thử đơn vị Seeing Model & parser Open-Meteo (`node --test`)
 ├── index.html                          # Entry HTML, PWA Meta Tags & #ios-status-bar-shield
 ├── package.json
 ├── tailwind.config.js
@@ -85,6 +104,13 @@ Vị trí mọi ngôi sao được tính động theo tọa độ địa lý (`l
 
 ### C. Bộ Tổng hợp Âm thanh Web Audio API ([audio.ts](file:///e:/AetheriaPlanetarium/src/utils/audio.ts))
 - `playStarSelect()`, `playTargetRayTrace()`, `playTabClick()`, `playToggle()` tổng hợp trực tiếp bằng Oscillator / BiquadFilter / GainEnvelope (0ms trễ, không phụ thuộc file âm thanh ngoài).
+
+### D. Thời tiết Thiên văn & Mô phỏng Khí quyển 2D/3D ([openMeteo.ts](file:///e:/AetheriaPlanetarium/src/services/openMeteo.ts), [seeingModel.ts](file:///e:/AetheriaPlanetarium/src/utils/seeingModel.ts), [useAstronomyWeather.ts](file:///e:/AetheriaPlanetarium/src/hooks/useAstronomyWeather.ts))
+- Tải dữ liệu Open-Meteo `current` + `hourly` 96 giờ cho tọa độ người quan sát (debounce `400ms`, cache cục bộ TTL 15 phút + Workbox `NetworkFirst` runtime caching).
+- Tính chỉ số Seeing `0–100` (`~0.8"–4.5"`), nội suy theo mốc thời gian mô phỏng (`interpolateWeatherAtDate`) theo từng phút, và chuyển đổi sang tham số suy giảm quang học (`starOpacity`, `magPenalty`, `hazeOpacity`, `twinkleBoost`, `constellationOpacity`) để làm mờ sao và phủ lớp mây trên cả `SkyMap2D` lẫn `ZenithDomeCanvas` (`CloudVeil3D`, `StarPoints3D`).
+
+### E. Hệ Mặt Trời Động (`astronomy-engine`) ([solarSystem.ts](file:///e:/AetheriaPlanetarium/src/utils/solarSystem.ts), [solarSystemOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/solarSystemOverlay2D.ts), [SolarSystem3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/SolarSystem3D.tsx))
+- Tính tọa độ `(RA, Dec)` & `(Alt, Az)` thời gian thực cho Mặt Trời, Mặt Trăng và 7 hành tinh (Sao Thủy → Sao Hải Vương) cùng pha trăng, góc nghiêng vành đai Sao Thổ và giờ mọc/lặn kế tiếp (`computeBodyRiseSet`), tách riêng trong chunk `vendor-astronomy`.
 
 ---
 

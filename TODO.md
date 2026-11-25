@@ -44,7 +44,8 @@
 - [x] Định vị GPS thời gian thực (`Geolocation API`), danh sách đài thiên văn và cỗ máy thời gian (`Time Warp`).
 - [x] Tích hợp con quay hồi chuyển (`useDeviceOrientation.ts`) với khóa tương tác xoay tự do + Recenter + vị trí nút AR tối ưu trên mobile.
 - [x] Mở rộng danh mục dữ liệu sao lên 5.200+ sao (`stars.ts`).
-- [ ] Tích hợp API dự báo thời tiết & độ che phủ mây tại vị trí quan sát (Open-Meteo / Astronomy Cloud Cover API).
+- [x] Tích hợp động cơ Ephemeris Hệ Mặt Trời (`astronomy-engine`) cho Mặt Trời, Mặt Trăng (pha trăng & độ chiếu sáng) và 7 hành tinh (Sao Thủy → Sao Hải Vương, vành đai Sao Thổ, giờ mọc/lặn) trên cả 2D & 3D.
+- [x] Tích hợp API dự báo thời tiết & độ che phủ mây tại vị trí quan sát (Open-Meteo `/v1/forecast`, badge thu gọn, bảng chi tiết, dự báo theo giờ đồng bộ bầu trời và mô phỏng mây/sao trên 2D/3D).
 
 ---
 
@@ -56,6 +57,6 @@
 
 ## 📦 5. Tối ưu Hóa Build & Hiệu Năng (Performance & Packaging)
 
-- [x] TypeScript `tsc --noEmit` sạch 100% không lỗi, `vite build` tách chunk (`vendor-three`, `vendor-react`, `vendor-framer`, `vendor-icons`).
-- [x] Workbox precache `dist/sw.js` (19 entries).
-- [ ] Audit chỉ số Google Lighthouse (Performance, Accessibility, Best Practices, PWA).
+- [x] TypeScript `tsc --noEmit` sạch 100% không lỗi, `vite build` tách chunk (`vendor-three`, `vendor-astronomy`, `vendor-react`, `vendor-framer`, `vendor-icons`) và tách hoàn toàn `vendor-three` khỏi bundle 2D ban đầu.
+- [x] Workbox precache `dist/sw.js` (23 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
+- [x] Audit chỉ số Google Lighthouse trên `vite preview` (Mobile: Perf `87`, A11y `100`, BP `100`, SEO `100`; Desktop: Perf `99`, A11y `100`, BP `100`, SEO `100`).

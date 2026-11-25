@@ -39,6 +39,21 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/api\.open-meteo\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'open-meteo-weather-api',
+              networkTimeoutSeconds: 6,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 16,
+                maxAgeSeconds: 60 * 60 * 6, // 6 hours
+              },
+            },
+          },
         ],
       },
       devOptions: {
@@ -52,10 +67,22 @@ export default defineConfig({
     open: false,
   },
   build: {
+    modulePreload: {
+      resolveDependencies: (_filename, deps) =>
+        deps.filter(
+          (dep) => !dep.includes('vendor-three') && !dep.includes('ZenithDomeCanvas')
+        ),
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('vite/preload-helper')) {
+            return 'vendor-react';
+          }
           if (id.includes('node_modules')) {
+            if (id.includes('astronomy-engine')) {
+              return 'vendor-astronomy';
+            }
             if (id.includes('three') || id.includes('@react-three')) {
               return 'vendor-three';
             }

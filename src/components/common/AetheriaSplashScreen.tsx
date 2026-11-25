@@ -102,9 +102,9 @@ export const AetheriaSplashScreen: React.FC<AetheriaSplashScreenProps> = ({
           {/* Typography */}
           <div className="text-center space-y-1 mb-8 z-10">
             <div className="flex items-center justify-center space-x-2">
-              <h1 className="text-xl md:text-2xl font-bold tracking-widest text-white uppercase font-sans">
+              <p className="text-xl md:text-2xl font-bold tracking-widest text-white uppercase font-sans">
                 AETHERIA
-              </h1>
+              </p>
               <span className="text-[10px] md:text-xs font-mono font-bold px-1.5 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
                 PRO
               </span>
@@ -137,7 +137,7 @@ export const AetheriaSplashScreen: React.FC<AetheriaSplashScreenProps> = ({
           </div>
 
           <div
-            className="absolute left-0 right-0 text-center text-[10px] font-mono text-slate-600 select-none"
+            className="absolute left-0 right-0 text-center text-[10px] font-mono text-slate-400 select-none"
             style={{ bottom: 'calc(var(--sab, 0px) + 16px)' }}
           >
             WGS84 • HIPPARCOS 118K • 120FPS NATIVE

@@ -2,6 +2,7 @@ import React from 'react';
 import { Radio } from 'lucide-react';
 import { Star } from '../../types/celestial';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
+import { formatCelestialDistance } from '../../utils/solarSystemFormat';
 
 interface StarTelemetryHUDProps {
   star: Star | null;
@@ -23,7 +24,13 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
   if (!star) return null;
 
   const t = TRANSLATIONS[lang];
-  const constellationName = getConstellationName(star.con, lang);
+  const solar = star.solarSystemData;
+  const constellationName = solar
+    ? lang === 'vi'
+      ? solar.subtitleVi
+      : solar.subtitleEn
+    : getConstellationName(star.con, lang);
+  const distInfo = formatCelestialDistance(star, lang);
 
   return (
     <div
@@ -42,9 +49,9 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
 
       {/* Metrics Body */}
       <div className="p-2 space-y-1 text-[10px] text-slate-300">
-        <div className="flex justify-between items-center">
-          <span className="text-slate-400">{t.constellation}:</span>
-          <span className="text-cyan-200 font-semibold">{constellationName}</span>
+        <div className="flex justify-between items-center gap-2">
+          <span className="text-slate-400 shrink-0">{solar ? t.solarSystem : t.constellation}:</span>
+          <span className="text-cyan-200 font-semibold truncate">{constellationName}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-slate-400">{t.altitudeH}:</span>
@@ -58,10 +65,10 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
             {star.az !== undefined ? `${star.az.toFixed(1)}°` : '--'}
           </span>
         </div>
-        {star.dist && (
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">{t.distance}:</span>
-            <span className="text-purple-300 font-mono">{star.dist.toLocaleString()} {t.lightYears}</span>
+        {(star.dist || solar) && (
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-slate-400 shrink-0">{t.distance}:</span>
+            <span className="text-purple-300 font-mono truncate">{distInfo.primary}</span>
           </div>
         )}
       </div>

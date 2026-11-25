@@ -15,6 +15,7 @@ interface HeaderProps {
   isLocating: boolean;
   onOpenAccount: () => void;
   onOpenControls: () => void;
+  weatherSlot?: React.ReactNode;
   lang?: Language;
 }
 
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   isLocating,
   onOpenAccount,
   onOpenControls,
+  weatherSlot,
   lang = 'vi',
 }) => {
   const t = TRANSLATIONS[lang];
@@ -113,8 +115,8 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center space-x-1.5 h-[26px] md:h-auto px-2 md:px-3 py-0.5 md:py-1.5 rounded-lg md:rounded-xl bg-[#121a2f] md:bg-[#0c1224] border border-white/10 text-slate-300 hover:text-white hover:border-cyan-500/30 text-xs font-hud transition-all group"
             title={t.searchPlaceholder}
           >
-            <Search className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
-            <span className="hidden lg:inline">{lang === 'vi' ? 'Tìm kiếm...' : 'Search...'}</span>
+            <Search className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" aria-hidden="true" />
+            <span className="sr-only lg:not-sr-only">{lang === 'vi' ? 'Tìm kiếm...' : 'Search...'}</span>
             <kbd className="hidden xl:inline-block px-1 py-0.2 text-[9px] bg-slate-800/80 border border-slate-700 rounded text-slate-400">
               {t.searchKbd}
             </kbd>
@@ -127,15 +129,19 @@ export const Header: React.FC<HeaderProps> = ({
             className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-[#0c1224] border border-white/10 text-xs text-slate-300 hover:text-cyan-300 transition-all font-hud"
             title={t.gpsSync}
           >
-            <Navigation2 className={`w-3.5 h-3.5 text-cyan-400 ${isLocating ? 'animate-spin' : ''}`} />
+            <Navigation2 className={`w-3.5 h-3.5 text-cyan-400 ${isLocating ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <span className="sr-only">{t.gpsSync}: </span>
             <span className="text-[10px] text-slate-400 font-mono">
               {location.latitude.toFixed(1)}°, {location.longitude.toFixed(1)}°
             </span>
           </button>
 
+          {/* Desktop Weather Badge */}
+          {weatherSlot && <div className="hidden md:flex items-center">{weatherSlot}</div>}
+
           {/* Astronomical Clock HUD */}
           <div className="flex items-center space-x-1 h-[26px] md:h-auto px-2 md:px-2.5 py-0.5 md:py-1.5 rounded-lg md:rounded-xl bg-[#121a2f] md:bg-[#0c1224] text-xs font-hud text-slate-200 border border-white/10">
-            <Clock className="w-3.5 h-3.5 text-purple-400" />
+            <Clock className="w-3.5 h-3.5 text-purple-400" aria-hidden="true" />
             <span className="text-white font-semibold text-[11px] md:text-xs leading-none">{formattedTime}</span>
           </div>
 
@@ -144,8 +150,9 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAccount}
             className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl bg-[#0c1224] border border-white/10 text-cyan-400 hover:text-white hover:border-cyan-400/40 hover:shadow-glow-cyan transition-all"
             title={t.account}
+            aria-label={t.account}
           >
-            <User className="w-4 h-4" />
+            <User className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -56,15 +56,40 @@
    - Khóa chặt vùng cảm ứng vuốt quay lại trong đúng **`28px` sát mép cửa sổ** (`EDGE_SWIPE_DEFAULTS.edgeWidth`), bỏ `drag="x"` toàn màn hình cũ trên `AccountModal` Level-1 (vốn khiến vuốt từ cạnh phải iPhone vẫn kích hoạt quay lại).
    - Mở rộng hỗ trợ `edge: 'right'` (chạm mép phải drawer vuốt sang trái để đóng) cho `Sidebar` (`Bảng điều khiển`) trên mobile `< 768px`, cùng `edge: 'left'` thống nhất cho `AccountModal` (cấp gốc & mục con) và `SearchBarModal`.
 
+### K. Tích hợp Thời tiết Thiên văn Open-Meteo, Mô phỏng Mây 2D/3D & Audit Google Lighthouse (25/11/2026)
+1. **Dữ liệu Khí tượng & Mô hình Seeing ([openMeteo.ts](file:///e:/AetheriaPlanetarium/src/services/openMeteo.ts), [seeingModel.ts](file:///e:/AetheriaPlanetarium/src/utils/seeingModel.ts), [useAstronomyWeather.ts](file:///e:/AetheriaPlanetarium/src/hooks/useAstronomyWeather.ts), [weather.ts](file:///e:/AetheriaPlanetarium/src/types/weather.ts)):**
+   - Kết nối `https://api.open-meteo.com/v1/forecast` (`current` + `hourly` 96 giờ gồm `past_days=1` và `forecast_days=3`, `timeformat=unixtime`, `timezone=auto`) với debounce `400ms` theo tọa độ, timeout `10s`, AbortController và cache cục bộ (`localStorage` + RAM, TTL 15 phút, tối đa 8 tọa độ) kèm Workbox `NetworkFirst` trong [vite.config.ts](file:///e:/AetheriaPlanetarium/vite.config.ts).
+   - Mô hình thuần túy `computeSeeingMetrics()` tính điểm Seeing `0–100`, ước lượng arcsecond (`0.8"–4.5"`), phân hạng 4 mức (`excellent` / `good` / `fair` / `poor`), chênh lệch điểm sương (`dewSpreadC`), và `interpolateWeatherAtDate()` nội suy tuyến tính theo đồng hồ mô phỏng (`SkyMap2D` / `ZenithDomeCanvas` đồng bộ theo phút).
+   - Kiểm thử đơn vị `tests/weather.test.ts` chạy qua `node --test tests/weather.test.ts` đạt `8/8` pass.
+2. **Mô phỏng Khí quyển Trực quan 2D & 3D ([skyWeatherOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/skyWeatherOverlay2D.ts), [SkyMap2D.tsx](file:///e:/AetheriaPlanetarium/src/components/planetarium/SkyMap2D.tsx), [CloudVeil3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/CloudVeil3D.tsx), [StarPoints3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/StarPoints3D.tsx), [ConstellationLines3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/ConstellationLines3D.tsx), [ZenithDomeCanvas.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/ZenithDomeCanvas.tsx)):**
+   - Khi bật `simulateSkyWeather`, `computeSkyVisualAttenuation()` giảm cấp sao giới hạn (`magPenalty`), làm mờ độ sáng sao (`starOpacity`, giữ ngưỡng sao cực sáng `mag < 1.0`), giảm độ rõ nét chòm sao (`constellationOpacity`), tăng nhấp nháy nhiễu động (`uTwinkleBoost` trong GLSL), và phủ lớp sương mù / dải mây trên cả bản đồ 2D lẫn vòm 3D WebGL (`CloudVeil3D`).
+3. **Giao diện Badge Thu Gọn & Bảng Chi Tiết Đồng Bộ Theo Giờ ([WeatherBadge.tsx](file:///e:/AetheriaPlanetarium/src/components/weather/WeatherBadge.tsx), [WeatherDetailPanel.tsx](file:///e:/AetheriaPlanetarium/src/components/weather/WeatherDetailPanel.tsx), [WeatherMetricsCard.tsx](file:///e:/AetheriaPlanetarium/src/components/weather/WeatherMetricsCard.tsx), [WeatherHourlyStrip.tsx](file:///e:/AetheriaPlanetarium/src/components/weather/WeatherHourlyStrip.tsx)):**
+   - Badge thu gọn hiển thị `% mây` và hạng Seeing trên Desktop (`Header`) và góc trên trái Mobile (`App.tsx`, không đè lên `StarTelemetryHUD`).
+   - Bấm mở chi tiết xem điểm Seeing, tầng mây Thấp/Trung/Cao, độ ẩm, điểm sương + cảnh báo đọng sương (`ΔT < 2.5°C`), gió, tầm nhìn, công tắc `<IOSSwitch />` bật/tắt mô phỏng bầu trời, và dải dự báo 36 giờ chạm để tua đồng hồ thiên văn sang giờ đó.
+4. **Tối ưu & Audit Google Lighthouse trên `vite preview` ([vite.config.ts](file:///e:/AetheriaPlanetarium/vite.config.ts), [App.tsx](file:///e:/AetheriaPlanetarium/src/App.tsx), [viewport.ts](file:///e:/AetheriaPlanetarium/src/utils/viewport.ts), [index.html](file:///e:/AetheriaPlanetarium/index.html)):**
+   - Lazy-load `ZenithDomeCanvas`, `AccountModal`, `SearchBarModal` và tách `vite/preload-helper` sang `vendor-react` + lọc `modulePreload` để `vendor-three` (`713.63 kB`) không nạp ở màn hình 2D ban đầu.
+   - Giảm tick clock `1x` về `1000ms` (tính lại sao mỗi `15s` khi chạy `1x`), đo kích thước `SkyMap2D` bằng `ResizeObserver`, bỏ `shadowBlur` trên 88 chòm sao 2D, bỏ splash timer/overlay ngoài iOS Standalone, và sửa Accessibility (`heading-order`, `label-content-name-mismatch`, `meta-viewport`, `meta-description`, `robots.txt`).
+   - **Kết quả đo Google Lighthouse (`http://localhost:4173/aetheriaplanetarium/`, trước → sau):**
+     - **Mobile:** Performance `58 → 85` (FCP `1.3s → 0.8s`, LCP `4.6s → 3.5s`, TBT `1360ms → 260ms`, CLS `0.001 → 0`, Speed Index `2.7s → 1.9s`), Accessibility `98 → 100`, Best Practices `100 → 100`, SEO `100 → 100`.
+     - **Desktop:** Performance `72 → 99` (FCP `0.2s → 0.2s`, LCP `1.6s → 1.0s`, TBT `520ms → 0ms`, CLS `0.003 → 0.003`, Speed Index `0.9s → 0.7s`), Accessibility `98 → 100`, Best Practices `100 → 100`, SEO `100 → 100`.
+
+### L. Hệ Mặt Trời Động (`astronomy-engine`) & Kiểm chứng Deploy Production (25/11/2026)
+1. **Động cơ Ephemeris 9 Thiên thể ([solarSystem.ts](file:///e:/AetheriaPlanetarium/src/utils/solarSystem.ts), [solarSystem.ts](file:///e:/AetheriaPlanetarium/src/types/solarSystem.ts), [solarSystemFormat.ts](file:///e:/AetheriaPlanetarium/src/utils/solarSystemFormat.ts), [vite.config.ts](file:///e:/AetheriaPlanetarium/vite.config.ts)):**
+   - Tích hợp `astronomy-engine` (đóng gói thành chunk `vendor-astronomy` `56.74 kB`, vẫn tách hoàn toàn `vendor-three` khỏi bundle 2D ban đầu) để tính vị trí thời gian thực cho **Mặt Trời, Mặt Trăng, Sao Thủy, Sao Kim, Sao Hỏa, Sao Mộc, Sao Thổ, Sao Thiên Vương, Sao Hải Vương**.
+   - Tính tọa độ `(RA, Dec)`, `(Alt, Az)` có hiệu chỉnh khúc xạ khí quyển, cấp sao biểu kiến, khoảng cách (`km` / `AU`), độ chiếu sáng (`%`), 8 pha Mặt Trăng + tuổi trăng, góc nghiêng vành đai Sao Thổ (`ringTiltDeg`), và giờ mọc/lặn kế tiếp (`computeBodyRiseSet` tính theo nhu cầu khi chọn mục tiêu).
+   - Kiểm thử đơn vị [solarSystem.test.ts](file:///e:/AetheriaPlanetarium/tests/solarSystem.test.ts) (`5/5` pass, đối chiếu Xuân phân / Hạ chí 2026 và ngày Trăng non / Trăng tròn 11/2026) cùng [weather.test.ts](file:///e:/AetheriaPlanetarium/tests/weather.test.ts) đạt tổng `13/13` pass.
+2. **Hiển thị 2D/3D, Tìm kiếm & Thẻ Chi tiết ([solarSystemOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/solarSystemOverlay2D.ts), [SolarSystem3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/SolarSystem3D.tsx), [InfoPanel.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/InfoPanel.tsx), [StarBottomSheet.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/StarBottomSheet.tsx), [SearchBarModal.tsx](file:///e:/AetheriaPlanetarium/src/components/search/SearchBarModal.tsx), [Sidebar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/Sidebar.tsx)):**
+   - Vẽ hào quang Mặt Trời, đĩa pha Mặt Trăng theo góc chiếu sáng (Canvas 2D & GLSL fragment shader 3D), vành đai Sao Thổ và các hành tinh kèm hit-testing 2D / Angular Distance Raycasting 3D ưu tiên thiên thể Hệ Mặt Trời.
+   - Thêm bộ lọc `Hệ Mặt Trời` trong `SearchBarModal`, lưới chọn nhanh 9 thiên thể ở tab Mục sao và công tắc `<IOSSwitch />` bật/tắt `showSolarSystem` trong `Sidebar`.
+   - Google Lighthouse trên `vite preview` sau khi tích hợp `astronomy-engine`: **Mobile** `Perf 87 / A11y 100 / BP 100 / SEO 100` (`TBT 180ms`, `CLS 0`), **Desktop** `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`).
+
 ---
 
 ## 4. ⚠️ Các vấn đề tồn đọng (Known Issues & Warnings)
-1. **Dữ liệu thời tiết thiên văn (Weather & Cloud Cover API):**
-   Chưa kết nối Open-Meteo Astronomy API để hiển thị độ che phủ mây và điều kiện quan sát tại tọa độ GPS.
-2. **Hành vi kính mờ OS iOS 26/27 trên PWA (`UIScrollEdgeEffect`):**
+1. **Hành vi kính mờ OS iOS 26/27 trên PWA (`UIScrollEdgeEffect`):**
    Apple hiện ép dải mờ UIKit ở mép trên đối với Home Screen Web Apps (`black-translucent` đã bị deprecated theo WebKit Bug 301994 / 317153) và chưa có thuộc tính web chuẩn để tắt hoàn toàn ở tầng OS. Cấu hình `--ios-top-blur-clearance: 18px` giúp thanh công cụ nằm sát ngay dưới ngưỡng mờ với chi phí đệm tối thiểu; nếu muốn sát `0px` tuyệt đối như app native, cần đóng gói vỏ `WKWebView` / Capacitor đặt `topEdgeEffect.isHidden = true`.
-3. **Môi trường Sandbox Windows khi chạy Vite build:**
-   `npx tsc --noEmit` chạy sạch trong sandbox, còn `npm run build` cần quyền ngoài sandbox do Rollup `fs.realpath` trên ổ `E:\`.
+2. **Môi trường Sandbox Windows khi chạy Vite build:**
+   `npx tsc --noEmit` và `node --test tests/weather.test.ts tests/solarSystem.test.ts` chạy sạch trong sandbox, còn `npm run build` cần quyền ngoài sandbox do Rollup `fs.realpath` trên ổ `E:\`.
 
 ---
 
@@ -74,5 +99,7 @@
 3. **[XONG]** Đăng ký PWA Service Worker & Offline Cache (`vite.config.ts`, `usePWA.ts`, `PWAInstallBanner.tsx`).
 4. **[XONG]** Danh mục 5.200+ sao & tối ưu GPU 60 FPS (`stars.ts`, `astronomy.ts`, `StarPoints3D.tsx`).
 5. **[XONG]** Chuẩn hóa Safe Area iOS Standalone, `<TopSafeBar>`, `AboutSection`, và Edge-Swipe `28px` (`useEdgeSwipeBack.ts`, `viewport.ts`).
-6. **Ưu tiên tiếp theo — Tích hợp API dự báo thời tiết thiên văn & độ che phủ mây (Open-Meteo Astronomy Cloud Cover API):**
-   Kết nối Open-Meteo hiển thị độ che phủ mây, độ ẩm và chỉ số tầm nhìn (Seeing condition) tại tọa độ người quan sát, đồng thời audit Google Lighthouse.
+6. **[XONG]** Tích hợp API dự báo thời tiết thiên văn & độ che phủ mây Open-Meteo, mô phỏng bầu trời 2D/3D, đồng bộ dự báo theo giờ và Audit Google Lighthouse (`openMeteo.ts`, `seeingModel.ts`, `WeatherDetailPanel.tsx`).
+7. **[XONG]** Mở rộng dữ liệu thiên văn động Hệ Mặt Trời 9 thiên thể (`astronomy-engine`, `solarSystem.ts`, `SolarSystem3D.tsx`, `solarSystemOverlay2D.ts`) và tích hợp quy trình kiểm chứng build/deploy production.
+8. **Ưu tiên tiếp theo — Kiểm thử thiết bị iOS thực tế & Mở rộng vật thể Vũ trụ sâu (Messier/NGC):**
+   Xác nhận thực địa PWA iOS Standalone trên iPhone/iPad theo checklist, và bổ sung danh mục tinh vân/thiên hà Messier (DSO) kèm đường hoàng đạo (Ecliptic line).

@@ -79,10 +79,10 @@ export const TargetSimulation3D: React.FC<TargetSimulation3DProps> = ({
     return new THREE.Vector3(x, y, z);
   }, [selectedStar?.alt, selectedStar?.az]);
 
-  // Star color from astrophysical spectral type
+  // Star or Solar System color
   const starColor = useMemo(() => {
-    return new THREE.Color(getSpectralColor(selectedStar?.spect || 'A'));
-  }, [selectedStar?.spect]);
+    return new THREE.Color(selectedStar?.color || getSpectralColor(selectedStar?.spect || 'A'));
+  }, [selectedStar?.color, selectedStar?.spect]);
 
   // Flare size scaled gracefully based on magnitude
   const flareSize = useMemo(() => {
@@ -256,7 +256,15 @@ export const TargetSimulation3D: React.FC<TargetSimulation3DProps> = ({
                   {selectedStar.name || `Star #${selectedStar.id}`}
                 </span>
                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                  {selectedStar.spect || 'A0'}
+                  {selectedStar.solarSystemData
+                    ? lang === 'vi'
+                      ? selectedStar.bodyType === 'sun'
+                        ? 'Mặt Trời'
+                        : selectedStar.bodyType === 'moon'
+                          ? 'Mặt Trăng'
+                          : 'Hành tinh'
+                      : (selectedStar.bodyType ?? 'PLANET').toUpperCase()
+                    : selectedStar.spect || 'A0'}
                 </span>
               </div>
 

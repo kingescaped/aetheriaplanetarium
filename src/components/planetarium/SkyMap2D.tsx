@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
-import { 
-  getLST, 
-  equatorialToHorizontal, 
-  getSpectralColor, 
+import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
+import { drawSkyWeatherOverlay2D } from './skyWeatherOverlay2D';
+import { drawSolarSystem2D, type ProjectedSolarBody } from './solarSystemOverlay2D';
+import {
+  getLST,
+  equatorialToHorizontal,
+  getSpectralColor,
   getStarVisualRadius,
   degToRad,
   radToDeg,
@@ -20,6 +23,9 @@ interface SkyMap2DProps {
   selectedStar: Star | null;
   onSelectStar: (star: Star) => void;
   onHoverCoords?: (coords: { ra: number; dec: number; alt: number; az: number }) => void;
+  weatherSample?: WeatherSample | null;
+  skyAttenuation?: SkyVisualAttenuation;
+  solarBodies?: Star[];
 }
 
 interface ProjectedStar {
@@ -39,6 +45,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   selectedStar,
   onSelectStar,
   onHoverCoords,
+  weatherSample,
+  skyAttenuation,
+  solarBodies = [],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -51,8 +60,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   const [hoveredStar, setHoveredStar] = useState<Star | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Cached projected stars for hit testing
+  // Cached projected stars & Solar System bodies for hit testing
   const projectedStarsRef = useRef<ProjectedStar[]>([]);
+  const projectedSolarRef = useRef<ProjectedSolarBody[]>([]);
 
   // Reset view to default
   const handleResetView = () => {
@@ -128,11 +138,15 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     // 2. Project all stars from equatorial (RA, Dec) to local horizontal (Alt, Az) and canvas (X, Y)
     const projectedMap = new Map<string | number, ProjectedStar>();
     const projectedList: ProjectedStar[] = [];
+    const effectiveMagLimit = Math.max(
+      0.5,
+      settings.magnitudeLimit - (skyAttenuation?.magPenalty ?? 0)
+    );
 
     for (let i = 0; i < stars.length; i++) {
       const star = stars[i];
-      // Filter out stars dimmer than user setting
-      if (star.mag > settings.magnitudeLimit) continue;
+      // Filter out stars dimmer than user setting & atmospheric extinction
+      if (star.mag > effectiveMagLimit) continue;
 
       const alt = star.alt !== undefined ? star.alt : 0;
       if (alt < -5) continue;
@@ -216,10 +230,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
 
     // 5. Draw Constellation Lines
     if (settings.showConstellationLines) {
+      const lineScale = skyAttenuation?.constellationOpacity ?? 1;
       ctx.save();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.strokeStyle = `rgba(56, 189, 248, ${(0.35 * lineScale).toFixed(3)})`;
       ctx.lineWidth = 1.2;
-      ctx.shadowColor = 'rgba(56, 189, 248, 0.5)';
+      ctx.shadowColor = `rgba(56, 189, 248, ${(0.5 * lineScale).toFixed(3)})`;
       ctx.shadowBlur = 4;
 
       for (const con of CONSTELLATIONS) {
@@ -259,12 +274,17 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     }
 
     // 7. Draw Stars with Spectral Colors & Magnitude Glow
+    const baseStarOpacity = skyAttenuation?.starOpacity ?? 1;
     for (const proj of projectedList) {
       if (!proj.visible) continue;
 
       const star = proj.star;
       const radius = getStarVisualRadius(star.mag);
       const starColor = getSpectralColor(star.spect);
+      ctx.globalAlpha =
+        baseStarOpacity < 0.999
+          ? Math.min(1, baseStarOpacity + (star.mag < 1.0 ? 0.12 : 0))
+          : 1;
 
       // Star radial glow for bright stars (mag < 2.5)
       if (star.mag < 2.5) {
@@ -294,10 +314,37 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         ctx.fillText(star.name, proj.x + radius + 4, proj.y + 3);
       }
     }
+    ctx.globalAlpha = 1;
 
-    // 8. Draw Highlight Ring for Selected Star
+    projectedSolarRef.current = settings.showSolarSystem
+      ? drawSolarSystem2D(
+          ctx,
+          solarBodies,
+          projectAltAzToCanvas,
+          cx,
+          cy,
+          baseRadius,
+          skyAttenuation,
+          settings.showStarLabels
+        )
+      : [];
+
+    if (weatherSample && skyAttenuation && skyAttenuation.hazeOpacity > 0.02) {
+      drawSkyWeatherOverlay2D(
+        ctx,
+        cx + pan.x,
+        cy + pan.y,
+        currentRadius,
+        weatherSample,
+        skyAttenuation
+      );
+    }
+
+    // 8. Draw Highlight Ring for Selected Star or Solar System Body
     if (selectedStar) {
-      const selectedProj = projectedMap.get(selectedStar.id);
+      const selectedProj =
+        projectedSolarRef.current.find((p) => p.star.id === selectedStar.id) ??
+        projectedMap.get(selectedStar.id);
       if (selectedProj && selectedProj.visible) {
         ctx.save();
         ctx.strokeStyle = '#38bdf8';
@@ -399,6 +446,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     selectedStar,
     hoveredStar,
     projectAltAzToCanvas,
+    weatherSample,
+    skyAttenuation,
+    solarBodies,
   ]);
 
   // Mouse Move Event (Hover detection & Alt/Az coordinate reporting)
@@ -433,19 +483,31 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       });
     }
 
-    // Check hit star
+    // Check hit Solar System body first, then star
     let closest: Star | null = null;
-    let minDist = 15; // 15px hit radius
+    let minDist = 18;
 
-    for (const proj of projectedStarsRef.current) {
+    for (const proj of projectedSolarRef.current) {
       if (!proj.visible) continue;
-      const dx = proj.x - mouseX;
-      const dy = proj.y - mouseY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
+      const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
       if (dist < minDist) {
         minDist = dist;
         closest = proj.star;
+      }
+    }
+
+    if (!closest) {
+      minDist = 15; // 15px hit radius
+      for (const proj of projectedStarsRef.current) {
+        if (!proj.visible) continue;
+        const dx = proj.x - mouseX;
+        const dy = proj.y - mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDist) {
+          minDist = dist;
+          closest = proj.star;
+        }
       }
     }
 
@@ -499,17 +561,28 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         y: mouseY - pan.y,
       });
 
-      // Hit test on touch
+      // Hit test on touch (Solar System bodies first, then stars)
       let closest: Star | null = null;
-      let minDist = 22; // slightly larger for finger taps
-      for (const proj of projectedStarsRef.current) {
+      let minDist = 24;
+      for (const proj of projectedSolarRef.current) {
         if (!proj.visible) continue;
-        const dx = proj.x - mouseX;
-        const dy = proj.y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
         if (dist < minDist) {
           minDist = dist;
           closest = proj.star;
+        }
+      }
+      if (!closest) {
+        minDist = 22; // slightly larger for finger taps
+        for (const proj of projectedStarsRef.current) {
+          if (!proj.visible) continue;
+          const dx = proj.x - mouseX;
+          const dy = proj.y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = proj.star;
+          }
         }
       }
       if (closest) {
@@ -549,8 +622,8 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   };
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-crosshair touch-none"
     >
       <canvas
@@ -586,16 +659,16 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       )}
 
       <div
-        className={`absolute z-20 flex flex-col space-y-2 pointer-events-auto transition-all duration-300 ${
-          selectedStar
-            ? 'top-[138px] right-[max(0.625rem,var(--sar))] md:top-4 md:right-[calc(24rem+max(1rem,var(--sar))+12px)]'
-            : 'top-3 right-[max(0.875rem,var(--sar))] md:top-4 md:right-[max(1.25rem,var(--sar))]'
-        }`}
+        className={`absolute z-20 flex flex-col space-y-2 pointer-events-auto transition-all duration-300 ${selectedStar
+          ? 'top-[138px] right-[max(0.625rem,var(--sar))] md:top-4 md:right-[calc(24rem+max(1rem,var(--sar))+12px)]'
+          : 'top-3 right-[max(0.875rem,var(--sar))] md:top-4 md:right-[max(1.25rem,var(--sar))]'
+          }`}
       >
         <button
           onClick={() => setZoom((z) => Math.min(4.0, z + 0.25))}
           className="p-2 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-cyan-500/40 hover:shadow-glow-cyan transition-all cursor-pointer"
           title="Zoom In"
+          aria-label="Zoom In"
         >
           <ZoomIn className="w-4 h-4 text-cyan-400" />
         </button>
@@ -604,6 +677,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
           onClick={() => setZoom((z) => Math.max(0.6, z - 0.25))}
           className="p-2 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-cyan-500/40 hover:shadow-glow-cyan transition-all cursor-pointer"
           title="Zoom Out"
+          aria-label="Zoom Out"
         >
           <ZoomOut className="w-4 h-4 text-cyan-400" />
         </button>
@@ -612,6 +686,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
           onClick={handleResetView}
           className="p-2 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-cyan-500/40 hover:shadow-glow-cyan transition-all cursor-pointer"
           title="Reset 2D Sky Map View"
+          aria-label="Reset 2D Sky Map View"
         >
           <RotateCcw className="w-4 h-4 text-purple-400" />
         </button>

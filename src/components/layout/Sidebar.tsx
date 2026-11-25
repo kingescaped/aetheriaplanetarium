@@ -14,6 +14,8 @@ import {
   Compass,
   Star as StarIcon,
   Sparkles,
+  Cloud,
+  Sun,
   X
 } from 'lucide-react';
 import { CelestialSettings, ObserverLocation, Star } from '../../types/celestial';
@@ -34,6 +36,7 @@ interface SidebarProps {
   onSettingsChange: (settings: CelestialSettings) => void;
   onSelectStar: (star: Star) => void;
   selectedStar: Star | null;
+  solarBodies?: Star[];
   lang?: Language;
 }
 
@@ -124,6 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSettingsChange,
   onSelectStar,
   selectedStar,
+  solarBodies = [],
   lang = 'vi',
 }) => {
   const [activeTab, setActiveTab] = useState<'observation' | 'time' | 'layers' | 'catalog'>('observation');
@@ -204,8 +208,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onToggle}
         className="hidden md:flex p-1.5 ml-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer items-center justify-center shrink-0"
         title={lang === 'vi' ? 'Đóng bảng điều khiển' : 'Close Controls'}
+        aria-label={lang === 'vi' ? 'Đóng bảng điều khiển' : 'Close Controls'}
       >
-        <X className="w-4 h-4" />
+        <X className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   );
@@ -224,8 +229,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1 font-hud">{t.latitude}</label>
+              <label htmlFor="sidebar-latitude" className="block text-[10px] text-slate-400 mb-1 font-hud">{t.latitude}</label>
               <input
+                id="sidebar-latitude"
                 type="number"
                 step="0.0001"
                 min="-90"
@@ -242,8 +248,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1 font-hud">{t.longitude}</label>
+              <label htmlFor="sidebar-longitude" className="block text-[10px] text-slate-400 mb-1 font-hud">{t.longitude}</label>
               <input
+                id="sidebar-longitude"
                 type="number"
                 step="0.0001"
                 min="-180"
@@ -314,8 +321,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Date & Time Input */}
           <div className="space-y-2">
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1 font-hud">{t.localTimestamp}</label>
+              <label htmlFor="sidebar-epoch" className="block text-[10px] text-slate-400 mb-1 font-hud">{t.localTimestamp}</label>
               <input
+                id="sidebar-epoch"
                 type="datetime-local"
                 value={new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000)
                   .toISOString()
@@ -343,19 +351,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 ${settings.timeSpeed === -3600 ? 'text-cyan-400 bg-cyan-500/20' : ''
                   }`}
                 title={lang === 'vi' ? 'Lùi 1 giờ / giây' : 'Reverse 1 hour / sec'}
+                aria-label={lang === 'vi' ? 'Lùi 1 giờ / giây' : 'Reverse 1 hour / sec'}
               >
-                <Rewind className="w-4 h-4" />
+                <Rewind className="w-4 h-4" aria-hidden="true" />
               </button>
 
               <button
                 onClick={() => handleTimeSpeed(settings.timeSpeed === 0 ? 1 : 0)}
                 className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-all shadow-glow-cyan"
                 title={settings.timeSpeed === 0 ? (lang === 'vi' ? 'Tiếp tục thời gian thực' : 'Play Real Time') : (lang === 'vi' ? 'Tạm dừng thời gian' : 'Pause Time')}
+                aria-label={settings.timeSpeed === 0 ? (lang === 'vi' ? 'Tiếp tục thời gian thực' : 'Play Real Time') : (lang === 'vi' ? 'Tạm dừng thời gian' : 'Pause Time')}
               >
                 {settings.timeSpeed === 0 ? (
-                  <Play className="w-4 h-4 fill-cyan-400" />
+                  <Play className="w-4 h-4 fill-cyan-400" aria-hidden="true" />
                 ) : (
-                  <Pause className="w-4 h-4" />
+                  <Pause className="w-4 h-4" aria-hidden="true" />
                 )}
               </button>
 
@@ -364,6 +374,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`px-2 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 text-[11px] font-mono ${settings.timeSpeed === 60 ? 'text-cyan-400 bg-cyan-500/20' : ''
                   }`}
                 title={lang === 'vi' ? 'Tua nhanh 1 phút / giây' : '1 min / sec'}
+                aria-label={lang === 'vi' ? 'Tua nhanh 1 phút / giây' : '1 min / sec'}
               >
                 60x
               </button>
@@ -373,8 +384,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`px-2 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 text-[11px] font-mono ${settings.timeSpeed === 3600 ? 'text-cyan-400 bg-cyan-500/20' : ''
                   }`}
                 title={lang === 'vi' ? 'Tua nhanh 1 giờ / giây' : '1 hour / sec'}
+                aria-label={lang === 'vi' ? 'Tua nhanh 1 giờ / giây' : '1 hour / sec'}
               >
-                <FastForward className="w-4 h-4" />
+                <FastForward className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -411,6 +423,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IOSSwitch
                 checked={settings.showConstellationLines}
                 color="cyan"
+                ariaLabel={t.constellationLines}
                 onChange={(checked) =>
                   onSettingsChange({
                     ...settings,
@@ -428,6 +441,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IOSSwitch
                 checked={settings.showConstellationLabels}
                 color="cyan"
+                ariaLabel={t.constellationLabels}
                 onChange={(checked) =>
                   onSettingsChange({
                     ...settings,
@@ -445,6 +459,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IOSSwitch
                 checked={settings.showStarLabels}
                 color="cyan"
+                ariaLabel={t.starLabels}
                 onChange={(checked) =>
                   onSettingsChange({
                     ...settings,
@@ -463,6 +478,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IOSSwitch
                 checked={settings.showGridLines}
                 color="purple"
+                ariaLabel={t.gridLines}
                 onChange={(checked) =>
                   onSettingsChange({
                     ...settings,
@@ -480,10 +496,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IOSSwitch
                 checked={settings.showGroundHorizon}
                 color="cyan"
+                ariaLabel={t.groundHorizon}
                 onChange={(checked) =>
                   onSettingsChange({
                     ...settings,
                     showGroundHorizon: checked,
+                  })
+                }
+              />
+            </div>
+
+            {/* Solar System Ephemeris Layer */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Sun className="w-4 h-4 text-amber-300" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showSolarSystem}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showSolarSystem}
+                color="cyan"
+                ariaLabel={t.showSolarSystem}
+                onChange={(checked) =>
+                  onSettingsChange({
+                    ...settings,
+                    showSolarSystem: checked,
+                  })
+                }
+              />
+            </div>
+
+            {/* Atmospheric Cloud & Haze Simulation */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Cloud className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.weatherSimulateSky}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.simulateSkyWeather}
+                color="cyan"
+                ariaLabel={t.weatherSimulateSky}
+                onChange={(checked) =>
+                  onSettingsChange({
+                    ...settings,
+                    simulateSkyWeather: checked,
                   })
                 }
               />
@@ -493,12 +548,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Magnitude Limit Slider */}
           <div className="pt-2">
             <div className="flex justify-between text-slate-300 mb-1">
-              <span className="text-[10px] text-slate-400 font-hud">{t.magnitudeThreshold}</span>
+              <label htmlFor="sidebar-mag-limit" className="text-[10px] text-slate-400 font-hud">{t.magnitudeThreshold}</label>
               <span className="text-[11px] font-mono text-cyan-400 font-bold">
                 {settings.magnitudeLimit.toFixed(1)} mag
               </span>
             </div>
             <input
+              id="sidebar-mag-limit"
               type="range"
               min="1.0"
               max="6.5"
@@ -523,6 +579,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* TAB 4: STAR CATALOG & QUICK NAV */}
       {activeTab === 'catalog' && (
         <div className="space-y-3">
+          {solarBodies.length > 0 && (
+            <div className="space-y-2 pb-2 border-b border-white/10">
+              <span className="font-semibold uppercase tracking-wider text-[11px] text-amber-300 font-hud block">
+                {t.solarSystemCatalogTitle}
+              </span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {solarBodies.map((body) => {
+                  const isSelected = selectedStar?.id === body.id;
+                  return (
+                    <button
+                      key={body.id}
+                      onClick={() => onSelectStar(body)}
+                      className={`px-2 py-1.5 rounded-xl text-left transition-all border ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400/60 text-white'
+                          : 'bg-slate-900/50 hover:bg-slate-800/70 border-white/10 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium truncate">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: body.color || '#fde047' }}
+                        />
+                        <span className="truncate">{body.name}</span>
+                      </div>
+                      <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+                        Alt {(body.alt ?? 0).toFixed(0)}°
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-slate-300">
             <span className="font-semibold uppercase tracking-wider text-[11px] text-cyan-400 font-hud">
               {t.landmarksTitle}
@@ -609,8 +700,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
                   title={t.tabLocation}
+                  aria-label={t.tabLocation}
                 >
-                  <MapPin className="w-4 h-4" />
+                  <MapPin className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => {
@@ -619,8 +711,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
                   title={t.tabTime}
+                  aria-label={t.tabTime}
                 >
-                  <Clock className="w-4 h-4" />
+                  <Clock className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => {
@@ -629,8 +722,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
                   title={t.tabLayers}
+                  aria-label={t.tabLayers}
                 >
-                  <Layers className="w-4 h-4" />
+                  <Layers className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => {
@@ -639,8 +733,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
                   title={t.tabCatalog}
+                  aria-label={t.tabCatalog}
                 >
-                  <StarIcon className="w-4 h-4" />
+                  <StarIcon className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             )}

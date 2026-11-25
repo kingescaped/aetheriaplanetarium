@@ -7,6 +7,7 @@ export interface IOSSwitchProps {
   color?: 'cyan' | 'emerald' | 'purple' | 'red' | 'blue';
   disabled?: boolean;
   className?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -23,6 +24,7 @@ export const IOSSwitch: React.FC<IOSSwitchProps> = ({
   color = 'cyan',
   disabled = false,
   className = '',
+  ariaLabel,
 }) => {
   const activeColorMap: Record<string, string> = {
     cyan: 'bg-cyan-500 shadow-glow-cyan',
@@ -48,6 +50,7 @@ export const IOSSwitch: React.FC<IOSSwitchProps> = ({
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
       disabled={disabled}
       onClick={handleToggle}
       className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-250 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${

@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Canvas } from '@react-three/fiber';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
+import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
 import { StarPoints3D } from './StarPoints3D';
+import { SolarSystem3D } from './SolarSystem3D';
+import { CloudVeil3D } from './CloudVeil3D';
 import { ConstellationLines3D } from './ConstellationLines3D';
 import { ConstellationLabels3D } from './ConstellationLabels3D';
 import { GroundHorizon3D } from './GroundHorizon3D';
@@ -27,6 +30,9 @@ interface ZenithDomeCanvasProps {
   isFocusRequested?: boolean;
   hideHtmlOverlays?: boolean;
   lang?: Language;
+  weatherSample?: WeatherSample | null;
+  skyAttenuation?: SkyVisualAttenuation;
+  solarBodies?: Star[];
 }
 
 export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
@@ -41,6 +47,9 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   isFocusRequested,
   hideHtmlOverlays = false,
   lang = 'vi',
+  weatherSample,
+  skyAttenuation,
+  solarBodies = [],
 }) => {
   const t = TRANSLATIONS[lang];
 
@@ -167,6 +176,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           isGyroEnabled={isGyroEnabled}
           gyroQuaternion={gyroQuaternion}
           stars={stars}
+          solarBodies={solarBodies}
           magnitudeLimit={settings.magnitudeLimit}
           onSelectStar={onSelectStar}
           recenterTrigger={recenterTrigger}
@@ -180,13 +190,20 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           showLabels={!hideHtmlOverlays}
         />
 
-        {/* 1.5. Black Horizon Silhouette (Mountains, Hills, Trees, Observatory Dome) */}
+        {/* 1.5. Atmospheric Cloud & Haze Veil */}
+        <CloudVeil3D
+          cloudCover={weatherSample?.cloudCover ?? 0}
+          hazeOpacity={skyAttenuation?.hazeOpacity ?? 0}
+        />
+
+        {/* 1.6. Black Horizon Silhouette (Mountains, Hills, Trees, Observatory Dome) */}
         <HorizonSilhouette3D visible={settings.showGroundHorizon} />
 
         {/* 2. Constellation Lines in 3D */}
         <ConstellationLines3D
           stars={stars}
           visible={settings.showConstellationLines}
+          opacityScale={skyAttenuation?.constellationOpacity ?? 1}
         />
 
         {/* 3. Constellation Labels in 3D */}
@@ -202,7 +219,17 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           settings={settings}
           selectedStar={selectedStar}
           onSelectStar={onSelectStar}
+          skyAttenuation={skyAttenuation}
         />
+
+        {/* 4.5. Dynamic Solar System Bodies (Sun, Moon & 7 Planets) */}
+        {settings.showSolarSystem && (
+          <SolarSystem3D
+            bodies={solarBodies}
+            showLabels={settings.showStarLabels && !hideHtmlOverlays}
+            skyAttenuation={skyAttenuation}
+          />
+        )}
 
         {/* 5. Target Simulation (3D Holographic Reticle + Radar Beacon + Flare - Laser Removed) */}
         <TargetSimulation3D selectedStar={selectedStar} showLabel={!hideHtmlOverlays} lang={lang} />
@@ -252,6 +279,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
                   }}
                   className="p-1 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-200 transition-colors cursor-pointer"
                   title={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
+                  aria-label={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
                 >
                   <Compass className="w-3.5 h-3.5" />
                 </button>
@@ -264,6 +292,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
                   }}
                   className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   title={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
+                  aria-label={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -319,6 +348,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
                 }}
                 className="p-1 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-200 transition-colors cursor-pointer"
                 title={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
+                aria-label={lang === 'vi' ? 'Căn lại theo hướng cảm biến la bàn thực' : 'Recenter to device compass'}
               >
                 <Compass className="w-3.5 h-3.5" />
               </button>
@@ -331,6 +361,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
                 }}
                 className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
                 title={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
+                aria-label={lang === 'vi' ? 'Tắt chế độ AR' : 'Disable AR'}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -395,6 +426,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
               <button
                 onClick={() => setShowDesktopNotice(false)}
                 className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                aria-label={t.close}
               >
                 <X className="w-4 h-4" />
               </button>

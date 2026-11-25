@@ -7,11 +7,13 @@ import { altAzToVector3, DOME_RADIUS } from '../../utils/coordinates3D';
 interface ConstellationLines3DProps {
   stars: Star[];
   visible: boolean;
+  opacityScale?: number;
 }
 
 export const ConstellationLines3D: React.FC<ConstellationLines3DProps> = ({
   stars,
   visible,
+  opacityScale = 1,
 }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
 
@@ -85,7 +87,7 @@ export const ConstellationLines3D: React.FC<ConstellationLines3DProps> = ({
       <lineBasicMaterial
         color="#38bdf8"
         transparent={true}
-        opacity={0.45}
+        opacity={0.45 * opacityScale}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />

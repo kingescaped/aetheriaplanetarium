@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -10,7 +10,15 @@ import { BottomNav } from './components/layout/BottomNav';
 import { SearchBarModal } from './components/search/SearchBarModal';
 import { AccountModal } from './components/account/AccountModal';
 import { SkyMap2D } from './components/planetarium/SkyMap2D';
-import { ZenithDomeCanvas } from './components/zenith3d/ZenithDomeCanvas';
+import { WeatherBadge } from './components/weather/WeatherBadge';
+import { WeatherDetailPanel } from './components/weather/WeatherDetailPanel';
+import { useAstronomyWeather } from './hooks/useAstronomyWeather';
+
+const ZenithDomeCanvas = lazy(() =>
+  import('./components/zenith3d/ZenithDomeCanvas').then((m) => ({
+    default: m.ZenithDomeCanvas,
+  }))
+);
 import {
   ViewMode,
   ObserverLocation,
@@ -19,7 +27,8 @@ import {
 } from './types/celestial';
 import { UserProfile, ObservationLog, UserPreferences } from './types/account';
 import { STAR_CATALOG } from './data/stars';
-import { getLST, equatorialToHorizontal, batchComputeHorizontalCoordsInPlace } from './utils/astronomy';
+import { getLST, batchComputeHorizontalCoordsInPlace } from './utils/astronomy';
+import { computeSolarSystemBodies } from './utils/solarSystem';
 import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
@@ -35,27 +44,42 @@ export function App() {
 
   useEffect(() => {
     let isMounted = true;
+    let timerId = 0;
+    let rafId = 0;
+
     const initApp = async () => {
-      // 1. Chờ font nạp hoàn tất
       try {
         if ('fonts' in document) {
-          await (document as any).fonts.ready;
+          await (document as unknown as { fonts: { ready: Promise<unknown> } }).fonts.ready;
         }
-      } catch (err) {
+      } catch {
         // Fallback
       }
 
-      // 2. Đệm an toàn ~850ms để Safe Area iOS và ma trận 5.200 sao hoàn tất ngầm
-      setTimeout(() => {
-        if (isMounted) {
-          setIsAppReady(true);
-        }
-      }, 850);
+      const ua = navigator.userAgent || '';
+      const isIOS =
+        /iPhone|iPad|iPod/i.test(ua) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as unknown as { standalone?: boolean }).standalone === true;
+
+      if (isIOS && isStandalone) {
+        timerId = window.setTimeout(() => {
+          if (isMounted) setIsAppReady(true);
+        }, 850);
+      } else {
+        rafId = window.requestAnimationFrame(() => {
+          if (isMounted) setIsAppReady(true);
+        });
+      }
     };
 
     initApp();
     return () => {
       isMounted = false;
+      window.clearTimeout(timerId);
+      window.cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -67,6 +91,7 @@ export function App() {
 
   useEffect(() => {
     localStorage.setItem('aetheria_lang', lang);
+    document.documentElement.lang = lang;
   }, [lang]);
 
   // Navigation & View Mode
@@ -94,7 +119,12 @@ export function App() {
     starGlowIntensity: 1.5,
     magnitudeLimit: 5.5,
     timeSpeed: 1, // 1x normal speed
+    simulateSkyWeather: true,
+    showSolarSystem: true,
   });
+
+  const weather = useAstronomyWeather(location, currentDate, settings.simulateSkyWeather);
+  const [isWeatherOpen, setIsWeatherOpen] = useState<boolean>(false);
 
   // Xác định chuẩn xác giao diện Mobile ngay từ frame đầu tiên (tránh độ trễ viewport 980px trên Safari/iOS)
   const checkIsMobile = (): boolean => {
@@ -229,10 +259,20 @@ export function App() {
     return starsPoolRef.current;
   }, [currentDate, location.latitude, location.longitude]);
 
+  const ephemerisSec = Math.floor(currentDate.getTime() / 1000);
+  const solarBodies = useMemo(() => {
+    if (!settings.showSolarSystem) return [];
+    return computeSolarSystemBodies(new Date(ephemerisSec * 1000), location, lang);
+  }, [settings.showSolarSystem, ephemerisSec, location.latitude, location.longitude, lang]);
+
   const selectedStar = useMemo<Star | null>(() => {
     if (selectedStarId === '') return null;
-    return calculatedStars.find((s: Star) => s.id === selectedStarId) ?? null;
-  }, [calculatedStars, selectedStarId]);
+    return (
+      solarBodies.find((b: Star) => b.id === selectedStarId) ??
+      calculatedStars.find((s: Star) => s.id === selectedStarId) ??
+      null
+    );
+  }, [solarBodies, calculatedStars, selectedStarId]);
 
   // Simulation Time Tick
   useEffect(() => {
@@ -316,61 +356,129 @@ export function App() {
               currentDate={currentDate}
               onOpenSearch={() => {
                 soundFx.playModalTransition();
+                setIsWeatherOpen(false);
                 setIsSearchOpen(true);
               }}
               onGetGeolocation={handleGetGeolocation}
               isLocating={isLocating}
               onOpenAccount={() => {
                 soundFx.playModalTransition();
+                setIsWeatherOpen(false);
                 setIsAccountOpen(true);
               }}
               onOpenControls={() => {
                 soundFx.playModalTransition();
                 setIsSidebarOpen((prev) => !prev);
               }}
+              weatherSlot={
+                <WeatherBadge
+                  resolved={weather.resolved}
+                  status={weather.status}
+                  isStale={weather.isStale}
+                  isOpen={isWeatherOpen}
+                  onClick={() => {
+                    soundFx.playModalTransition();
+                    setIsWeatherOpen((prev) => !prev);
+                  }}
+                  lang={lang}
+                />
+              }
               lang={lang}
             />
           )}
 
-        {/* Workspace: Bounded below Header and above BottomNav */}
-        <div className="relative z-0 isolate flex-1 min-h-0 w-full overflow-hidden">
-          <main className="absolute inset-0 z-0 isolate flex items-center justify-center overflow-hidden">
-            {viewMode === '2D_PLANETARIUM' ? (
-              <SkyMap2D
-                stars={calculatedStars}
+          {/* Workspace: Bounded below Header and above BottomNav */}
+          <div className="relative z-0 isolate flex-1 min-h-0 w-full overflow-hidden">
+            <main className="absolute inset-0 z-0 isolate flex items-center justify-center overflow-hidden">
+              {viewMode === '2D_PLANETARIUM' ? (
+                <SkyMap2D
+                  stars={calculatedStars}
+                  location={location}
+                  currentDate={currentDate}
+                  settings={settings}
+                  selectedStar={selectedStar}
+                  onSelectStar={(star) => {
+                    soundFx.playStarSelect();
+                    setSelectedStarId(star.id);
+                  }}
+                  onHoverCoords={(coords) => setCursorCoords(coords)}
+                  weatherSample={weather.resolved?.sample ?? null}
+                  skyAttenuation={weather.resolved?.attenuation}
+                  solarBodies={solarBodies}
+                />
+              ) : (
+                <Suspense fallback={<div className="w-full h-full bg-[#030712]" />}>
+                  <ZenithDomeCanvas
+                    stars={calculatedStars}
+                    location={location}
+                    currentDate={currentDate}
+                    settings={settings}
+                    selectedStar={selectedStar}
+                    onSelectStar={(star) => {
+                      soundFx.playStarSelect();
+                      setSelectedStarId(star.id);
+                    }}
+                    targetAzimuth={targetAzimuth}
+                    isZenithRequested={isZenithRequested}
+                    isFocusRequested={isFocusRequested}
+                    hideHtmlOverlays={isAnyModalOpen || (isMobile && (isSidebarOpen || isWeatherOpen))}
+                    lang={lang}
+                    weatherSample={weather.resolved?.sample ?? null}
+                    skyAttenuation={weather.resolved?.attenuation}
+                    solarBodies={solarBodies}
+                  />
+                </Suspense>
+              )}
+            </main>
+
+            <div className="hidden md:block">
+              <InfoPanel
+                star={selectedStar}
+                onClose={() => setSelectedStarId('')}
+                onFocusStar={(star) => {
+                  soundFx.playTargetRayTrace();
+                  setSelectedStarId(star.id);
+                  setViewMode('3D_ZENITH_DOME');
+                  setIsFocusRequested(true);
+                  setTimeout(() => setIsFocusRequested(false), 400);
+                }}
                 location={location}
                 currentDate={currentDate}
-                settings={settings}
-                selectedStar={selectedStar}
-                onSelectStar={(star) => {
-                  soundFx.playStarSelect();
-                  setSelectedStarId(star.id);
-                }}
-                onHoverCoords={(coords) => setCursorCoords(coords)}
-              />
-            ) : (
-              <ZenithDomeCanvas
-                stars={calculatedStars}
-                location={location}
-                currentDate={currentDate}
-                settings={settings}
-                selectedStar={selectedStar}
-                onSelectStar={(star) => {
-                  soundFx.playStarSelect();
-                  setSelectedStarId(star.id);
-                }}
-                targetAzimuth={targetAzimuth}
-                isZenithRequested={isZenithRequested}
-                isFocusRequested={isFocusRequested}
-                hideHtmlOverlays={isAnyModalOpen || (isMobile && isSidebarOpen)}
                 lang={lang}
               />
-            )}
-          </main>
+            </div>
 
-          <div className="hidden md:block">
-            <InfoPanel
+            {!isAnyModalOpen && !(isMobile && isSidebarOpen) && (
+              <div className="md:hidden absolute top-3 left-[max(0.75rem,var(--sal))] z-20 pointer-events-auto">
+                <WeatherBadge
+                  resolved={weather.resolved}
+                  status={weather.status}
+                  isStale={weather.isStale}
+                  isOpen={isWeatherOpen}
+                  onClick={() => {
+                    soundFx.playModalTransition();
+                    setIsWeatherOpen((prev) => !prev);
+                  }}
+                  lang={lang}
+                  compact
+                />
+              </div>
+            )}
+
+            {selectedStar && !isAnyModalOpen && (
+              <div
+                className="md:hidden absolute top-2.5 z-30 max-w-[210px] pointer-events-auto"
+                style={{
+                  right: 'max(0.625rem, var(--sar, 0px))',
+                }}
+              >
+                <StarTelemetryHUD star={selectedStar} lang={lang} />
+              </div>
+            )}
+
+            <StarBottomSheet
               star={selectedStar}
+              isOpen={!!selectedStarId && !isAnyModalOpen}
               onClose={() => setSelectedStarId('')}
               onFocusStar={(star) => {
                 soundFx.playTargetRayTrace();
@@ -379,164 +487,167 @@ export function App() {
                 setIsFocusRequested(true);
                 setTimeout(() => setIsFocusRequested(false), 400);
               }}
+              isFavorite={selectedStar ? favorites.includes(String(selectedStar.id)) : false}
+              onToggleFavorite={handleToggleFavorite}
+              onOpenJournal={(star) => {
+                soundFx.playTabClick();
+                setSelectedStarId(star.id);
+                setIsAccountOpen(true);
+              }}
+              onResetOrientation={() => {
+                soundFx.playTabClick();
+                setIsZenithRequested(true);
+                setTimeout(() => setIsZenithRequested(false), 300);
+              }}
+              onSetDirection={(azimuth) => {
+                soundFx.playTabClick();
+                setCursorCoords((prev) => ({ ...prev, az: azimuth }));
+                setTargetAzimuth(azimuth);
+                setTimeout(() => setTargetAzimuth(null), 300);
+              }}
               location={location}
               currentDate={currentDate}
               lang={lang}
             />
+
+            <BottomHUD
+              viewMode={viewMode}
+              selectedStar={selectedStar}
+              cursorCoords={cursorCoords}
+              onResetOrientation={() => {
+                soundFx.playTabClick();
+                setIsZenithRequested(true);
+                setTimeout(() => setIsZenithRequested(false), 300);
+              }}
+              onSetDirection={(azimuth) => {
+                soundFx.playTabClick();
+                setCursorCoords((prev) => ({ ...prev, az: azimuth }));
+                setTargetAzimuth(azimuth);
+                setTimeout(() => setTargetAzimuth(null), 300);
+              }}
+            />
+
+            <PWAInstallBanner pwa={pwa} lang={lang} />
+
+            <WeatherDetailPanel
+              isOpen={isWeatherOpen && !isAnyModalOpen}
+              onClose={() => setIsWeatherOpen(false)}
+              location={location}
+              currentDate={currentDate}
+              forecast={weather.forecast}
+              resolved={weather.resolved}
+              status={weather.status}
+              isStale={weather.isStale}
+              error={weather.error}
+              simulateSkyWeather={settings.simulateSkyWeather}
+              onToggleSimulateSky={(enabled) =>
+                setSettings((prev) => ({ ...prev, simulateSkyWeather: enabled }))
+              }
+              onSelectHour={(timestampMs) => {
+                soundFx.playTabClick();
+                setCurrentDate(new Date(timestampMs));
+                setSettings((prev) => ({ ...prev, timeSpeed: 0 }));
+              }}
+              onResetToNow={() => {
+                soundFx.playTabClick();
+                setCurrentDate(new Date());
+                setSettings((prev) => ({ ...prev, timeSpeed: 1 }));
+              }}
+              onRefresh={weather.refresh}
+              lang={lang}
+            />
           </div>
 
-          {selectedStar && !isAnyModalOpen && (
-            <div
-              className="md:hidden absolute top-2.5 z-30 max-w-[210px] pointer-events-auto"
-              style={{
-                right: 'max(0.625rem, var(--sar, 0px))',
-              }}
-            >
-              <StarTelemetryHUD star={selectedStar} lang={lang} />
-            </div>
-          )}
-
-          <StarBottomSheet
-            star={selectedStar}
-            isOpen={!!selectedStarId && !isAnyModalOpen}
-            onClose={() => setSelectedStarId('')}
-            onFocusStar={(star) => {
-              soundFx.playTargetRayTrace();
+          <Sidebar
+            isOpen={isSidebarOpen}
+            onToggle={() => {
+              soundFx.playModalTransition();
+              setIsSidebarOpen(!isSidebarOpen);
+            }}
+            location={location}
+            onLocationChange={setLocation}
+            currentDate={currentDate}
+            onDateChange={setCurrentDate}
+            settings={settings}
+            onSettingsChange={setSettings}
+            onSelectStar={(star) => {
+              soundFx.playStarSelect();
               setSelectedStarId(star.id);
-              setViewMode('3D_ZENITH_DOME');
-              setIsFocusRequested(true);
-              setTimeout(() => setIsFocusRequested(false), 400);
             }}
-            isFavorite={selectedStar ? favorites.includes(String(selectedStar.id)) : false}
-            onToggleFavorite={handleToggleFavorite}
-            onOpenJournal={(star) => {
-              soundFx.playTabClick();
-              setSelectedStarId(star.id);
-              setIsAccountOpen(true);
-            }}
-            onResetOrientation={() => {
-              soundFx.playTabClick();
-              setIsZenithRequested(true);
-              setTimeout(() => setIsZenithRequested(false), 300);
-            }}
-            onSetDirection={(azimuth) => {
-              soundFx.playTabClick();
-              setCursorCoords((prev) => ({ ...prev, az: azimuth }));
-              setTargetAzimuth(azimuth);
-              setTimeout(() => setTargetAzimuth(null), 300);
-            }}
+            selectedStar={selectedStar}
+            solarBodies={solarBodies}
             lang={lang}
           />
 
-          <BottomHUD
-            viewMode={viewMode}
-            selectedStar={selectedStar}
-            cursorCoords={cursorCoords}
-            onResetOrientation={() => {
-              soundFx.playTabClick();
-              setIsZenithRequested(true);
-              setTimeout(() => setIsZenithRequested(false), 300);
-            }}
-            onSetDirection={(azimuth) => {
-              soundFx.playTabClick();
-              setCursorCoords((prev) => ({ ...prev, az: azimuth }));
-              setTargetAzimuth(azimuth);
-              setTimeout(() => setTargetAzimuth(null), 300);
-            }}
-          />
-
-          <PWAInstallBanner pwa={pwa} lang={lang} />
+          <AnimatePresence>
+            {isAccountOpen && (
+              <AccountModal
+                isOpen={isAccountOpen}
+                onClose={() => setIsAccountOpen(false)}
+                user={user}
+                onUpdateUser={setUser}
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                onSelectStar={(id) => {
+                  setSelectedStarId(id);
+                  setViewMode('3D_ZENITH_DOME');
+                }}
+                observationLogs={observationLogs}
+                onAddLog={(newLog) => {
+                  setObservationLogs((prev) => [
+                    { ...newLog, id: `log_${Date.now()}` },
+                    ...prev,
+                  ]);
+                }}
+                onDeleteLog={(id) => {
+                  setObservationLogs((prev) => prev.filter((log) => log.id !== id));
+                }}
+                preferences={preferences}
+                onUpdatePreferences={setPreferences}
+                starsCatalog={[...solarBodies, ...calculatedStars]}
+                settings={settings}
+                onSettingsChange={setSettings}
+                location={location}
+                lang={lang}
+                onLanguageChange={setLang}
+                pwa={pwa}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onToggle={() => {
-            soundFx.playModalTransition();
-            setIsSidebarOpen(!isSidebarOpen);
-          }}
-          location={location}
-          onLocationChange={setLocation}
-          currentDate={currentDate}
-          onDateChange={setCurrentDate}
-          settings={settings}
-          onSettingsChange={setSettings}
+        {/* Row 2: Mobile BottomNav in Flex flow */}
+        {!isSearchOpen && (
+          <BottomNav
+            viewMode={viewMode}
+            setViewMode={(mode) => {
+              setViewMode(mode);
+              setIsAccountOpen(false);
+              if (isMobile) setIsSidebarOpen(false);
+            }}
+            onOpenAccount={() => {
+              setIsAccountOpen(true);
+              if (isMobile) setIsSidebarOpen(false);
+            }}
+            isAccountOpen={isAccountOpen}
+            onCloseAccount={() => setIsAccountOpen(false)}
+            hasActiveTarget={!!selectedStar}
+            lang={lang}
+          />
+        )}
+
+        {/* Full-Shell Overlays */}
+        <SearchBarModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
           onSelectStar={(star) => {
             soundFx.playStarSelect();
             setSelectedStarId(star.id);
           }}
-          selectedStar={selectedStar}
+          starsCatalog={[...solarBodies, ...calculatedStars.filter((s: Star) => Boolean(s.name))]}
           lang={lang}
         />
-
-        <AnimatePresence>
-          {isAccountOpen && (
-            <AccountModal
-              isOpen={isAccountOpen}
-              onClose={() => setIsAccountOpen(false)}
-              user={user}
-              onUpdateUser={setUser}
-              favorites={favorites}
-              onToggleFavorite={handleToggleFavorite}
-              onSelectStar={(id) => {
-                setSelectedStarId(id);
-                setViewMode('3D_ZENITH_DOME');
-              }}
-              observationLogs={observationLogs}
-              onAddLog={(newLog) => {
-                setObservationLogs((prev) => [
-                  { ...newLog, id: `log_${Date.now()}` },
-                  ...prev,
-                ]);
-              }}
-              onDeleteLog={(id) => {
-                setObservationLogs((prev) => prev.filter((log) => log.id !== id));
-              }}
-              preferences={preferences}
-              onUpdatePreferences={setPreferences}
-              starsCatalog={calculatedStars}
-              settings={settings}
-              onSettingsChange={setSettings}
-              location={location}
-              lang={lang}
-              onLanguageChange={setLang}
-              pwa={pwa}
-            />
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* Row 2: Mobile BottomNav in Flex flow */}
-      {!isSearchOpen && (
-        <BottomNav
-          viewMode={viewMode}
-          setViewMode={(mode) => {
-            setViewMode(mode);
-            setIsAccountOpen(false);
-            if (isMobile) setIsSidebarOpen(false);
-          }}
-          onOpenAccount={() => {
-            setIsAccountOpen(true);
-            if (isMobile) setIsSidebarOpen(false);
-          }}
-          isAccountOpen={isAccountOpen}
-          onCloseAccount={() => setIsAccountOpen(false)}
-          hasActiveTarget={!!selectedStar}
-          lang={lang}
-        />
-      )}
-
-      {/* Full-Shell Overlays */}
-      <SearchBarModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onSelectStar={(star) => {
-          soundFx.playStarSelect();
-          setSelectedStarId(star.id);
-        }}
-        starsCatalog={calculatedStars.filter((s: Star) => Boolean(s.name))}
-        lang={lang}
-      />
-    </div >
 
       <AetheriaSplashScreen isReady={isAppReady} lang={lang} />
     </>

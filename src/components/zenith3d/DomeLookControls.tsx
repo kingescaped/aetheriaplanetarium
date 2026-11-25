@@ -14,6 +14,7 @@ interface DomeLookControlsProps {
   gyroQuaternion?: THREE.Quaternion | null;
   onManualDrag?: () => void;
   stars?: Star[];
+  solarBodies?: Star[];
   magnitudeLimit?: number;
   onSelectStar?: (star: Star) => void;
   recenterTrigger?: number;
@@ -29,12 +30,21 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
   gyroQuaternion = null,
   onManualDrag,
   stars,
+  solarBodies,
   magnitudeLimit = 6.5,
   onSelectStar,
   recenterTrigger = 0,
   onHeadingChange,
 }) => {
   const { camera, gl } = useThree();
+  const starsRef = useRef<Star[] | undefined>(stars);
+  const solarBodiesRef = useRef<Star[] | undefined>(solarBodies);
+  const magLimitRef = useRef<number>(magnitudeLimit);
+  const onSelectStarRef = useRef<((star: Star) => void) | undefined>(onSelectStar);
+  starsRef.current = stars;
+  solarBodiesRef.current = solarBodies;
+  magLimitRef.current = magnitudeLimit;
+  onSelectStarRef.current = onSelectStar;
 
   // Current and target spherical angles (in radians)
   const currentYaw = useRef<number>(0);
@@ -161,7 +171,7 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
       const dist = Math.hypot(dx, dy);
       const duration = performance.now() - pointerDownTime.current;
 
-      if (dist < 9 && duration < 500 && onSelectStar && stars && stars.length > 0) {
+      if (dist < 9 && duration < 500 && onSelectStarRef.current) {
         const rect = domElement.getBoundingClientRect();
         const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -172,31 +182,46 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
 
         let closestStar: Star | null = null;
         let minAngularDist = Infinity;
-        // ~3.4 degrees angular tolerance for effortless mobile finger tapping & desktop click
-        const maxHitAngle = 0.06;
-
-        const magLimit = magnitudeLimit ?? 6.5;
         const starVec = new THREE.Vector3();
 
-        for (let i = 0; i < stars.length; i++) {
-          const s = stars[i];
-          if (s.mag > magLimit) continue;
+        const currentSolar = solarBodiesRef.current ?? [];
+        for (let i = 0; i < currentSolar.length; i++) {
+          const s = currentSolar[i];
           if (s.alt !== undefined && s.alt < -5) continue;
-
           const [sx, sy, sz] = altAzToVector3(s.alt ?? 45, s.az ?? 0, DOME_RADIUS);
           starVec.set(sx - camera.position.x, sy - camera.position.y, sz - camera.position.z).normalize();
-
-          const dot = rayDir.dot(starVec);
-          const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
-
-          if (angle < maxHitAngle && angle < minAngularDist) {
+          const angle = Math.acos(Math.max(-1, Math.min(1, rayDir.dot(starVec))));
+          if (angle < 0.075 && angle < minAngularDist) {
             minAngularDist = angle;
             closestStar = s;
           }
         }
 
+        if (!closestStar && starsRef.current && starsRef.current.length > 0) {
+          const maxHitAngle = 0.06;
+          const magLimit = magLimitRef.current ?? 6.5;
+          const currentStars = starsRef.current;
+
+          for (let i = 0; i < currentStars.length; i++) {
+            const s = currentStars[i];
+            if (s.mag > magLimit) continue;
+            if (s.alt !== undefined && s.alt < -5) continue;
+
+            const [sx, sy, sz] = altAzToVector3(s.alt ?? 45, s.az ?? 0, DOME_RADIUS);
+            starVec.set(sx - camera.position.x, sy - camera.position.y, sz - camera.position.z).normalize();
+
+            const dot = rayDir.dot(starVec);
+            const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+
+            if (angle < maxHitAngle && angle < minAngularDist) {
+              minAngularDist = angle;
+              closestStar = s;
+            }
+          }
+        }
+
         if (closestStar) {
-          onSelectStar(closestStar);
+          onSelectStarRef.current(closestStar);
         }
       }
     };

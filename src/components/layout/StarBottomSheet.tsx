@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import {
   X,
@@ -11,10 +11,16 @@ import {
   BookOpen,
   Navigation
 } from 'lucide-react';
-import { Star } from '../../types/celestial';
+import { ObserverLocation, Star } from '../../types/celestial';
 import { getSpectralColor } from '../../utils/astronomy';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
 import { soundFx } from '../../utils/audio';
+import { computeBodyRiseSet } from '../../utils/solarSystem';
+import {
+  formatCelestialDistance,
+  formatRiseSetClock,
+  getMoonPhaseLabel,
+} from '../../utils/solarSystemFormat';
 
 interface StarBottomSheetProps {
   star: Star | null;
@@ -26,6 +32,8 @@ interface StarBottomSheetProps {
   onOpenJournal?: (star: Star) => void;
   onResetOrientation?: () => void;
   onSetDirection?: (azimuth: number) => void;
+  location?: ObserverLocation;
+  currentDate?: Date;
   lang?: Language;
 }
 
@@ -39,16 +47,32 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
   onOpenJournal,
   onResetOrientation,
   onSetDirection,
+  location,
+  currentDate,
   lang = 'vi',
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const dragControls = useDragControls();
   const t = TRANSLATIONS[lang];
+  const solar = star?.solarSystemData;
+  const dateHourKey = currentDate
+    ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`
+    : '';
+  const riseSet = useMemo(() => {
+    if (!solar || !location || !currentDate) return null;
+    return computeBodyRiseSet(solar.bodyId, currentDate, location);
+  }, [solar?.bodyId, dateHourKey, location?.latitude, location?.longitude]);
 
   if (!isOpen || !star) return null;
 
-  const spectralColor = getSpectralColor(star.spect);
+  const spectralColor = star.color || getSpectralColor(star.spect);
   const constellationName = getConstellationName(star.con, lang);
+  const subtitleText = solar
+    ? lang === 'vi'
+      ? solar.subtitleVi
+      : solar.subtitleEn
+    : constellationName;
+  const distInfo = formatCelestialDistance(star, lang);
 
   const handleFocus = () => {
     soundFx.playTargetRayTrace();
@@ -128,7 +152,7 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
                   {star.name || `Star #${star.id}`}
                 </h3>
                 <p className="text-[10px] text-cyan-400 font-mono truncate">
-                  {constellationName} • Mag {star.mag.toFixed(1)}
+                  {subtitleText} • Mag {star.mag.toFixed(1)}
                 </p>
               </div>
             </div>
@@ -242,24 +266,69 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
             <div className="px-3 pb-3 pt-1 space-y-2 overflow-y-auto max-h-[42vh] text-xs font-sans animate-in fade-in duration-200 border-t border-white/5 touch-pan-y overscroll-contain">
               {/* Grid thông số vật lý */}
               <div className="grid grid-cols-2 gap-1.5 pt-1">
-                <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
-                  <div className="text-[9px] text-slate-400 font-hud uppercase">{t.spectralClass}</div>
-                  <div className="text-[11px] font-bold font-mono text-cyan-300 mt-0.5 flex items-center gap-1.5">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: spectralColor }}
-                    />
-                    <span>{star.spect || 'Unknown'}</span>
+                {solar ? (
+                  <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
+                    <div className="text-[9px] text-slate-400 font-hud uppercase">
+                      {solar.moonPhaseName ? t.moonPhase : t.illumination}
+                    </div>
+                    <div className="text-[11px] font-bold font-mono text-cyan-300 mt-0.5 truncate">
+                      {solar.moonPhaseName
+                        ? getMoonPhaseLabel(solar.moonPhaseName, lang)
+                        : solar.phaseFraction !== undefined
+                          ? `${(solar.phaseFraction * 100).toFixed(1)}%`
+                          : 'G2V'}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
+                    <div className="text-[9px] text-slate-400 font-hud uppercase">{t.spectralClass}</div>
+                    <div className="text-[11px] font-bold font-mono text-cyan-300 mt-0.5 flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: spectralColor }}
+                      />
+                      <span>{star.spect || 'Unknown'}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
                   <div className="text-[9px] text-slate-400 font-hud uppercase">{t.distance}</div>
                   <div className="text-[11px] font-bold font-mono text-purple-300 mt-0.5">
-                    {star.dist ? `${star.dist.toLocaleString()} ${t.lightYears}` : constellationName}
+                    {distInfo.primary}
                   </div>
                 </div>
               </div>
+
+              {solar && (
+                <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 grid grid-cols-2 gap-1.5 font-mono text-[10px] text-slate-200">
+                  {solar.phaseFraction !== undefined && solar.kind !== 'sun' && (
+                    <div>
+                      {t.illumination}: <span className="text-white font-bold">{(solar.phaseFraction * 100).toFixed(1)}%</span>
+                    </div>
+                  )}
+                  {solar.moonAgeDays !== undefined && (
+                    <div>
+                      {t.moonAge}: <span className="text-cyan-300">{solar.moonAgeDays} {t.daysUnit}</span>
+                    </div>
+                  )}
+                  {solar.ringTiltDeg !== undefined && (
+                    <div>
+                      {t.ringTilt}: <span className="text-amber-300">{solar.ringTiltDeg}°</span>
+                    </div>
+                  )}
+                  {riseSet && (
+                    <>
+                      <div>
+                        {t.nextRise}: <span className="text-emerald-300">{formatRiseSetClock(riseSet.nextRiseMs, lang)}</span>
+                      </div>
+                      <div>
+                        {t.nextSet}: <span className="text-purple-300">{formatRiseSetClock(riseSet.nextSetMs, lang)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Tọa độ thiên văn */}
               <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 space-y-1 font-mono text-[10px]">

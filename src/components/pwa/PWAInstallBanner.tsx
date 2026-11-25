@@ -78,8 +78,9 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ pwa, lang = 
           onClick={handleDismiss}
           className="absolute top-3.5 right-3.5 p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
           title="Đóng thông báo"
+          aria-label={t.close}
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4" aria-hidden="true" />
         </button>
 
         <div className="flex items-start space-x-3 pr-6">
@@ -94,9 +95,9 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ pwa, lang = 
 
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="text-xs font-bold text-white tracking-tight">
+              <h2 className="text-xs font-bold text-white tracking-tight">
                 {t.pwaTitle}
-              </h4>
+              </h2>
               {pwa.isOfflineReady && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-mono text-emerald-400">
                   <CheckCircle2 className="w-2.5 h-2.5" />

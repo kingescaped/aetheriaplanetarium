@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { X, Crosshair, Sparkles, Compass } from 'lucide-react';
 import { Star, ObserverLocation } from '../../types/celestial';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
+import { computeBodyRiseSet } from '../../utils/solarSystem';
+import {
+  formatCelestialDistance,
+  formatRiseSetClock,
+  getMoonPhaseLabel,
+} from '../../utils/solarSystemFormat';
 import { StarTelemetryHUD } from './StarTelemetryHUD';
 
 interface InfoPanelProps {
@@ -17,12 +23,22 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   star,
   onClose,
   onFocusStar,
+  location,
+  currentDate,
   lang = 'vi',
 }) => {
+  const solar = star?.solarSystemData;
+  const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`;
+  const riseSet = useMemo(() => {
+    if (!solar) return null;
+    return computeBodyRiseSet(solar.bodyId, currentDate, location);
+  }, [solar?.bodyId, dateKey, location.latitude, location.longitude]);
+
   if (!star) return null;
 
   const t = TRANSLATIONS[lang];
   const constellationName = getConstellationName(star.con, lang);
+  const distInfo = formatCelestialDistance(star, lang);
 
   // Spectral type color helper
   const getSpectralColor = (spect?: string) => {
@@ -40,7 +56,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
     }
   };
 
-  const spectralColor = getSpectralColor(star.spect);
+  const spectralColor = star.color || getSpectralColor(star.spect);
 
   return (
     <div className="absolute top-3 right-[max(1rem,var(--sar))] max-h-[calc(100%-var(--sab)-4.25rem)] overflow-y-auto overscroll-contain touch-manipulation z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
@@ -66,7 +82,13 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                   {star.name || star.properName || `Star #${star.id}`}
                 </h2>
                 <div className="text-xs text-cyan-400 font-hud">
-                  {star.con ? `${t.constellation} ${constellationName}` : t.deepSpace}
+                  {solar
+                    ? lang === 'vi'
+                      ? solar.subtitleVi
+                      : solar.subtitleEn
+                    : star.con
+                      ? `${t.constellation} ${constellationName}`
+                      : t.deepSpace}
                 </div>
               </div>
             </div>
@@ -75,6 +97,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
               title={t.close}
+              aria-label={t.close}
             >
               <X className="w-4 h-4" />
             </button>
@@ -91,8 +114,8 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
               <div className="text-sm font-bold font-mono text-cyan-300 mt-0.5">
                 {star.mag > 0 ? `+${star.mag.toFixed(2)}` : star.mag.toFixed(2)} mag
               </div>
-              <div className="text-[9px] text-slate-500 mt-0.5">
-                {star.mag < 0 ? (lang === 'vi' ? 'Cực kỳ sáng' : 'Extremely Bright') : star.mag < 2 ? (lang === 'vi' ? 'Sao sáng rõ' : 'Bright Visible') : (lang === 'vi' ? 'Mắt thường thấy' : 'Naked Eye')}
+              <div className="text-[9px] text-slate-400 mt-0.5">
+                {star.mag < 0 ? (lang === 'vi' ? 'Cực kỳ sáng' : 'Extremely Bright') : star.mag < 2 ? (lang === 'vi' ? 'Sao sáng rõ' : 'Bright Visible') : (lang === 'vi' ? 'Quan sát thiên văn' : 'Astronomical Target')}
               </div>
             </div>
 
@@ -100,37 +123,83 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
             <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
               <div className="text-[10px] text-slate-400 font-hud uppercase">{t.distance}</div>
               <div className="text-sm font-bold font-mono text-purple-300 mt-0.5">
-                {star.dist ? `${star.dist.toLocaleString()} ${t.lightYears}` : 'N/A'}
+                {distInfo.primary}
               </div>
-              <div className="text-[9px] text-slate-500 mt-0.5">
-                {star.dist ? `${(star.dist / 3.262).toFixed(1)} ${t.parsecs}` : t.deepSpace}
+              <div className="text-[9px] text-slate-400 mt-0.5">
+                {distInfo.secondary}
               </div>
             </div>
           </div>
 
-          {/* Spectral & Classification */}
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-hud uppercase">{t.spectralClass}</span>
-              <span
-                className="px-2 py-0.5 rounded-md font-mono text-xs font-bold border"
-                style={{
-                  backgroundColor: `${spectralColor}22`,
-                  borderColor: `${spectralColor}55`,
-                  color: spectralColor,
-                }}
-              >
-                {star.spect || 'Unknown'}
-              </span>
-            </div>
+          {solar ? (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
+              {solar.moonPhaseName && (
+                <div className="flex items-center justify-between text-slate-200">
+                  <span className="text-[10px] text-slate-400 font-hud uppercase">{t.moonPhase}</span>
+                  <span className="font-sans text-xs font-semibold text-cyan-200">
+                    {getMoonPhaseLabel(solar.moonPhaseName, lang)}
+                  </span>
+                </div>
+              )}
 
-            {star.bayerFlamsteed && (
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.bayerFlamsteed}</span>
-                <span className="font-mono text-xs text-white">{star.bayerFlamsteed}</span>
+              {solar.phaseFraction !== undefined && solar.kind !== 'sun' && (
+                <div className="flex items-center justify-between text-slate-200">
+                  <span className="text-[10px] text-slate-400 font-hud uppercase">{t.illumination}</span>
+                  <span className="font-mono text-xs font-bold text-white">
+                    {(solar.phaseFraction * 100).toFixed(1)}%
+                    {solar.moonAgeDays !== undefined ? ` • ${solar.moonAgeDays} ${t.daysUnit}` : ''}
+                  </span>
+                </div>
+              )}
+
+              {solar.ringTiltDeg !== undefined && (
+                <div className="flex items-center justify-between text-slate-200">
+                  <span className="text-[10px] text-slate-400 font-hud uppercase">{t.ringTilt}</span>
+                  <span className="font-mono text-xs text-amber-300">{solar.ringTiltDeg}°</span>
+                </div>
+              )}
+
+              {riseSet && (
+                <div className="pt-1.5 border-t border-white/5 grid grid-cols-2 gap-2 font-mono text-xs">
+                  <div>
+                    <span className="text-slate-400 text-[10px]">{t.nextRise}: </span>
+                    <span className="text-emerald-300 font-semibold">
+                      {formatRiseSetClock(riseSet.nextRiseMs, lang)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px]">{t.nextSet}: </span>
+                    <span className="text-purple-300 font-semibold">
+                      {formatRiseSetClock(riseSet.nextSetMs, lang)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.spectralClass}</span>
+                <span
+                  className="px-2 py-0.5 rounded-md font-mono text-xs font-bold border"
+                  style={{
+                    backgroundColor: `${spectralColor}22`,
+                    borderColor: `${spectralColor}55`,
+                    color: spectralColor,
+                  }}
+                >
+                  {star.spect || 'Unknown'}
+                </span>
               </div>
-            )}
-          </div>
+
+              {star.bayerFlamsteed && (
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-[10px] text-slate-400 font-hud uppercase">{t.bayerFlamsteed}</span>
+                  <span className="font-mono text-xs text-white">{star.bayerFlamsteed}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Equatorial & Zenith Coordinates */}
           <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2 font-mono">
