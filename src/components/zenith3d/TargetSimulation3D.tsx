@@ -264,7 +264,9 @@ export const TargetSimulation3D: React.FC<TargetSimulation3DProps> = ({
                           ? 'Mặt Trăng'
                           : 'Hành tinh'
                       : (selectedStar.bodyType ?? 'PLANET').toUpperCase()
-                    : selectedStar.spect || 'A0'}
+                    : selectedStar.deepSkyData
+                      ? selectedStar.deepSkyData.catalogCode
+                      : selectedStar.spect || 'A0'}
                 </span>
               </div>
 

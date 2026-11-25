@@ -46,6 +46,8 @@
 - [x] Mở rộng danh mục dữ liệu sao lên 5.200+ sao (`stars.ts`).
 - [x] Tích hợp động cơ Ephemeris Hệ Mặt Trời (`astronomy-engine`) cho Mặt Trời, Mặt Trăng (pha trăng & độ chiếu sáng) và 7 hành tinh (Sao Thủy → Sao Hải Vương, vành đai Sao Thổ, giờ mọc/lặn) trên cả 2D & 3D.
 - [x] Tích hợp API dự báo thời tiết & độ che phủ mây tại vị trí quan sát (Open-Meteo `/v1/forecast`, badge thu gọn, bảng chi tiết, dự báo theo giờ đồng bộ bầu trời và mô phỏng mây/sao trên 2D/3D).
+- [x] Mở rộng danh mục Vũ trụ sâu **110 vật thể Messier (`M1`–`M110`) + 15 vật thể NGC/IC nổi bật** cùng **Đường hoàng đạo (4 điểm phân/chí + vạch chia `30°`)** trên cả 2D & 3D (mặc định tắt, bật đồng bộ qua `<IOSSwitch />` hoặc chọn từ Tìm kiếm).
+- [x] Cập nhật SVG minh họa hình dạng thực tế của Mặt Trời, Mặt Trăng theo pha, 7 hành tinh, 6 hình thái DSO và sao nhấp nháy sáng (`CelestialBodyGlyph`) trên `InfoPanel`, `StarBottomSheet`, `SearchBarModal` & `Sidebar`.
 
 ---
 
@@ -58,5 +60,7 @@
 ## 📦 5. Tối ưu Hóa Build & Hiệu Năng (Performance & Packaging)
 
 - [x] TypeScript `tsc --noEmit` sạch 100% không lỗi, `vite build` tách chunk (`vendor-three`, `vendor-astronomy`, `vendor-react`, `vendor-framer`, `vendor-icons`) và tách hoàn toàn `vendor-three` khỏi bundle 2D ban đầu.
-- [x] Workbox precache `dist/sw.js` (23 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
-- [x] Audit chỉ số Google Lighthouse trên `vite preview` (Mobile: Perf `87`, A11y `100`, BP `100`, SEO `100`; Desktop: Perf `99`, A11y `100`, BP `100`, SEO `100`).
+- [x] Unit test Node (`node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts`): `17/17` pass qua 5 suites.
+- [x] Workbox precache `dist/sw.js` (24 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
+- [x] Audit chỉ số Google Lighthouse (`vite preview` với bản DSO/Hoàng đạo: Mobile `Perf 84`, Desktop `Perf 99`, A11y/BP/SEO `100`; trên GitHub Pages `957dc15`: Desktop `Perf 97`, A11y/BP/SEO `100` ở cả Mobile & Desktop).
+- [x] Kiểm thử thực địa trên thiết bị iOS thực tế (Standalone PWA, safe-area, Open-Meteo, Hệ Mặt Trời 2D/3D, AR & offline).

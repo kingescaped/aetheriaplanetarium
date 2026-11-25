@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Sparkles, Filter, ChevronLeft } from 'lucide-react';
+import { Search, X, Filter, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Star } from '../../types/celestial';
 import { Language, TRANSLATIONS } from '../../utils/i18n';
@@ -7,6 +7,8 @@ import { soundFx } from '../../utils/audio';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
 import { TopSafeBar } from '../layout/TopSafeBar';
 import { formatCelestialDistance } from '../../utils/solarSystemFormat';
+import { getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
+import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 
 interface SearchBarModalProps {
   isOpen: boolean;
@@ -24,7 +26,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
   lang = 'vi',
 }) => {
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'solar' | 'bright' | 'constellation'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'solar' | 'dso' | 'bright' | 'constellation'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[lang];
 
@@ -66,6 +68,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
     .filter((s) => {
       // Category filter
       if (selectedCategory === 'solar' && !s.solarSystemData) return false;
+      if (selectedCategory === 'dso' && s.bodyType !== 'dso') return false;
       if (selectedCategory === 'bright' && s.mag > 1.5) return false;
       if (selectedCategory === 'constellation' && !s.con) return false;
 
@@ -76,11 +79,15 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
         (s.properName && s.properName.toLowerCase().includes(q)) ||
         (s.solarSystemData?.nameEn.toLowerCase().includes(q)) ||
         (s.solarSystemData?.nameVi.toLowerCase().includes(q)) ||
+        (s.deepSkyData?.catalogCode.toLowerCase().includes(q)) ||
+        (s.deepSkyData?.ngcCode?.toLowerCase().includes(q)) ||
+        (s.deepSkyData?.nameEn.toLowerCase().includes(q)) ||
+        (s.deepSkyData?.nameVi.toLowerCase().includes(q)) ||
         (s.con && s.con.toLowerCase().includes(q)) ||
         (s.bayerFlamsteed && s.bayerFlamsteed.toLowerCase().includes(q))
       );
     })
-    .slice(0, 16); // Results
+    .slice(0, 20); // Results
 
   return (
     <motion.div
@@ -176,9 +183,22 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
           <button
             onClick={() => {
               soundFx.playTabClick();
+              setSelectedCategory('dso');
+            }}
+            className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'dso'
+              ? 'bg-purple-500/20 text-purple-200 border border-purple-400/40 shadow-glow-cyan'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+              }`}
+          >
+            {t.filterDeepSky}
+          </button>
+
+          <button
+            onClick={() => {
+              soundFx.playTabClick();
               setSelectedCategory('bright');
             }}
-            className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'bright'
+            className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'bright'
               ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
               : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
               }`}
@@ -191,7 +211,7 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               soundFx.playTabClick();
               setSelectedCategory('constellation');
             }}
-            className={`px-2.5 py-1 rounded-xl transition-all ${selectedCategory === 'constellation'
+            className={`px-2.5 py-1 rounded-xl shrink-0 transition-all ${selectedCategory === 'constellation'
               ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
               : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
               }`}
@@ -216,10 +236,10 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
               >
                 <div className="flex items-center space-x-3">
                   <div
-                    className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-transform"
+                    className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-transform shrink-0"
                     style={star.color ? { borderColor: `${star.color}66` } : undefined}
                   >
-                    <Sparkles className="w-4 h-4 text-cyan-400" style={star.color ? { color: star.color } : undefined} />
+                    <CelestialBodyGlyph star={star} size={24} />
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white group-hover:text-cyan-300">
@@ -230,9 +250,11 @@ export const SearchBarModal: React.FC<SearchBarModalProps> = ({
                         ? lang === 'vi'
                           ? star.solarSystemData.subtitleVi
                           : star.solarSystemData.subtitleEn
-                        : star.con
-                          ? `${star.con} ${t.constellation}`
-                          : 'Deep Sky'}{' '}
+                        : star.deepSkyData
+                          ? `${getDeepSkyTypeLabel(star.deepSkyData.dsoType, lang)}${star.deepSkyData.ngcCode ? ` • ${star.deepSkyData.ngcCode}` : ''}`
+                          : star.con
+                            ? `${star.con} ${t.constellation}`
+                            : 'Deep Sky'}{' '}
                       • {t.apparentMagnitude}: <span className="text-cyan-300">{star.mag}</span>
                     </div>
                   </div>

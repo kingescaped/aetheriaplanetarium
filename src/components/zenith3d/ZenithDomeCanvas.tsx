@@ -3,8 +3,11 @@ import { createPortal } from 'react-dom';
 import { Canvas } from '@react-three/fiber';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
+import type { EclipticOverlayData } from '../../types/deepSky';
 import { StarPoints3D } from './StarPoints3D';
 import { SolarSystem3D } from './SolarSystem3D';
+import { DeepSky3D } from './DeepSky3D';
+import { EclipticLine3D } from './EclipticLine3D';
 import { CloudVeil3D } from './CloudVeil3D';
 import { ConstellationLines3D } from './ConstellationLines3D';
 import { ConstellationLabels3D } from './ConstellationLabels3D';
@@ -33,6 +36,8 @@ interface ZenithDomeCanvasProps {
   weatherSample?: WeatherSample | null;
   skyAttenuation?: SkyVisualAttenuation;
   solarBodies?: Star[];
+  deepSkyBodies?: Star[];
+  eclipticData?: EclipticOverlayData | null;
 }
 
 export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
@@ -50,6 +55,8 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   weatherSample,
   skyAttenuation,
   solarBodies = [],
+  deepSkyBodies = [],
+  eclipticData = null,
 }) => {
   const t = TRANSLATIONS[lang];
 
@@ -177,6 +184,7 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           gyroQuaternion={gyroQuaternion}
           stars={stars}
           solarBodies={solarBodies}
+          deepSkyBodies={settings.showDeepSky ? deepSkyBodies : undefined}
           magnitudeLimit={settings.magnitudeLimit}
           onSelectStar={onSelectStar}
           recenterTrigger={recenterTrigger}
@@ -206,6 +214,16 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           opacityScale={skyAttenuation?.constellationOpacity ?? 1}
         />
 
+        {/* 2.5. Ecliptic Line (Seasons & 30° Longitude Ticks) */}
+        {settings.showEclipticLine && eclipticData && (
+          <EclipticLine3D
+            eclipticData={eclipticData}
+            showLabels={settings.showConstellationLabels && !hideHtmlOverlays}
+            skyAttenuation={skyAttenuation}
+            lang={lang}
+          />
+        )}
+
         {/* 3. Constellation Labels in 3D */}
         <ConstellationLabels3D
           location={location}
@@ -221,6 +239,16 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           onSelectStar={onSelectStar}
           skyAttenuation={skyAttenuation}
         />
+
+        {/* 4.3. Deep Sky Objects (Messier 110 + NGC Highlights) */}
+        {settings.showDeepSky && (
+          <DeepSky3D
+            bodies={deepSkyBodies}
+            showLabels={settings.showStarLabels && !hideHtmlOverlays}
+            selectedStar={selectedStar}
+            skyAttenuation={skyAttenuation}
+          />
+        )}
 
         {/* 4.5. Dynamic Solar System Bodies (Sun, Moon & 7 Planets) */}
         {settings.showSolarSystem && (

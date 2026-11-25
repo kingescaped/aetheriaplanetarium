@@ -1,8 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
+import type { EclipticOverlayData } from '../../types/deepSky';
+import type { Language } from '../../utils/i18n';
 import { drawSkyWeatherOverlay2D } from './skyWeatherOverlay2D';
 import { drawSolarSystem2D, type ProjectedSolarBody } from './solarSystemOverlay2D';
+import { drawEclipticOverlay2D } from './eclipticOverlay2D';
+import { drawDeepSky2D, type ProjectedDeepSky } from './deepSkyOverlay2D';
 import {
   getLST,
   equatorialToHorizontal,
@@ -26,6 +30,9 @@ interface SkyMap2DProps {
   weatherSample?: WeatherSample | null;
   skyAttenuation?: SkyVisualAttenuation;
   solarBodies?: Star[];
+  deepSkyBodies?: Star[];
+  eclipticData?: EclipticOverlayData | null;
+  lang?: Language;
 }
 
 interface ProjectedStar {
@@ -48,44 +55,12 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   weatherSample,
   skyAttenuation,
   solarBodies = [],
+  deepSkyBodies = [],
+  eclipticData = null,
+  lang = 'vi',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
-
-  // Track container dimensions asynchronously to avoid forced synchronous reflow on React commit
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const updateSize = (w: number, h: number) => {
-      const nextW = Math.round(w);
-      const nextH = Math.round(h);
-      if (nextW <= 0 || nextH <= 0) return;
-      setCanvasSize((prev) =>
-        prev.width === nextW && prev.height === nextH ? prev : { width: nextW, height: nextH }
-      );
-    };
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver((entries) => {
-        const entry = entries[0];
-        if (entry) {
-          updateSize(entry.contentRect.width, entry.contentRect.height);
-        }
-      });
-      observer.observe(container);
-      return () => observer.disconnect();
-    }
-
-    const handleResize = () => updateSize(container.clientWidth, container.clientHeight);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Pan & Zoom view state
   const [zoom, setZoom] = useState<number>(1.0);
@@ -95,9 +70,10 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   const [hoveredStar, setHoveredStar] = useState<Star | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Cached projected stars & Solar System bodies for hit testing
+  // Cached projected stars, deep sky & Solar System bodies for hit testing
   const projectedStarsRef = useRef<ProjectedStar[]>([]);
   const projectedSolarRef = useRef<ProjectedSolarBody[]>([]);
+  const projectedDeepSkyRef = useRef<ProjectedDeepSky[]>([]);
 
   // Reset view to default
   const handleResetView = () => {
@@ -144,20 +120,19 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   // Main Canvas Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || canvasSize.width <= 0 || canvasSize.height <= 0) return;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const rafId = requestAnimationFrame(() => {
-      // Handle High-DPI screen clarity without forcing synchronous layout reads on commit
-      const dpr = window.devicePixelRatio || 1;
-      const width = canvasSize.width;
-      const height = canvasSize.height;
+    // Handle High-DPI screen clarity
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
 
-      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-      }
+    if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+    }
 
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -309,6 +284,37 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       ctx.restore();
     }
 
+    // 6.5. Draw Ecliptic Line (Equinoxes, Solstices & 30° Longitude Ticks)
+    if (settings.showEclipticLine && eclipticData) {
+      drawEclipticOverlay2D(
+        ctx,
+        eclipticData,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        skyAttenuation,
+        lang
+      );
+    }
+
+    // 6.8. Draw Deep Sky Objects (110 Messier + 15 NGC Highlights)
+    projectedDeepSkyRef.current = settings.showDeepSky
+      ? drawDeepSky2D(
+          ctx,
+          deepSkyBodies,
+          projectAltAzToCanvas,
+          cx,
+          cy,
+          baseRadius,
+          zoom,
+          selectedStar,
+          hoveredStar,
+          skyAttenuation,
+          settings.showStarLabels
+        )
+      : [];
+
     // 7. Draw Stars with Spectral Colors & Magnitude Glow
     const baseStarOpacity = skyAttenuation?.starOpacity ?? 1;
     for (const proj of projectedList) {
@@ -354,15 +360,15 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
 
     projectedSolarRef.current = settings.showSolarSystem
       ? drawSolarSystem2D(
-          ctx,
-          solarBodies,
-          projectAltAzToCanvas,
-          cx,
-          cy,
-          baseRadius,
-          skyAttenuation,
-          settings.showStarLabels
-        )
+        ctx,
+        solarBodies,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        skyAttenuation,
+        settings.showStarLabels
+      )
       : [];
 
     if (weatherSample && skyAttenuation && skyAttenuation.hazeOpacity > 0.02) {
@@ -376,10 +382,11 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       );
     }
 
-    // 8. Draw Highlight Ring for Selected Star or Solar System Body
+    // 8. Draw Highlight Ring for Selected Star, Deep Sky Object or Solar System Body
     if (selectedStar) {
       const selectedProj =
         projectedSolarRef.current.find((p) => p.star.id === selectedStar.id) ??
+        projectedDeepSkyRef.current.find((p) => p.star.id === selectedStar.id) ??
         projectedMap.get(selectedStar.id);
       if (selectedProj && selectedProj.visible) {
         ctx.save();
@@ -415,9 +422,12 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       }
     }
 
-    // 9. Draw Highlight for Hovered Star
+    // 9. Draw Highlight for Hovered Star or Deep Sky Object
     if (hoveredStar && (!selectedStar || hoveredStar.id !== selectedStar.id)) {
-      const hProj = projectedMap.get(hoveredStar.id);
+      const hProj =
+        projectedSolarRef.current.find((p) => p.star.id === hoveredStar.id) ??
+        projectedDeepSkyRef.current.find((p) => p.star.id === hoveredStar.id) ??
+        projectedMap.get(hoveredStar.id);
       if (hProj && hProj.visible) {
         ctx.save();
         ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
@@ -471,10 +481,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       ctx.restore();
     }
 
-      ctx.restore();
-    });
-
-    return () => cancelAnimationFrame(rafId);
+    ctx.restore();
   }, [
     stars,
     location,
@@ -488,7 +495,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     weatherSample,
     skyAttenuation,
     solarBodies,
-    canvasSize,
+    deepSkyBodies,
+    eclipticData,
+    lang,
   ]);
 
   // Mouse Move Event (Hover detection & Alt/Az coordinate reporting)
@@ -523,7 +532,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       });
     }
 
-    // Check hit Solar System body first, then star
+    // Check hit Solar System body first, then Deep Sky Object, then star
     let closest: Star | null = null;
     let minDist = 18;
 
@@ -533,6 +542,18 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       if (dist < minDist) {
         minDist = dist;
         closest = proj.star;
+      }
+    }
+
+    if (!closest) {
+      minDist = 16;
+      for (const proj of projectedDeepSkyRef.current) {
+        if (!proj.visible) continue;
+        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = proj.star;
+        }
       }
     }
 
@@ -601,7 +622,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         y: mouseY - pan.y,
       });
 
-      // Hit test on touch (Solar System bodies first, then stars)
+      // Hit test on touch (Solar System bodies first, then DSOs, then stars)
       let closest: Star | null = null;
       let minDist = 24;
       for (const proj of projectedSolarRef.current) {
@@ -610,6 +631,17 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         if (dist < minDist) {
           minDist = dist;
           closest = proj.star;
+        }
+      }
+      if (!closest) {
+        minDist = 22;
+        for (const proj of projectedDeepSkyRef.current) {
+          if (!proj.visible) continue;
+          const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = proj.star;
+          }
         }
       }
       if (!closest) {

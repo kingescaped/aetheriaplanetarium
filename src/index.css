@@ -162,3 +162,26 @@
 .night-vision {
   filter: hue-rotate(320deg) saturate(2.5) brightness(0.85);
 }
+
+@keyframes aetheria-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.animate-star-twinkle {
+  transform-origin: center;
+  animation: aetheria-star-twinkle 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-star-twinkle {
+    animation: none;
+  }
+}

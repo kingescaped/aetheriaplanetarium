@@ -1,4 +1,4 @@
-import { Star } from '../types/celestial';
+import type { Star } from '../types/celestial.ts';
 
 /**
  * High-Precision Astronomical Coordinate & Time Conversion Engine

@@ -3,6 +3,7 @@ import { Radio } from 'lucide-react';
 import { Star } from '../../types/celestial';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
 import { formatCelestialDistance } from '../../utils/solarSystemFormat';
+import { getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
 
 interface StarTelemetryHUDProps {
   star: Star | null;
@@ -25,11 +26,14 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
 
   const t = TRANSLATIONS[lang];
   const solar = star.solarSystemData;
+  const dso = star.deepSkyData;
   const constellationName = solar
     ? lang === 'vi'
       ? solar.subtitleVi
       : solar.subtitleEn
-    : getConstellationName(star.con, lang);
+    : dso
+      ? getDeepSkyTypeLabel(dso.dsoType, lang)
+      : getConstellationName(star.con, lang);
   const distInfo = formatCelestialDistance(star, lang);
 
   return (
@@ -50,7 +54,7 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
       {/* Metrics Body */}
       <div className="p-2 space-y-1 text-[10px] text-slate-300">
         <div className="flex justify-between items-center gap-2">
-          <span className="text-slate-400 shrink-0">{solar ? t.solarSystem : t.constellation}:</span>
+          <span className="text-slate-400 shrink-0">{solar ? t.solarSystem : dso ? t.dsoType : t.constellation}:</span>
           <span className="text-cyan-200 font-semibold truncate">{constellationName}</span>
         </div>
         <div className="flex justify-between items-center">

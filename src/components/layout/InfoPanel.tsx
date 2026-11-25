@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { X, Crosshair, Sparkles, Compass } from 'lucide-react';
+import { X, Crosshair, Compass } from 'lucide-react';
 import { Star, ObserverLocation } from '../../types/celestial';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
 import { computeBodyRiseSet } from '../../utils/solarSystem';
@@ -8,6 +8,8 @@ import {
   formatRiseSetClock,
   getMoonPhaseLabel,
 } from '../../utils/solarSystemFormat';
+import { formatAngularSize, getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
+import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 import { StarTelemetryHUD } from './StarTelemetryHUD';
 
 interface InfoPanelProps {
@@ -28,6 +30,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   lang = 'vi',
 }) => {
   const solar = star?.solarSystemData;
+  const dso = star?.deepSkyData;
   const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`;
   const riseSet = useMemo(() => {
     if (!solar) return null;
@@ -62,19 +65,19 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
     <div className="absolute top-3 right-[max(1rem,var(--sar))] max-h-[calc(100%-var(--sab)-4.25rem)] overflow-y-auto overscroll-contain touch-manipulation z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
       {/* 1. Main Star Info Card */}
       <div className="rounded-2xl glass-panel border border-white/10 shadow-glass overflow-hidden">
-        {/* Header with Star Glow */}
+        {/* Header with Celestial Body Glyph */}
         <div className="relative p-4 pb-3 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-lg"
+                className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-lg shrink-0"
                 style={{
-                  backgroundColor: `${spectralColor}22`,
+                  backgroundColor: `${spectralColor}18`,
                   borderColor: `${spectralColor}66`,
                   boxShadow: `0 0 20px ${spectralColor}44`,
                 }}
               >
-                <Sparkles className="w-5 h-5" style={{ color: spectralColor }} />
+                <CelestialBodyGlyph star={star} size={32} />
               </div>
 
               <div>
@@ -86,9 +89,11 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                     ? lang === 'vi'
                       ? solar.subtitleVi
                       : solar.subtitleEn
-                    : star.con
-                      ? `${t.constellation} ${constellationName}`
-                      : t.deepSpace}
+                    : dso
+                      ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
+                      : star.con
+                        ? `${t.constellation} ${constellationName}`
+                        : t.deepSpace}
                 </div>
               </div>
             </div>
@@ -175,6 +180,36 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          ) : dso ? (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.dsoType}</span>
+                <span
+                  className="px-2 py-0.5 rounded-md font-sans text-xs font-semibold border truncate"
+                  style={{
+                    backgroundColor: `${spectralColor}22`,
+                    borderColor: `${spectralColor}55`,
+                    color: spectralColor,
+                  }}
+                >
+                  {getDeepSkyTypeLabel(dso.dsoType, lang)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.catalogRef}</span>
+                <span className="font-mono text-xs text-white">
+                  {dso.catalogCode}{dso.ngcCode ? ` • ${dso.ngcCode}` : ''}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.angularSize}</span>
+                <span className="font-mono text-xs text-cyan-200">{formatAngularSize(dso.sizeArcmin, lang)}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-[10px] text-slate-400 font-hud uppercase">{t.constellation}</span>
+                <span className="font-sans text-xs text-slate-200">{constellationName}</span>
+              </div>
             </div>
           ) : (
             <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2">

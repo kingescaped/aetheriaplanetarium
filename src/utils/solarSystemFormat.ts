@@ -20,11 +20,30 @@ export function formatCelestialDistance(
   const t = TRANSLATIONS[lang];
   const solar = star.solarSystemData;
   if (!solar) {
+    if (!star.dist) {
+      return { primary: 'N/A', secondary: t.deepSpace };
+    }
+    if (star.dist >= 1_000_000) {
+      const mLy = star.dist / 1_000_000;
+      const mpc = star.dist / 3_261_564;
+      return {
+        primary:
+          lang === 'vi'
+            ? `${mLy.toFixed(2)} triệu năm as`
+            : `${mLy.toFixed(2)}M ly`,
+        secondary: `${mpc.toFixed(2)} Mpc`,
+      };
+    }
+    if (star.dist >= 10_000) {
+      const kpc = star.dist / 3261.56;
+      return {
+        primary: `${Math.round(star.dist).toLocaleString()} ${t.lightYears}`,
+        secondary: `${kpc.toFixed(1)} kpc`,
+      };
+    }
     return {
-      primary: star.dist ? `${star.dist.toLocaleString()} ${t.lightYears}` : 'N/A',
-      secondary: star.dist
-        ? `${(star.dist / 3.262).toFixed(1)} ${t.parsecs}`
-        : t.deepSpace,
+      primary: `${star.dist.toLocaleString()} ${t.lightYears}`,
+      secondary: `${(star.dist / 3.262).toFixed(1)} ${t.parsecs}`,
     };
   }
 

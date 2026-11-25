@@ -81,7 +81,23 @@
 2. **Hiển thị 2D/3D, Tìm kiếm & Thẻ Chi tiết ([solarSystemOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/solarSystemOverlay2D.ts), [SolarSystem3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/SolarSystem3D.tsx), [InfoPanel.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/InfoPanel.tsx), [StarBottomSheet.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/StarBottomSheet.tsx), [SearchBarModal.tsx](file:///e:/AetheriaPlanetarium/src/components/search/SearchBarModal.tsx), [Sidebar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/Sidebar.tsx)):**
    - Vẽ hào quang Mặt Trời, đĩa pha Mặt Trăng theo góc chiếu sáng (Canvas 2D & GLSL fragment shader 3D), vành đai Sao Thổ và các hành tinh kèm hit-testing 2D / Angular Distance Raycasting 3D ưu tiên thiên thể Hệ Mặt Trời.
    - Thêm bộ lọc `Hệ Mặt Trời` trong `SearchBarModal`, lưới chọn nhanh 9 thiên thể ở tab Mục sao và công tắc `<IOSSwitch />` bật/tắt `showSolarSystem` trong `Sidebar`.
-   - Google Lighthouse trên `vite preview` sau khi tích hợp `astronomy-engine`: **Mobile** `Perf 87 / A11y 100 / BP 100 / SEO 100` (`TBT 180ms`, `CLS 0`), **Desktop** `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`).
+   - Tối ưu & đóng gói bản release `957dc15` (`index-BsL-cZZY.js` `151.29 kB`, Workbox precache `24 entries`, lazy-load `AccountModal`/`SearchBarModal`/`WeatherDetailPanel`, tick `1x` mỗi `1000ms`, `ResizeObserver` cho `SkyMap2D`):
+     - **Local `vite preview`:** Mobile `Perf 87 / A11y 100 / BP 100 / SEO 100` (`TBT 200ms`, `CLS 0.006`), Desktop `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`).
+     - **Live Production (`https://kingescaped.github.io/aetheriaplanetarium/`, Actions run `45586894312`, commits `a1de96b` & `957dc15`):** Desktop `Perf 97 / A11y 100 / BP 100 / SEO 100` (`TBT 80ms`), Mobile `A11y/BP/SEO 100` (Perf `56` ở `benchmarkIndex=2041.5`), Open-Meteo `200`, `0` lỗi console/runtime, và đã xác nhận thực tế trên thiết bị iOS Standalone PWA (25/11/2026).
+
+### M. Vật thể Vũ trụ sâu (110 Messier + 15 NGC), Đường hoàng đạo & Glyph Hình dạng Thiên thể (25/11/2026)
+1. **Danh mục Vũ trụ sâu 125 vật thể ([messierCatalog.ts](file:///e:/AetheriaPlanetarium/src/data/messierCatalog.ts), [ngcHighlights.ts](file:///e:/AetheriaPlanetarium/src/data/ngcHighlights.ts), [deepSky.ts](file:///e:/AetheriaPlanetarium/src/utils/deepSky.ts), [deepSkyFormat.ts](file:///e:/AetheriaPlanetarium/src/utils/deepSkyFormat.ts)):**
+   - Nạp đủ **110 vật thể Messier (`M1`–`M110`)** kèm mã chéo NGC/IC/Winnecke và **15 thiên thể NGC/IC nổi bật** 2 bán cầu (`NGC 869`/`884`, `Omega Centauri`, `47 Tucanae`, `Carina Nebula`, `Tarantula`, `LMC`, `SMC`, `Jewel Box`, `Sculptor`, `Centaurus A`, `Rosette`, `Eastern Veil`, `North America`, `Helix Nebula`).
+   - Hỗ trợ 6 phân nhóm hình thái (`galaxy`, `nebula`, `planetary_nebula`, `supernova_remnant`, `globular_cluster`, `open_cluster`), khoảng cách `năm as / kpc / Mpc`, kích thước góc `arcmin`, lọc `Vũ trụ sâu` trong [SearchBarModal.tsx](file:///e:/AetheriaPlanetarium/src/components/search/SearchBarModal.tsx), lưới mục tiêu nổi bật và công tắc `<IOSSwitch />` `showDeepSky` mặc định **TẮT (`false`)** trong [Sidebar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/Sidebar.tsx) (tự bật khi người dùng chọn DSO từ tìm kiếm/catalog).
+2. **Đường hoàng đạo Ecliptic 2D/3D ([ecliptic.ts](file:///e:/AetheriaPlanetarium/src/utils/ecliptic.ts), [eclipticOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/eclipticOverlay2D.ts), [EclipticLine3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/EclipticLine3D.tsx)):**
+   - Tính đường cong hoàng đạo theo độ nghiêng thực `Astronomy.e_tilt().tobl` tại `currentDate`, vẽ nét đứt vàng hổ phách kèm **vạch chia kinh độ mỗi `30°`** và **4 điểm phân/chí** (`Xuân phân 0°`, `Hạ chí 90°`, `Thu phân 180°`, `Đông chí 270°`), công tắc `<IOSSwitch />` `showEclipticLine` mặc định **TẮT (`false`)**.
+3. **Biểu tượng SVG Hình dạng Thiên thể ([CelestialBodyGlyph.tsx](file:///e:/AetheriaPlanetarium/src/components/common/CelestialBodyGlyph.tsx), [solarBodyGlyphs.tsx](file:///e:/AetheriaPlanetarium/src/components/common/solarBodyGlyphs.tsx), [index.css](file:///e:/AetheriaPlanetarium/src/index.css)):**
+   - Thay thế icon `<Sparkles />` chung cũ trong [InfoPanel.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/InfoPanel.tsx), [StarBottomSheet.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/StarBottomSheet.tsx), [SearchBarModal.tsx](file:///e:/AetheriaPlanetarium/src/components/search/SearchBarModal.tsx) và [Sidebar.tsx](file:///e:/AetheriaPlanetarium/src/components/layout/Sidebar.tsx) bằng SVG minh họa theo đúng thiên thể: Mặt Trời có hào quang tia nắng, Mặt Trăng khuyết/tròn theo pha thực + miệng hố, 7 hành tinh (Sao Thổ với góc nghiêng vành đai `ringTiltDeg`, Sao Mộc với vệt mây + Vết Đỏ Lớn, Sao Hỏa có chỏm cực), 6 hình thái DSO, và các ngôi sao theo màu quang phổ kèm hiệu ứng nhấp nháy sáng `.animate-star-twinkle` (dự phòng icon sao nhấp nháy nếu thiếu lớp quang phổ).
+4. **Kiểm chứng cục bộ trước khi Commit/Push (`vite preview`):**
+   - `node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts` đạt **`17/17` pass** (`5 suites`, kiểm tra đủ `M1`–`M110`, 15 NGC, biên tọa độ & độ lệch Mặt Trời `< 0.05°`).
+   - `npx tsc --noEmit` exit `0`; `npm run build` sạch (`index-D1eV78Yj.js` `185.75 kB` / `55.80 kB` gzip, `vendor-three` tách lazy hoàn toàn).
+   - Browser QA trên `vite preview` xác nhận Open-Meteo `200`, bật tắt `showDeepSky`/`showEclipticLine` không ghi đè state, `data-glyph-kind` đúng (`sun`, `moon`, `saturn`, `star` nhấp nháy, `dso:galaxy`), 0 lỗi console/exception.
+   - **Google Lighthouse trên `vite preview` (`http://localhost:4173/aetheriaplanetarium/`):** **Mobile** `Perf 84 / A11y 100 / BP 100 / SEO 100` (`FCP 0.8s`, `LCP 3.7s`, `TBT 260ms`, `CLS 0.001`), **Desktop** `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`).
 
 ---
 
@@ -89,7 +105,7 @@
 1. **Hành vi kính mờ OS iOS 26/27 trên PWA (`UIScrollEdgeEffect`):**
    Apple hiện ép dải mờ UIKit ở mép trên đối với Home Screen Web Apps (`black-translucent` đã bị deprecated theo WebKit Bug 301994 / 317153) và chưa có thuộc tính web chuẩn để tắt hoàn toàn ở tầng OS. Cấu hình `--ios-top-blur-clearance: 18px` giúp thanh công cụ nằm sát ngay dưới ngưỡng mờ với chi phí đệm tối thiểu; nếu muốn sát `0px` tuyệt đối như app native, cần đóng gói vỏ `WKWebView` / Capacitor đặt `topEdgeEffect.isHidden = true`.
 2. **Môi trường Sandbox Windows khi chạy Vite build:**
-   `npx tsc --noEmit` và `node --test tests/weather.test.ts tests/solarSystem.test.ts` chạy sạch trong sandbox, còn `npm run build` cần quyền ngoài sandbox do Rollup `fs.realpath` trên ổ `E:\`.
+   `npx tsc --noEmit` và `node --test` chạy sạch trong sandbox, còn `npm run build` cần quyền ngoài sandbox do Rollup `fs.realpath` trên ổ `E:\`.
 
 ---
 
@@ -101,5 +117,7 @@
 5. **[XONG]** Chuẩn hóa Safe Area iOS Standalone, `<TopSafeBar>`, `AboutSection`, và Edge-Swipe `28px` (`useEdgeSwipeBack.ts`, `viewport.ts`).
 6. **[XONG]** Tích hợp API dự báo thời tiết thiên văn & độ che phủ mây Open-Meteo, mô phỏng bầu trời 2D/3D, đồng bộ dự báo theo giờ và Audit Google Lighthouse (`openMeteo.ts`, `seeingModel.ts`, `WeatherDetailPanel.tsx`).
 7. **[XONG]** Mở rộng dữ liệu thiên văn động Hệ Mặt Trời 9 thiên thể (`astronomy-engine`, `solarSystem.ts`, `SolarSystem3D.tsx`, `solarSystemOverlay2D.ts`) và tích hợp quy trình kiểm chứng build/deploy production.
-8. **Ưu tiên tiếp theo — Kiểm thử thiết bị iOS thực tế & Mở rộng vật thể Vũ trụ sâu (Messier/NGC):**
-   Xác nhận thực địa PWA iOS Standalone trên iPhone/iPad theo checklist, và bổ sung danh mục tinh vân/thiên hà Messier (DSO) kèm đường hoàng đạo (Ecliptic line).
+8. **[XONG]** Deploy Production GitHub Pages (https://kingescaped.github.io/aetheriaplanetarium/, `a1de96b` & `957dc15`), xác minh live QA/Lighthouse và xác nhận thực tế trên thiết bị iOS Standalone PWA (25/11/2026).
+9. **[XONG]** Mở rộng 125 vật thể Vũ trụ sâu (`110 Messier + 15 NGC`), Đường hoàng đạo (4 điểm phân/chí + vạch chia `30°`) và SVG minh họa hình dạng thiên thể + sao nhấp nháy trong thẻ thông tin.
+10. **Ưu tiên tiếp theo — Mở rộng Bầu trời Chạng vạng (Twilight) & Xuất ảnh Bầu trời:**
+    Bổ sung mô phỏng màu bầu trời ban ngày/chạng vạng theo góc Mặt Trời, đường lưới Xích đạo (Equatorial grid) và tính năng chụp/chia sẻ ảnh bầu trời 2D/3D.

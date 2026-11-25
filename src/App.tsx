@@ -41,6 +41,8 @@ import { UserProfile, ObservationLog, UserPreferences } from './types/account';
 import { STAR_CATALOG } from './data/stars';
 import { getLST, batchComputeHorizontalCoordsInPlace } from './utils/astronomy';
 import { computeSolarSystemBodies } from './utils/solarSystem';
+import { computeDeepSkyBodies } from './utils/deepSky';
+import { computeEclipticOverlay } from './utils/ecliptic';
 import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
@@ -133,6 +135,8 @@ export function App() {
     timeSpeed: 1, // 1x normal speed
     simulateSkyWeather: true,
     showSolarSystem: true,
+    showDeepSky: false,
+    showEclipticLine: false,
   });
 
   const weather = useAstronomyWeather(location, currentDate, settings.simulateSkyWeather);
@@ -279,19 +283,48 @@ export function App() {
   }, [currentDate, location.latitude, location.longitude]);
 
   const ephemerisSec = Math.floor(currentDate.getTime() / 1000);
+  const dsoTickBucket =
+    Math.abs(settings.timeSpeed) > 1
+      ? ephemerisSec
+      : Math.floor(currentDate.getTime() / 60000);
+
   const solarBodies = useMemo(() => {
     if (!settings.showSolarSystem) return [];
     return computeSolarSystemBodies(new Date(ephemerisSec * 1000), location, lang);
   }, [settings.showSolarSystem, ephemerisSec, location.latitude, location.longitude, lang]);
 
+  const deepSkyBodies = useMemo(() => {
+    const tickDate = new Date(
+      (Math.abs(settings.timeSpeed) > 1 ? dsoTickBucket * 1000 : dsoTickBucket * 60000)
+    );
+    return computeDeepSkyBodies(tickDate, location, lang);
+  }, [settings.timeSpeed, dsoTickBucket, location.latitude, location.longitude, lang]);
+
+  const eclipticData = useMemo(() => {
+    if (!settings.showEclipticLine) return null;
+    const tickDate = new Date(
+      (Math.abs(settings.timeSpeed) > 1 ? dsoTickBucket * 1000 : dsoTickBucket * 60000)
+    );
+    return computeEclipticOverlay(tickDate, location);
+  }, [settings.showEclipticLine, settings.timeSpeed, dsoTickBucket, location.latitude, location.longitude]);
+
   const selectedStar = useMemo<Star | null>(() => {
     if (selectedStarId === '') return null;
     return (
       solarBodies.find((b: Star) => b.id === selectedStarId) ??
+      deepSkyBodies.find((d: Star) => d.id === selectedStarId) ??
       calculatedStars.find((s: Star) => s.id === selectedStarId) ??
       null
     );
-  }, [solarBodies, calculatedStars, selectedStarId]);
+  }, [solarBodies, deepSkyBodies, calculatedStars, selectedStarId]);
+
+  const handleSelectCelestial = (star: Star) => {
+    soundFx.playStarSelect();
+    setSelectedStarId(star.id);
+    if (star.bodyType === 'dso' && !settings.showDeepSky) {
+      setSettings((prev) => ({ ...prev, showDeepSky: true }));
+    }
+  };
 
   // Simulation Time Tick
   useEffect(() => {
@@ -417,14 +450,14 @@ export function App() {
                   currentDate={currentDate}
                   settings={settings}
                   selectedStar={selectedStar}
-                  onSelectStar={(star) => {
-                    soundFx.playStarSelect();
-                    setSelectedStarId(star.id);
-                  }}
+                  onSelectStar={handleSelectCelestial}
                   onHoverCoords={(coords) => setCursorCoords(coords)}
                   weatherSample={weather.resolved?.sample ?? null}
                   skyAttenuation={weather.resolved?.attenuation}
                   solarBodies={solarBodies}
+                  deepSkyBodies={deepSkyBodies}
+                  eclipticData={eclipticData}
+                  lang={lang}
                 />
               ) : (
                 <Suspense fallback={<div className="w-full h-full bg-[#030712]" />}>
@@ -434,10 +467,7 @@ export function App() {
                     currentDate={currentDate}
                     settings={settings}
                     selectedStar={selectedStar}
-                    onSelectStar={(star) => {
-                      soundFx.playStarSelect();
-                      setSelectedStarId(star.id);
-                    }}
+                    onSelectStar={handleSelectCelestial}
                     targetAzimuth={targetAzimuth}
                     isZenithRequested={isZenithRequested}
                     isFocusRequested={isFocusRequested}
@@ -446,6 +476,8 @@ export function App() {
                     weatherSample={weather.resolved?.sample ?? null}
                     skyAttenuation={weather.resolved?.attenuation}
                     solarBodies={solarBodies}
+                    deepSkyBodies={deepSkyBodies}
+                    eclipticData={eclipticData}
                   />
                 </Suspense>
               )}
@@ -594,12 +626,10 @@ export function App() {
             onDateChange={setCurrentDate}
             settings={settings}
             onSettingsChange={setSettings}
-            onSelectStar={(star) => {
-              soundFx.playStarSelect();
-              setSelectedStarId(star.id);
-            }}
+            onSelectStar={handleSelectCelestial}
             selectedStar={selectedStar}
             solarBodies={solarBodies}
+            deepSkyBodies={deepSkyBodies}
             lang={lang}
           />
 
@@ -615,6 +645,9 @@ export function App() {
                   onToggleFavorite={handleToggleFavorite}
                   onSelectStar={(id) => {
                     setSelectedStarId(id);
+                    if (typeof id === 'string' && id.startsWith('dso_') && !settings.showDeepSky) {
+                      setSettings((prev) => ({ ...prev, showDeepSky: true }));
+                    }
                     setViewMode('3D_ZENITH_DOME');
                   }}
                   observationLogs={observationLogs}
@@ -629,7 +662,7 @@ export function App() {
                   }}
                   preferences={preferences}
                   onUpdatePreferences={setPreferences}
-                  starsCatalog={[...solarBodies, ...calculatedStars]}
+                  starsCatalog={[...solarBodies, ...deepSkyBodies, ...calculatedStars]}
                   settings={settings}
                   onSettingsChange={setSettings}
                   location={location}
@@ -668,11 +701,8 @@ export function App() {
             <SearchBarModal
               isOpen={isSearchOpen}
               onClose={() => setIsSearchOpen(false)}
-              onSelectStar={(star) => {
-                soundFx.playStarSelect();
-                setSelectedStarId(star.id);
-              }}
-              starsCatalog={[...solarBodies, ...calculatedStars.filter((s: Star) => Boolean(s.name))]}
+              onSelectStar={handleSelectCelestial}
+              starsCatalog={[...solarBodies, ...deepSkyBodies, ...calculatedStars.filter((s: Star) => Boolean(s.name))]}
               lang={lang}
             />
           </Suspense>

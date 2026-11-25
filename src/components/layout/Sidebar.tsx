@@ -16,6 +16,7 @@ import {
   Sparkles,
   Cloud,
   Sun,
+  Orbit,
   X
 } from 'lucide-react';
 import { CelestialSettings, ObserverLocation, Star } from '../../types/celestial';
@@ -24,6 +25,8 @@ import { PROMINENT_STARS } from '../../data/stars';
 import { IOSNavigationBar } from './IOSNavigationBar';
 import { IOSSwitch } from './IOSSwitch';
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack';
+import { getFeaturedDeepSkyBodies } from '../../utils/deepSky';
+import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -33,10 +36,11 @@ interface SidebarProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
   settings: CelestialSettings;
-  onSettingsChange: (settings: CelestialSettings) => void;
+  onSettingsChange: React.Dispatch<React.SetStateAction<CelestialSettings>>;
   onSelectStar: (star: Star) => void;
   selectedStar: Star | null;
   solarBodies?: Star[];
+  deepSkyBodies?: Star[];
   lang?: Language;
 }
 
@@ -128,6 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectStar,
   selectedStar,
   solarBodies = [],
+  deepSkyBodies = [],
   lang = 'vi',
 }) => {
   const [activeTab, setActiveTab] = useState<'observation' | 'time' | 'layers' | 'catalog'>('observation');
@@ -425,10 +430,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.constellationLines}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showConstellationLines: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -443,10 +448,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.constellationLabels}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showConstellationLabels: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -461,10 +466,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.starLabels}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showStarLabels: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -480,10 +485,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="purple"
                 ariaLabel={t.gridLines}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showGridLines: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -498,10 +503,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.groundHorizon}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showGroundHorizon: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -517,10 +522,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.showSolarSystem}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     showSolarSystem: checked,
-                  })
+                  }))
+                }
+              />
+            </div>
+
+            {/* Deep Sky Objects Layer */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-purple-300" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showDeepSky}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showDeepSky}
+                color="purple"
+                ariaLabel={t.showDeepSky}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showDeepSky: checked,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Ecliptic Line Layer */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Orbit className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showEclipticLine}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showEclipticLine}
+                color="cyan"
+                ariaLabel={t.showEclipticLine}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showEclipticLine: checked,
+                  }))
                 }
               />
             </div>
@@ -536,10 +579,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color="cyan"
                 ariaLabel={t.weatherSimulateSky}
                 onChange={(checked) =>
-                  onSettingsChange({
-                    ...settings,
+                  onSettingsChange((prev) => ({
+                    ...prev,
                     simulateSkyWeather: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -560,12 +603,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               max="6.5"
               step="0.1"
               value={settings.magnitudeLimit}
-              onChange={(e) =>
-                onSettingsChange({
-                  ...settings,
-                  magnitudeLimit: parseFloat(e.target.value),
-                })
-              }
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                onSettingsChange((prev) => ({
+                  ...prev,
+                  magnitudeLimit: value,
+                }));
+              }}
               className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-manipulation"
             />
             <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
@@ -598,14 +642,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-1.5 text-[11px] font-medium truncate">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: body.color || '#fde047' }}
-                        />
+                        <CelestialBodyGlyph star={body} size={16} />
                         <span className="truncate">{body.name}</span>
                       </div>
                       <div className="text-[9px] font-mono text-slate-400 mt-0.5">
                         Alt {(body.alt ?? 0).toFixed(0)}°
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {deepSkyBodies.length > 0 && (
+            <div className="space-y-2 pb-2 border-b border-white/10">
+              <span className="font-semibold uppercase tracking-wider text-[11px] text-purple-300 font-hud block">
+                {t.deepSkyCatalogTitle}
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {getFeaturedDeepSkyBodies(deepSkyBodies).map((dso) => {
+                  const meta = dso.deepSkyData!;
+                  const isSelected = selectedStar?.id === dso.id;
+                  return (
+                    <button
+                      key={dso.id}
+                      onClick={() => onSelectStar(dso)}
+                      className={`px-2 py-1.5 rounded-xl text-left transition-all border ${
+                        isSelected
+                          ? 'bg-purple-500/20 border-purple-400/60 text-white'
+                          : 'bg-slate-900/50 hover:bg-slate-800/70 border-white/10 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium truncate">
+                        <CelestialBodyGlyph star={dso} size={18} />
+                        <span className="truncate">{meta.catalogCode}</span>
+                      </div>
+                      <div className="text-[9px] font-sans text-slate-400 truncate mt-0.5">
+                        {lang === 'vi' ? meta.nameVi : meta.nameEn}
+                      </div>
+                      <div className="text-[9px] font-mono text-purple-300/90 mt-0.5">
+                        Mag {dso.mag.toFixed(1)} • Alt {(dso.alt ?? 0).toFixed(0)}°
                       </div>
                     </button>
                   );

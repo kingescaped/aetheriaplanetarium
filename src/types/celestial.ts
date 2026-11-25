@@ -1,4 +1,5 @@
-import type { SolarSystemBodyMeta } from './solarSystem';
+import type { SolarSystemBodyMeta } from './solarSystem.ts';
+import type { DeepSkyMeta } from './deepSky.ts';
 
 export interface Star {
   id: string | number;
@@ -17,8 +18,9 @@ export interface Star {
   z?: number; // 3D Dome Cartesian Z
   alt?: number; // Altitude in degrees (-90 to +90)
   az?: number;  // Azimuth in degrees (0 to 360)
-  bodyType?: 'star' | 'sun' | 'moon' | 'planet';
+  bodyType?: 'star' | 'sun' | 'moon' | 'planet' | 'dso';
   solarSystemData?: SolarSystemBodyMeta;
+  deepSkyData?: DeepSkyMeta;
 }
 
 export interface ConstellationLine {
@@ -48,4 +50,6 @@ export interface CelestialSettings {
   timeSpeed: number; // 0 = paused, 1 = 1x real time, 60 = 1 min/sec, etc.
   simulateSkyWeather: boolean;
   showSolarSystem: boolean;
+  showDeepSky: boolean;
+  showEclipticLine: boolean;
 }

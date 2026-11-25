@@ -21,7 +21,9 @@ E:\AetheriaPlanetarium\
 │   │   │   └── AccountModal.tsx        # Modal cài đặt & tài khoản (Master-Detail Desktop, Stack Mobile)
 │   │   ├── common/
 │   │   │   ├── AetheriaLogo.tsx        # Logo ngôi sao 8 cánh (useId tránh trùng SVG gradient ID)
-│   │   │   └── AetheriaSplashScreen.tsx# Màn hình khởi tạo đồng bộ Safe Area (z-[9999])
+│   │   │   ├── AetheriaSplashScreen.tsx# Màn hình khởi tạo đồng bộ Safe Area (z-[9999])
+│   │   │   ├── CelestialBodyGlyph.tsx  # Icon SVG động theo thiên thể (DSO, sao quang phổ nhấp nháy)
+│   │   │   └── solarBodyGlyphs.tsx     # Hình minh họa SVG Mặt Trời, Mặt Trăng theo pha & 7 hành tinh
 │   │   ├── layout/
 │   │   │   ├── BottomHUD.tsx           # Thanh HUD góc nhìn & la bàn (Desktop)
 │   │   │   ├── BottomNav.tsx           # Thanh điều hướng Tabview đáy màn hình (Mobile)
@@ -35,6 +37,8 @@ E:\AetheriaPlanetarium\
 │   │   │   └── TopSafeBar.tsx          # Vỏ thanh đỉnh thống nhất dùng chung cho mọi màn hình
 │   │   ├── planetarium/
 │   │   │   ├── SkyMap2D.tsx            # Bản đồ sao 2D Canvas Alt-Azimuth
+│   │   │   ├── deepSkyOverlay2D.ts     # Ký hiệu 6 loại hình thái DSO (Messier/NGC) trên 2D
+│   │   │   ├── eclipticOverlay2D.ts    # Đường hoàng đạo nét đứt, vạch chia 30° & 4 điểm phân/chí 2D
 │   │   │   ├── skyWeatherOverlay2D.ts  # Lớp sương mù & mây khí quyển 2D Canvas
 │   │   │   └── solarSystemOverlay2D.ts # Vẽ Mặt Trời, pha Mặt Trăng & 7 hành tinh trên 2D
 │   │   ├── pwa/
@@ -52,14 +56,16 @@ E:\AetheriaPlanetarium\
 │   │       ├── CloudVeil3D.tsx         # Vòm mây & sương khí quyển GLSL 3D
 │   │       ├── ConstellationLabels3D.tsx
 │   │       ├── ConstellationLines3D.tsx
+│   │       ├── DeepSky3D.tsx           # Sprite texture 6 hình thái DSO & nhãn nổi bật 3D
 │   │       ├── DomeLookControls.tsx
+│   │       ├── EclipticLine3D.tsx      # Đường hoàng đạo 3D kèm vạch 30° & 4 điểm phân/chí
 │   │       ├── GroundHorizon3D.tsx
 │   │       ├── HorizonSilhouette3D.tsx
 │   │       ├── SolarSystem3D.tsx       # Mặt Trời, shader pha Mặt Trăng & 7 hành tinh 3D
 │   │       ├── StarPoints3D.tsx
 │   │       ├── TargetSimulation3D.tsx
 │   │       └── ZenithDomeCanvas.tsx
-│   ├── data/                           # constellations.ts (88 chòm sao IAU), stars.ts (5.200+ sao)
+│   ├── data/                           # constellations.ts (88 IAU), stars.ts (5.200+ sao), messierCatalog.ts (110), ngcHighlights.ts (15)
 │   ├── hooks/
 │   │   ├── useAstronomyWeather.ts      # Hook debounce tọa độ, cache & nội suy dự báo theo giờ
 │   │   ├── useDeviceOrientation.ts     # Cảm biến la bàn AR & xin quyền iOS
@@ -67,20 +73,24 @@ E:\AetheriaPlanetarium\
 │   │   └── usePWA.ts                   # Đăng ký Workbox SW (chỉ Production) & trạng thái cài đặt
 │   ├── services/
 │   │   └── openMeteo.ts                # Client Open-Meteo /v1/forecast & cache localStorage
-│   ├── types/                          # account.ts, celestial.ts, solarSystem.ts, weather.ts
+│   ├── types/                          # account.ts, celestial.ts, deepSky.ts, solarSystem.ts, weather.ts
 │   ├── utils/
 │   │   ├── astronomy.ts                # LST, Alt-Az, batchComputeHorizontalCoordsInPlace
 │   │   ├── audio.ts                    # Bộ tổng hợp âm thanh Web Audio API
 │   │   ├── coordinates3D.ts            # Hệ tọa độ thiên cầu 3D
+│   │   ├── deepSky.ts                  # Chiếu 125 DSO (110 Messier + 15 NGC) sang (Alt, Az)
+│   │   ├── deepSkyFormat.ts            # Định dạng tên phân loại DSO & kích thước góc arcmin
+│   │   ├── ecliptic.ts                 # Tính đường hoàng đạo theo độ nghiêng thực Astronomy.e_tilt
 │   │   ├── i18n.ts                     # Từ điển song ngữ VI / EN
 │   │   ├── seeingModel.ts              # Tính chỉ số Seeing, độ mờ bầu trời & nội suy theo giờ
 │   │   ├── solarSystem.ts              # Ephemeris Hệ Mặt Trời (astronomy-engine) & Rise/Set
-│   │   ├── solarSystemFormat.ts        # Định dạng khoảng cách km/AU, pha trăng & đồng hồ mọc/lặn
+│   │   ├── solarSystemFormat.ts        # Định dạng khoảng cách km/AU, Mpc/ly, pha trăng & mọc/lặn
 │   │   └── viewport.ts                 # Hiệu chuẩn --app-height, --visual-vh & dọn blur iOS
 │   ├── App.tsx                         # State Machine & Two-Row App Shell
-│   ├── index.css                       # CSS tokens Safe Area, Glassmorphism, Dark Scheme
+│   ├── index.css                       # CSS tokens Safe Area, Glassmorphism, Twinkle Keyframe
 │   └── main.tsx                        # Khởi chạy React & hiệu chuẩn viewport
 ├── tests/
+│   ├── deepSkyEcliptic.test.ts         # Kiểm thử 125 DSO, đường hoàng đạo & độ lệch Mặt Trời
 │   ├── solarSystem.test.ts             # Kiểm thử đơn vị Ephemeris 9 thiên thể & pha trăng (`node --test`)
 │   └── weather.test.ts                 # Kiểm thử đơn vị Seeing Model & parser Open-Meteo (`node --test`)
 ├── index.html                          # Entry HTML, PWA Meta Tags & #ios-status-bar-shield
@@ -111,6 +121,10 @@ Vị trí mọi ngôi sao được tính động theo tọa độ địa lý (`l
 
 ### E. Hệ Mặt Trời Động (`astronomy-engine`) ([solarSystem.ts](file:///e:/AetheriaPlanetarium/src/utils/solarSystem.ts), [solarSystemOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/solarSystemOverlay2D.ts), [SolarSystem3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/SolarSystem3D.tsx))
 - Tính tọa độ `(RA, Dec)` & `(Alt, Az)` thời gian thực cho Mặt Trời, Mặt Trăng và 7 hành tinh (Sao Thủy → Sao Hải Vương) cùng pha trăng, góc nghiêng vành đai Sao Thổ và giờ mọc/lặn kế tiếp (`computeBodyRiseSet`), tách riêng trong chunk `vendor-astronomy`.
+
+### F. Vật thể Vũ trụ sâu, Đường hoàng đạo & Glyph Thiên thể ([deepSky.ts](file:///e:/AetheriaPlanetarium/src/utils/deepSky.ts), [ecliptic.ts](file:///e:/AetheriaPlanetarium/src/utils/ecliptic.ts), [CelestialBodyGlyph.tsx](file:///e:/AetheriaPlanetarium/src/components/common/CelestialBodyGlyph.tsx))
+- Dữ liệu tĩnh 125 thiên thể sâu (`M1`–`M110` + 15 NGC nổi bật) kèm đường hoàng đạo tính từ độ nghiêng thực `Astronomy.e_tilt().tobl` (gắn vạch `30°` và 4 điểm phân/chí), mặc định tắt và bật độc lập qua `<IOSSwitch />`.
+- Bộ vẽ `CelestialBodyGlyph` tạo SVG chuẩn hóa cho từng thiên thể trên thẻ thông tin, danh sách tìm kiếm và sidebar; tự động rơi về biểu tượng ngôi sao phát quang nhấp nháy (`.animate-star-twinkle`) khi mục tiêu là sao nền hoặc không có hình thái riêng.
 
 ---
 

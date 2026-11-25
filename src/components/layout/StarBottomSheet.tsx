@@ -21,6 +21,8 @@ import {
   formatRiseSetClock,
   getMoonPhaseLabel,
 } from '../../utils/solarSystemFormat';
+import { formatAngularSize, getDeepSkyTypeLabel } from '../../utils/deepSkyFormat';
+import { CelestialBodyGlyph } from '../common/CelestialBodyGlyph';
 
 interface StarBottomSheetProps {
   star: Star | null;
@@ -55,6 +57,7 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
   const dragControls = useDragControls();
   const t = TRANSLATIONS[lang];
   const solar = star?.solarSystemData;
+  const dso = star?.deepSkyData;
   const dateHourKey = currentDate
     ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}-${currentDate.getHours()}`
     : '';
@@ -71,7 +74,9 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
     ? lang === 'vi'
       ? solar.subtitleVi
       : solar.subtitleEn
-    : constellationName;
+    : dso
+      ? `${dso.catalogCode} • ${getDeepSkyTypeLabel(dso.dsoType, lang)}`
+      : constellationName;
   const distInfo = formatCelestialDistance(star, lang);
 
   const handleFocus = () => {
@@ -138,13 +143,13 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
           >
             <div className="flex items-center space-x-2.5 min-w-0">
               <div
-                className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 shadow-glow-cyan"
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 shadow-glow-cyan"
                 style={{
-                  backgroundColor: `${spectralColor}22`,
+                  backgroundColor: `${spectralColor}18`,
                   borderColor: spectralColor
                 }}
               >
-                <Sparkles className="w-3.5 h-3.5" style={{ color: spectralColor }} />
+                <CelestialBodyGlyph star={star} size={24} />
               </div>
 
               <div className="min-w-0">
@@ -279,6 +284,13 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
                           : 'G2V'}
                     </div>
                   </div>
+                ) : dso ? (
+                  <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
+                    <div className="text-[9px] text-slate-400 font-hud uppercase">{t.dsoType}</div>
+                    <div className="text-[11px] font-semibold font-sans text-purple-200 mt-0.5 truncate">
+                      {getDeepSkyTypeLabel(dso.dsoType, lang)}
+                    </div>
+                  </div>
                 ) : (
                   <div className="p-2 rounded-xl bg-slate-900/70 border border-white/5">
                     <div className="text-[9px] text-slate-400 font-hud uppercase">{t.spectralClass}</div>
@@ -299,6 +311,17 @@ export const StarBottomSheet: React.FC<StarBottomSheetProps> = ({
                   </div>
                 </div>
               </div>
+
+              {dso && (
+                <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 grid grid-cols-2 gap-1.5 font-mono text-[10px] text-slate-200">
+                  <div className="truncate">
+                    {t.catalogRef}: <span className="text-white">{dso.ngcCode || dso.catalogCode}</span>
+                  </div>
+                  <div className="truncate">
+                    {t.angularSize}: <span className="text-cyan-300">{formatAngularSize(dso.sizeArcmin, lang)}</span>
+                  </div>
+                </div>
+              )}
 
               {solar && (
                 <div className="p-2.5 rounded-xl bg-slate-900/70 border border-white/5 grid grid-cols-2 gap-1.5 font-mono text-[10px] text-slate-200">

@@ -235,6 +235,21 @@ export const TRANSLATIONS = {
     moonPhaseWaningGibbous: 'Trăng khuyết cuối tháng',
     moonPhaseLastQuarter: 'Bán nguyệt cuối tháng',
     moonPhaseWaningCrescent: 'Trăng lưỡi liềm cuối tháng',
+
+    // Deep Sky Objects & Ecliptic Line
+    showDeepSky: 'Vật thể Vũ trụ sâu (Messier / NGC)',
+    showEclipticLine: 'Đường hoàng đạo (Ecliptic)',
+    filterDeepSky: 'Vũ trụ sâu',
+    deepSkyCatalogTitle: 'Vũ trụ sâu nổi bật (Messier / NGC)',
+    dsoType: 'Phân loại',
+    catalogRef: 'Danh mục chéo',
+    angularSize: 'Kích thước góc',
+    dsoTypeGalaxy: 'Thiên hà',
+    dsoTypeNebula: 'Tinh vân phát xạ / phản xạ',
+    dsoTypePlanetaryNebula: 'Tinh vân hành tinh',
+    dsoTypeSupernovaRemnant: 'Tàn dư siêu tân tinh',
+    dsoTypeGlobularCluster: 'Cụm sao cầu',
+    dsoTypeOpenCluster: 'Cụm sao mở',
   },
 
   en: {
@@ -471,6 +486,21 @@ export const TRANSLATIONS = {
     moonPhaseWaningGibbous: 'Waning Gibbous',
     moonPhaseLastQuarter: 'Last Quarter',
     moonPhaseWaningCrescent: 'Waning Crescent',
+
+    // Deep Sky Objects & Ecliptic Line
+    showDeepSky: 'Deep Sky Objects (Messier / NGC)',
+    showEclipticLine: 'Ecliptic Line (Seasons & 30°)',
+    filterDeepSky: 'Deep Sky',
+    deepSkyCatalogTitle: 'Featured Deep Sky (Messier / NGC)',
+    dsoType: 'Object Class',
+    catalogRef: 'Cross-Catalog',
+    angularSize: 'Angular Size',
+    dsoTypeGalaxy: 'Galaxy',
+    dsoTypeNebula: 'Emission / Reflection Nebula',
+    dsoTypePlanetaryNebula: 'Planetary Nebula',
+    dsoTypeSupernovaRemnant: 'Supernova Remnant',
+    dsoTypeGlobularCluster: 'Globular Cluster',
+    dsoTypeOpenCluster: 'Open Cluster',
   },
 };
 
@@ -519,9 +549,20 @@ export const CONSTELLATION_NAMES: Record<string, { vi: string; en: string }> = {
   PAV: { vi: 'Khổng Tước', en: 'Pavo' },
   TUC: { vi: 'Đỗ Quyên', en: 'Tucana' },
   GRU: { vi: 'Thiên Hạc', en: 'Grus' },
-  COL: { vi: 'Thiên Nga', en: 'Columba' },
+  COL: { vi: 'Thiên Cáp', en: 'Columba' },
   PHE: { vi: 'Phượng Hoàng', en: 'Phoenix' },
   MON: { vi: 'Kỳ Lân', en: 'Monoceros' },
+  CVN: { vi: 'Lạp Khuyển', en: 'Canes Venatici' },
+  COM: { vi: 'Hậu Phát', en: 'Coma Berenices' },
+  SER: { vi: 'Cự Xà', en: 'Serpens' },
+  SCT: { vi: 'Thuẫn Bài', en: 'Scutum' },
+  VUL: { vi: 'Hồ Ly', en: 'Vulpecula' },
+  SGE: { vi: 'Thiên Tiễn', en: 'Sagitta' },
+  TRI: { vi: 'Tam Giác', en: 'Triangulum' },
+  CET: { vi: 'Kình Ngư', en: 'Cetus' },
+  LEP: { vi: 'Thiên Thố', en: 'Lepus' },
+  DOR: { vi: 'Kiếm Ngư', en: 'Dorado' },
+  SCL: { vi: 'Ngọc Điêu', en: 'Sculptor' },
 };
 
 /**
