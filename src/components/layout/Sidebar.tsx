@@ -16,10 +16,14 @@ import {
   Sparkles,
   Cloud,
   Sun,
+  Sunset,
+  Globe2,
   Orbit,
   X
 } from 'lucide-react';
 import { CelestialSettings, ObserverLocation, Star } from '../../types/celestial';
+import type { TwilightState } from '../../types/atmosphere';
+import { getTwilightPhaseLabel } from '../../utils/twilight';
 import { Language, TRANSLATIONS, getConstellationName } from '../../utils/i18n';
 import { PROMINENT_STARS } from '../../data/stars';
 import { IOSNavigationBar } from './IOSNavigationBar';
@@ -41,6 +45,7 @@ interface SidebarProps {
   selectedStar: Star | null;
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
+  twilightState?: TwilightState;
   lang?: Language;
 }
 
@@ -133,6 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedStar,
   solarBodies = [],
   deepSkyBodies = [],
+  twilightState,
   lang = 'vi',
 }) => {
   const [activeTab, setActiveTab] = useState<'observation' | 'time' | 'layers' | 'catalog'>('observation');
@@ -405,6 +411,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : `${settings.timeSpeed}x ${t.speedUnit}`}
               </span>
             </div>
+
+            {twilightState && (
+              <div className="mt-3 p-2.5 rounded-xl bg-slate-900/50 border border-white/5 flex items-center justify-between text-[10.5px] font-mono">
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <Sunset className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span>{getTwilightPhaseLabel(twilightState.phase, lang)}</span>
+                </span>
+                <span className="text-slate-400">
+                  {t.sunAltitudeShort}: {twilightState.sunAltDeg >= 0 ? `+${twilightState.sunAltDeg.toFixed(1)}` : twilightState.sunAltDeg.toFixed(1)}°
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -563,6 +581,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onSettingsChange((prev) => ({
                     ...prev,
                     showEclipticLine: checked,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Equatorial Coordinate Grid (RA / Dec) */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Globe2 className="w-4 h-4 text-teal-400" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showEquatorialGrid}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showEquatorialGrid}
+                color="emerald"
+                ariaLabel={t.showEquatorialGrid}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showEquatorialGrid: checked,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Daylight & Twilight Atmosphere Simulation */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-800/40 transition-all">
+              <div className="flex items-center space-x-2">
+                <Sunset className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                <span className="text-xs text-slate-200">{t.showAtmosphereTwilight}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showAtmosphereTwilight}
+                color="cyan"
+                ariaLabel={t.showAtmosphereTwilight}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    showAtmosphereTwilight: checked,
                   }))
                 }
               />

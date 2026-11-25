@@ -143,7 +143,7 @@ export function drawSolarSystem2D(
     if (!visible) continue;
 
     const kind = body.solarSystemData?.kind ?? 'planet';
-    const floorAlpha = kind === 'sun' ? 0.6 : kind === 'moon' ? 0.5 : 0.25;
+    const floorAlpha = kind === 'sun' ? 0.92 : kind === 'moon' ? 0.5 : 0.25;
     const alpha = Math.max(floorAlpha, baseAlpha);
 
     let labelOffset = 9;

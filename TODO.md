@@ -48,6 +48,9 @@
 - [x] Tích hợp API dự báo thời tiết & độ che phủ mây tại vị trí quan sát (Open-Meteo `/v1/forecast`, badge thu gọn, bảng chi tiết, dự báo theo giờ đồng bộ bầu trời và mô phỏng mây/sao trên 2D/3D).
 - [x] Mở rộng danh mục Vũ trụ sâu **110 vật thể Messier (`M1`–`M110`) + 15 vật thể NGC/IC nổi bật** cùng **Đường hoàng đạo (4 điểm phân/chí + vạch chia `30°`)** trên cả 2D & 3D (mặc định tắt, bật đồng bộ qua `<IOSSwitch />` hoặc chọn từ Tìm kiếm).
 - [x] Cập nhật SVG minh họa hình dạng thực tế của Mặt Trời, Mặt Trăng theo pha, 7 hành tinh, 6 hình thái DSO và sao nhấp nháy sáng (`CelestialBodyGlyph`) trên `InfoPanel`, `StarBottomSheet`, `SearchBarModal` & `Sidebar`.
+- [x] Mô phỏng Bầu trời Ban ngày & 4 pha Chạng vạng (`showAtmosphereTwilight` mặc định BẬT) dựa theo góc Mặt Trời `astronomy-engine` kèm hào quang chân trời 2D/GLSL 3D và làm mờ sao hài hòa với thời tiết.
+- [x] Bổ sung Lưới tọa độ Xích đạo RA / Dec (`showEquatorialGrid` mặc định TẮT: 12 kinh tuyến 2h, 5 vĩ tuyến kèm Xích đạo trời `0° Eq` & cực `NCP/SCP`) trên 2D & 3D.
+- [x] Tính năng Chụp & Xuất ảnh Bầu trời 2D/3D (`SkyCaptureModal`, `CanvasCaptureBridge` không dùng `preserveDrawingBuffer`): công tắc `<IOSSwitch />` bật/tắt Watermark (mặc định BẬT), Web Share Sheet trên iOS/mobile và fallback tải file PNG trên desktop.
 
 ---
 
@@ -60,7 +63,7 @@
 ## 📦 5. Tối ưu Hóa Build & Hiệu Năng (Performance & Packaging)
 
 - [x] TypeScript `tsc --noEmit` sạch 100% không lỗi, `vite build` tách chunk (`vendor-three`, `vendor-astronomy`, `vendor-react`, `vendor-framer`, `vendor-icons`) và tách hoàn toàn `vendor-three` khỏi bundle 2D ban đầu.
-- [x] Unit test Node (`node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts`): `17/17` pass qua 5 suites.
-- [x] Workbox precache `dist/sw.js` (24 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
-- [x] Audit chỉ số Google Lighthouse (`vite preview` với bản DSO/Hoàng đạo: Mobile `Perf 84`, Desktop `Perf 99`, A11y/BP/SEO `100`; trên GitHub Pages `957dc15`: Desktop `Perf 97`, A11y/BP/SEO `100` ở cả Mobile & Desktop).
+- [x] Unit test Node (`node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts tests/twilightEquatorialCapture.test.ts`): `24/24` pass qua 8 suites.
+- [x] Workbox precache `dist/sw.js` (25 entries) kèm runtime cache `NetworkFirst` cho Open-Meteo API.
+- [x] Audit chỉ số Google Lighthouse (`vite preview` bản Twilight & Xuất ảnh: Desktop `Perf 99`, Mobile `Perf 73` ở `benchmarkIndex=2557.5`, A11y/BP/SEO `100`; trên GitHub Pages `957dc15`: Desktop `Perf 97`, A11y/BP/SEO `100` ở cả Mobile & Desktop).
 - [x] Kiểm thử thực địa trên thiết bị iOS thực tế (Standalone PWA, safe-area, Open-Meteo, Hệ Mặt Trời 2D/3D, AR & offline).

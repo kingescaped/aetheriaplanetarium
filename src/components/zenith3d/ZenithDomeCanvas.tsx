@@ -4,6 +4,10 @@ import { Canvas } from '@react-three/fiber';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
 import type { EclipticOverlayData } from '../../types/deepSky';
+import type { EquatorialGridData, TwilightState } from '../../types/atmosphere';
+import { AtmosphereDome3D } from './AtmosphereDome3D';
+import { EquatorialGrid3D } from './EquatorialGrid3D';
+import { CanvasCaptureBridge } from './CanvasCaptureBridge';
 import { StarPoints3D } from './StarPoints3D';
 import { SolarSystem3D } from './SolarSystem3D';
 import { DeepSky3D } from './DeepSky3D';
@@ -38,6 +42,9 @@ interface ZenithDomeCanvasProps {
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
   eclipticData?: EclipticOverlayData | null;
+  twilightState?: TwilightState;
+  equatorialGridData?: EquatorialGridData | null;
+  captureRef?: React.MutableRefObject<(() => HTMLCanvasElement | null) | null>;
 }
 
 export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
@@ -57,6 +64,9 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
   solarBodies = [],
   deepSkyBodies = [],
   eclipticData = null,
+  twilightState,
+  equatorialGridData = null,
+  captureRef,
 }) => {
   const t = TRANSLATIONS[lang];
 
@@ -170,6 +180,9 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
         }}
         className="w-full h-full block touch-none"
       >
+        <CanvasCaptureBridge captureRef={captureRef} />
+        <AtmosphereDome3D twilightState={twilightState} />
+
         {/* Soft cosmic ambient illumination */}
         <ambientLight intensity={0.25} />
         <directionalLight position={[0, 50, 0]} intensity={0.4} color="#818cf8" />
@@ -197,6 +210,15 @@ export const ZenithDomeCanvas: React.FC<ZenithDomeCanvasProps> = ({
           showGrid={settings.showGridLines}
           showLabels={!hideHtmlOverlays}
         />
+
+        {/* 1.2. Equatorial Coordinate Grid (RA / Dec) */}
+        {settings.showEquatorialGrid && equatorialGridData && (
+          <EquatorialGrid3D
+            gridData={equatorialGridData}
+            showLabels={settings.showConstellationLabels && !hideHtmlOverlays}
+            skyAttenuation={skyAttenuation}
+          />
+        )}
 
         {/* 1.5. Atmospheric Cloud & Haze Veil */}
         <CloudVeil3D

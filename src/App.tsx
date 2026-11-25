@@ -31,6 +31,11 @@ const WeatherDetailPanel = lazy(() =>
     default: m.WeatherDetailPanel,
   }))
 );
+const SkyCaptureModal = lazy(() =>
+  import('./components/capture/SkyCaptureModal').then((m) => ({
+    default: m.SkyCaptureModal,
+  }))
+);
 import {
   ViewMode,
   ObserverLocation,
@@ -43,6 +48,9 @@ import { getLST, batchComputeHorizontalCoordsInPlace } from './utils/astronomy';
 import { computeSolarSystemBodies } from './utils/solarSystem';
 import { computeDeepSkyBodies } from './utils/deepSky';
 import { computeEclipticOverlay } from './utils/ecliptic';
+import { computeTwilightState, combineSkyAttenuation } from './utils/twilight';
+import { computeEquatorialGrid } from './utils/equatorialGrid';
+import type { SkyCaptureMetadata } from './types/atmosphere';
 import { Language } from './utils/i18n';
 import { soundFx } from './utils/audio';
 import { usePWA } from './hooks/usePWA';
@@ -137,6 +145,8 @@ export function App() {
     showSolarSystem: true,
     showDeepSky: false,
     showEclipticLine: false,
+    showAtmosphereTwilight: true,
+    showEquatorialGrid: false,
   });
 
   const weather = useAstronomyWeather(location, currentDate, settings.simulateSkyWeather);
@@ -177,6 +187,10 @@ export function App() {
   const [selectedStarId, setSelectedStarId] = useState<string | number>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAccountOpen, setIsAccountOpen] = useState<boolean>(false);
+  const [isCaptureOpen, setIsCaptureOpen] = useState<boolean>(false);
+  const [capturedRawCanvas, setCapturedRawCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [capturedMeta, setCapturedMeta] = useState<SkyCaptureMetadata | null>(null);
+  const captureSkyFrameRef = useRef<(() => HTMLCanvasElement | null) | null>(null);
 
   // Stargazer Account & User Preferences
   const [user, setUser] = useState<UserProfile>(() => {
@@ -308,6 +322,27 @@ export function App() {
     return computeEclipticOverlay(tickDate, location);
   }, [settings.showEclipticLine, settings.timeSpeed, dsoTickBucket, location.latitude, location.longitude]);
 
+  const twilightState = useMemo(() => {
+    return computeTwilightState(
+      new Date(ephemerisSec * 1000),
+      location,
+      settings.showAtmosphereTwilight
+    );
+  }, [ephemerisSec, location.latitude, location.longitude, settings.showAtmosphereTwilight]);
+
+  const combinedAttenuation = useMemo(
+    () => combineSkyAttenuation(weather.resolved?.attenuation, twilightState),
+    [weather.resolved?.attenuation, twilightState]
+  );
+
+  const equatorialGridData = useMemo(() => {
+    if (!settings.showEquatorialGrid) return null;
+    const tickDate = new Date(
+      (Math.abs(settings.timeSpeed) > 1 ? dsoTickBucket * 1000 : dsoTickBucket * 60000)
+    );
+    return computeEquatorialGrid(tickDate, location);
+  }, [settings.showEquatorialGrid, settings.timeSpeed, dsoTickBucket, location.latitude, location.longitude]);
+
   const selectedStar = useMemo<Star | null>(() => {
     if (selectedStarId === '') return null;
     return (
@@ -385,8 +420,35 @@ export function App() {
     );
   };
 
-  // Check if full-screen modal (Settings / Search) is open to hide Main Header
-  const isAnyModalOpen = isAccountOpen || isSearchOpen;
+  const handleOpenCapture = () => {
+    soundFx.playModalTransition();
+    const srcCanvas =
+      captureSkyFrameRef.current?.() ??
+      (document.querySelector('main canvas') as HTMLCanvasElement | null);
+    let frozenCanvas: HTMLCanvasElement | null = null;
+    if (srcCanvas && srcCanvas.width > 0 && srcCanvas.height > 0) {
+      frozenCanvas = document.createElement('canvas');
+      frozenCanvas.width = srcCanvas.width;
+      frozenCanvas.height = srcCanvas.height;
+      frozenCanvas.getContext('2d')?.drawImage(srcCanvas, 0, 0);
+    }
+    setCapturedRawCanvas(frozenCanvas);
+    setCapturedMeta({
+      location,
+      date: new Date(currentDate.getTime()),
+      viewMode,
+      selectedStar,
+      twilightPhase: twilightState.phase,
+      sunAltDeg: twilightState.sunAltDeg,
+      showAtmosphereTwilight: settings.showAtmosphereTwilight,
+      nightVisionMode: preferences.nightVisionMode,
+    });
+    setIsWeatherOpen(false);
+    setIsCaptureOpen(true);
+  };
+
+  // Check if full-screen modal (Settings / Search / Capture) is open to hide Main Header
+  const isAnyModalOpen = isAccountOpen || isSearchOpen || isCaptureOpen;
 
   return (
     <>
@@ -423,6 +485,7 @@ export function App() {
                 soundFx.playModalTransition();
                 setIsSidebarOpen((prev) => !prev);
               }}
+              onOpenCapture={handleOpenCapture}
               weatherSlot={
                 <WeatherBadge
                   resolved={weather.resolved}
@@ -453,10 +516,13 @@ export function App() {
                   onSelectStar={handleSelectCelestial}
                   onHoverCoords={(coords) => setCursorCoords(coords)}
                   weatherSample={weather.resolved?.sample ?? null}
-                  skyAttenuation={weather.resolved?.attenuation}
+                  skyAttenuation={combinedAttenuation}
                   solarBodies={solarBodies}
                   deepSkyBodies={deepSkyBodies}
                   eclipticData={eclipticData}
+                  twilightState={twilightState}
+                  equatorialGridData={equatorialGridData}
+                  captureRef={captureSkyFrameRef}
                   lang={lang}
                 />
               ) : (
@@ -474,10 +540,13 @@ export function App() {
                     hideHtmlOverlays={isAnyModalOpen || (isMobile && (isSidebarOpen || isWeatherOpen))}
                     lang={lang}
                     weatherSample={weather.resolved?.sample ?? null}
-                    skyAttenuation={weather.resolved?.attenuation}
+                    skyAttenuation={combinedAttenuation}
                     solarBodies={solarBodies}
                     deepSkyBodies={deepSkyBodies}
                     eclipticData={eclipticData}
+                    twilightState={twilightState}
+                    equatorialGridData={equatorialGridData}
+                    captureRef={captureSkyFrameRef}
                   />
                 </Suspense>
               )}
@@ -630,6 +699,7 @@ export function App() {
             selectedStar={selectedStar}
             solarBodies={solarBodies}
             deepSkyBodies={deepSkyBodies}
+            twilightState={twilightState}
             lang={lang}
           />
 
@@ -703,6 +773,18 @@ export function App() {
               onClose={() => setIsSearchOpen(false)}
               onSelectStar={handleSelectCelestial}
               starsCatalog={[...solarBodies, ...deepSkyBodies, ...calculatedStars.filter((s: Star) => Boolean(s.name))]}
+              lang={lang}
+            />
+          </Suspense>
+        )}
+
+        {isCaptureOpen && capturedMeta && (
+          <Suspense fallback={null}>
+            <SkyCaptureModal
+              isOpen={isCaptureOpen}
+              onClose={() => setIsCaptureOpen(false)}
+              rawCanvas={capturedRawCanvas}
+              metadata={capturedMeta}
               lang={lang}
             />
           </Suspense>

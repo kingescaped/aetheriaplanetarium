@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Box, Search, Navigation2, Clock, User, Sliders } from 'lucide-react';
+import { Eye, Box, Search, Navigation2, Clock, User, Sliders, Camera } from 'lucide-react';
 import { AetheriaStarLogo } from '../common/AetheriaLogo';
 import { TopSafeBar } from './TopSafeBar';
 import { ViewMode, ObserverLocation } from '../../types/celestial';
@@ -15,6 +15,7 @@ interface HeaderProps {
   isLocating: boolean;
   onOpenAccount: () => void;
   onOpenControls: () => void;
+  onOpenCapture: () => void;
   weatherSlot?: React.ReactNode;
   lang?: Language;
 }
@@ -29,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   isLocating,
   onOpenAccount,
   onOpenControls,
+  onOpenCapture,
   weatherSlot,
   lang = 'vi',
 }) => {
@@ -120,6 +122,18 @@ export const Header: React.FC<HeaderProps> = ({
             <kbd className="hidden xl:inline-block px-1 py-0.2 text-[9px] bg-slate-800/80 border border-slate-700 rounded text-slate-400">
               {t.searchKbd}
             </kbd>
+          </button>
+
+          {/* Sky Image Capture Button */}
+          <button
+            type="button"
+            onClick={onOpenCapture}
+            data-testid="capture-sky-btn"
+            className="flex items-center justify-center h-[26px] md:w-8 md:h-8 px-1.5 md:px-0 rounded-lg md:rounded-xl bg-[#121a2f] md:bg-[#0c1224] border border-white/10 text-cyan-300 hover:text-white hover:border-cyan-400/40 hover:shadow-glow-cyan transition-all cursor-pointer"
+            title={t.captureSkyButtonAria}
+            aria-label={t.captureSkyButtonAria}
+          >
+            <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" aria-hidden="true" />
           </button>
 
           {/* Location Badge */}

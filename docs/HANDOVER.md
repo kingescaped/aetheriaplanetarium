@@ -99,6 +99,22 @@
    - Browser QA trên `vite preview` xác nhận Open-Meteo `200`, bật tắt `showDeepSky`/`showEclipticLine` không ghi đè state, `data-glyph-kind` đúng (`sun`, `moon`, `saturn`, `star` nhấp nháy, `dso:galaxy`), 0 lỗi console/exception.
    - **Google Lighthouse trên `vite preview` (`http://localhost:4173/aetheriaplanetarium/`):** **Mobile** `Perf 84 / A11y 100 / BP 100 / SEO 100` (`FCP 0.8s`, `LCP 3.7s`, `TBT 260ms`, `CLS 0.001`), **Desktop** `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`).
 
+### N. Bầu trời Chạng vạng (Twilight), Lưới Xích đạo & Xuất ảnh Bầu trời 2D/3D (25/11/2026)
+1. **Mô phỏng Khí quyển Ban ngày & 4 Pha Chạng vạng ([twilight.ts](file:///e:/AetheriaPlanetarium/src/utils/twilight.ts), [twilightSky2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/twilightSky2D.ts), [AtmosphereDome3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/AtmosphereDome3D.tsx)):**
+   - Tính độ cao & phương vị Mặt Trời trực tiếp từ `astronomy-engine` (`Astronomy.Equator` + `Astronomy.Horizon`, độc lập với công tắc `showSolarSystem`), phân loại 5 trạng thái (`daylight > 0°`, `civil -6°..0°`, `nautical -12°..-6°`, `astronomical -18°..-12°`, `night <= -18°`).
+   - Dải màu chuyển mượt thiên đỉnh → chân trời kèm hào quang hoàng hôn/bình minh định hướng theo `sunAzDeg` trên cả **Bản đồ 2D** và **Shader vòm GLSL 3D**, phối hợp qua `combineSkyAttenuation()` để làm mờ sao và nhãn chòm sao ban ngày đồng thời giữ Mặt Trời nổi bật (`floorAlpha 0.92/0.94`).
+   - Mặc định **BẬT (`showAtmosphereTwilight: true`)**, có công tắc `<IOSSwitch />` trong `Sidebar` & `AccountModal` cùng badge pha/góc Mặt Trời trong tab Thời gian.
+2. **Lưới Tọa độ Xích đạo (RA / Dec) ([equatorialGrid.ts](file:///e:/AetheriaPlanetarium/src/utils/equatorialGrid.ts), [equatorialGridOverlay2D.ts](file:///e:/AetheriaPlanetarium/src/components/planetarium/equatorialGridOverlay2D.ts), [EquatorialGrid3D.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/EquatorialGrid3D.tsx)):**
+   - Dựng 12 kinh tuyến Xích kinh mỗi `2h` (`0h–22h`), 5 vĩ tuyến Xích vĩ (`-60°`, `-30°`, nhấn mạnh Xích đạo trời `0° Eq`, `+30°`, `+60°`) và hai cực thiên cầu `NCP +90° / SCP -90°` trên cả 2D và 3D. Mặc định **TẮT (`showEquatorialGrid: false`)** để tránh rối mắt với lưới Alt-Az mặc định, bật tức thì qua `<IOSSwitch />`.
+3. **Chụp, Đóng dấu & Chia sẻ Ảnh Bầu trời ([SkyCaptureModal.tsx](file:///e:/AetheriaPlanetarium/src/components/capture/SkyCaptureModal.tsx), [skyCapture.ts](file:///e:/AetheriaPlanetarium/src/utils/skyCapture.ts), [skyCaptureCanvas.ts](file:///e:/AetheriaPlanetarium/src/utils/skyCaptureCanvas.ts), [CanvasCaptureBridge.tsx](file:///e:/AetheriaPlanetarium/src/components/zenith3d/CanvasCaptureBridge.tsx)):**
+   - Nút chụp biểu tượng Camera trên `Header` (gọn trên cả Mobile `390px` và Desktop) kích hoạt trích xuất khung hình 2D hoặc 3D WebGL tức thì qua `gl.render(scene, camera)` (không tốn bộ nhớ `preserveDrawingBuffer` liên tục) và đóng băng pixel trước khi mở `SkyCaptureModal` (tải lazy `11.50 kB`, hỗ trợ `.night-vision` & vuốt mép trái đóng).
+   - **Tùy chọn Watermark mặc định BẬT** kèm công tắc **`<IOSSwitch />` ngay trong modal xem trước trước khi xuất**, hiển thị logo 8 cánh Aetheria, chế độ 2D/3D, tên đài quan sát & tọa độ, dấu thời gian + pha bầu trời và mục tiêu đang khóa.
+   - Tự động ưu tiên **Web Share Sheet (`navigator.share({ files })`)** trên iOS/mobile (kèm nút tải trực tiếp) và dự phòng **tải file PNG (`<a download>`)** trên desktop.
+4. **Kiểm chứng & Deploy Production (`vite preview` + GitHub Pages):**
+   - `node --test tests/weather.test.ts tests/solarSystem.test.ts tests/deepSkyEcliptic.test.ts tests/twilightEquatorialCapture.test.ts`: **`24/24` pass** (`8 suites`), `npx tsc --noEmit` exit `0`, `npm run build` sạch (`index-2wFbvDGd.js` `198.79 kB` / `59.64 kB` gzip, `SkyCaptureModal` tải lazy, `vendor-three` không nạp ở 2D ban đầu).
+   - Headless Chrome QA (`verify_twilight_capture.mjs`) xác nhận mặc định `showAtmosphereTwilight="true"`, `showEquatorialGrid="false"`, ảnh chụp 2D (`1280×744`), 3D (`1280×744`, `meanLuma=22.13`) và Mobile `390×844` (`780×1404` sau chuyển 3D→2D) không bị đen/trống, bật/tắt watermark đổi ảnh tức thì, 0 lỗi console/exception.
+   - **Google Lighthouse trên `vite preview` (`http://localhost:4173/aetheriaplanetarium/`):** **Desktop** `Perf 99 / A11y 100 / BP 100 / SEO 100` (`TBT 0ms`, `benchmarkIndex=2824`), **Mobile** `Perf 73 / A11y 100 / BP 100 / SEO 100` (`FCP 0.8s`, `CLS 0.001`, `benchmarkIndex=2557.5` thấp hơn mốc `3076` trước đây).
+
 ---
 
 ## 4. ⚠️ Các vấn đề tồn đọng (Known Issues & Warnings)
@@ -119,5 +135,5 @@
 7. **[XONG]** Mở rộng dữ liệu thiên văn động Hệ Mặt Trời 9 thiên thể (`astronomy-engine`, `solarSystem.ts`, `SolarSystem3D.tsx`, `solarSystemOverlay2D.ts`) và tích hợp quy trình kiểm chứng build/deploy production.
 8. **[XONG]** Deploy Production GitHub Pages (https://kingescaped.github.io/aetheriaplanetarium/, `a1de96b` & `957dc15`), xác minh live QA/Lighthouse và xác nhận thực tế trên thiết bị iOS Standalone PWA (25/11/2026).
 9. **[XONG]** Mở rộng 125 vật thể Vũ trụ sâu (`110 Messier + 15 NGC`), Đường hoàng đạo (4 điểm phân/chí + vạch chia `30°`) và SVG minh họa hình dạng thiên thể + sao nhấp nháy trong thẻ thông tin.
-10. **Ưu tiên tiếp theo — Mở rộng Bầu trời Chạng vạng (Twilight) & Xuất ảnh Bầu trời:**
-    Bổ sung mô phỏng màu bầu trời ban ngày/chạng vạng theo góc Mặt Trời, đường lưới Xích đạo (Equatorial grid) và tính năng chụp/chia sẻ ảnh bầu trời 2D/3D.
+10. **[XONG]** Mở rộng Bầu trời Chạng vạng (`showAtmosphereTwilight`, mặc định bật), Lưới Xích đạo RA/Dec (`showEquatorialGrid`, mặc định tắt) và Chụp/Chia sẻ ảnh Bầu trời 2D/3D (watermark `<IOSSwitch />` mặc định bật + Web Share Sheet/PNG).
+11. **Ưu tiên tiếp theo — Dải Ngân Hà động (Milky Way shader 2D/3D) & Theo dõi vệ tinh / ISS TLE.**

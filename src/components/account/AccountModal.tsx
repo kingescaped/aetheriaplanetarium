@@ -46,7 +46,7 @@ interface AccountModalProps {
   onUpdatePreferences: (pref: UserPreferences) => void;
   starsCatalog: Star[];
   settings: CelestialSettings;
-  onSettingsChange: (settings: CelestialSettings) => void;
+  onSettingsChange: React.Dispatch<React.SetStateAction<CelestialSettings>>;
   location: ObserverLocation;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
@@ -523,8 +523,44 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <IOSSwitch
                 checked={settings.showGridLines}
                 color="cyan"
+                ariaLabel={t.gridLines}
                 onChange={(checked) =>
-                  onSettingsChange({ ...settings, showGridLines: checked })
+                  onSettingsChange((prev) => ({ ...prev, showGridLines: checked }))
+                }
+              />
+            </div>
+
+            {/* Equatorial Grid */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
+              <div className="flex items-center space-x-3">
+                <Globe className="w-4 h-4 text-teal-400" />
+                <span className="text-xs text-white font-medium">{t.showEquatorialGrid}</span>
+              </div>
+              <IOSSwitch
+                checked={settings.showEquatorialGrid}
+                color="emerald"
+                ariaLabel={t.showEquatorialGrid}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({ ...prev, showEquatorialGrid: checked }))
+                }
+              />
+            </div>
+
+            {/* Daylight & Twilight Atmosphere */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
+              <div className="flex items-center space-x-3">
+                <Eye className="w-4 h-4 text-amber-400" />
+                <div>
+                  <div className="text-xs text-white font-medium">{t.showAtmosphereTwilight}</div>
+                  <div className="text-[10px] text-slate-400">{t.showAtmosphereTwilightDesc}</div>
+                </div>
+              </div>
+              <IOSSwitch
+                checked={settings.showAtmosphereTwilight}
+                color="cyan"
+                ariaLabel={t.showAtmosphereTwilight}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({ ...prev, showAtmosphereTwilight: checked }))
                 }
               />
             </div>

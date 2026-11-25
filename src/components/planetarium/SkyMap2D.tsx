@@ -2,7 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Star, ObserverLocation, CelestialSettings } from '../../types/celestial';
 import type { SkyVisualAttenuation, WeatherSample } from '../../types/weather';
 import type { EclipticOverlayData } from '../../types/deepSky';
+import type { EquatorialGridData, TwilightState } from '../../types/atmosphere';
 import type { Language } from '../../utils/i18n';
+import { drawTwilightSky2D, drawTwilightHorizonGlow2D } from './twilightSky2D';
+import { drawEquatorialGrid2D } from './equatorialGridOverlay2D';
 import { drawSkyWeatherOverlay2D } from './skyWeatherOverlay2D';
 import { drawSolarSystem2D, type ProjectedSolarBody } from './solarSystemOverlay2D';
 import { drawEclipticOverlay2D } from './eclipticOverlay2D';
@@ -32,6 +35,9 @@ interface SkyMap2DProps {
   solarBodies?: Star[];
   deepSkyBodies?: Star[];
   eclipticData?: EclipticOverlayData | null;
+  twilightState?: TwilightState;
+  equatorialGridData?: EquatorialGridData | null;
+  captureRef?: React.MutableRefObject<(() => HTMLCanvasElement | null) | null>;
   lang?: Language;
 }
 
@@ -57,6 +63,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   solarBodies = [],
   deepSkyBodies = [],
   eclipticData = null,
+  twilightState,
+  equatorialGridData = null,
+  captureRef,
   lang = 'vi',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -80,6 +89,17 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     setZoom(1.0);
     setPan({ x: 0, y: 0 });
   };
+
+  useEffect(() => {
+    if (!captureRef) return;
+    const captureFn = () => canvasRef.current;
+    captureRef.current = captureFn;
+    return () => {
+      if (captureRef.current === captureFn) {
+        captureRef.current = null;
+      }
+    };
+  }, [captureRef]);
 
   // Convert (alt, az) to 2D Canvas coordinates (North Up, East Left)
   const projectAltAzToCanvas = useCallback(
@@ -184,19 +204,13 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     ctx.arc(cx + pan.x, cy + pan.y, currentRadius, 0, Math.PI * 2);
     ctx.closePath();
 
-    // Dark celestial sphere gradient
-    const skyGrad = ctx.createRadialGradient(
-      cx + pan.x, cy + pan.y, 0,
-      cx + pan.x, cy + pan.y, currentRadius
-    );
-    skyGrad.addColorStop(0, '#070f2b');
-    skyGrad.addColorStop(0.7, '#04091a');
-    skyGrad.addColorStop(1, '#02050f');
-    ctx.fillStyle = skyGrad;
-    ctx.fill();
+    // Dynamic cosmic / twilight sky gradient
+    drawTwilightSky2D(ctx, cx + pan.x, cy + pan.y, currentRadius, twilightState);
 
     // Clip rendering strictly inside the horizon dome circle
     ctx.clip();
+
+    drawTwilightHorizonGlow2D(ctx, cx + pan.x, cy + pan.y, currentRadius, twilightState);
 
     // 4. Draw Coordinate Grid (Alt-Azimuthal Grid)
     if (settings.showGridLines) {
@@ -239,6 +253,21 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       ctx.fill();
     }
 
+    // 4.5. Draw Equatorial Coordinate Grid (RA / Dec)
+    if (settings.showEquatorialGrid && equatorialGridData) {
+      drawEquatorialGrid2D(
+        ctx,
+        equatorialGridData,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        currentRadius,
+        skyAttenuation,
+        settings.showConstellationLabels || settings.showStarLabels
+      );
+    }
+
     // 5. Draw Constellation Lines
     if (settings.showConstellationLines) {
       const lineScale = skyAttenuation?.constellationOpacity ?? 1;
@@ -266,6 +295,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
 
     // 6. Draw Constellation Names (Centroids)
     if (settings.showConstellationLabels) {
+      const labelAlpha = Math.max(0.24, 0.75 * (skyAttenuation?.constellationOpacity ?? 1));
       ctx.save();
       ctx.font = '500 11px Inter, sans-serif';
       ctx.textAlign = 'center';
@@ -277,7 +307,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
           const { x, y } = projectAltAzToCanvas(alt, az, cx, cy, baseRadius);
 
           // Subtle background pill
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+          ctx.fillStyle = `rgba(56, 189, 248, ${labelAlpha.toFixed(3)})`;
           ctx.fillText(con.nameVi || con.name, x, y);
         }
       }
@@ -301,31 +331,33 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     // 6.8. Draw Deep Sky Objects (110 Messier + 15 NGC Highlights)
     projectedDeepSkyRef.current = settings.showDeepSky
       ? drawDeepSky2D(
-          ctx,
-          deepSkyBodies,
-          projectAltAzToCanvas,
-          cx,
-          cy,
-          baseRadius,
-          zoom,
-          selectedStar,
-          hoveredStar,
-          skyAttenuation,
-          settings.showStarLabels
-        )
+        ctx,
+        deepSkyBodies,
+        projectAltAzToCanvas,
+        cx,
+        cy,
+        baseRadius,
+        zoom,
+        selectedStar,
+        hoveredStar,
+        skyAttenuation,
+        settings.showStarLabels
+      )
       : [];
 
     // 7. Draw Stars with Spectral Colors & Magnitude Glow
     const baseStarOpacity = skyAttenuation?.starOpacity ?? 1;
+    const daylightDimming = twilightState?.skyBrightness ?? 0;
     for (const proj of projectedList) {
       if (!proj.visible) continue;
 
       const star = proj.star;
       const radius = getStarVisualRadius(star.mag);
       const starColor = getSpectralColor(star.spect);
+      const brightBoost = star.mag < 1.0 ? 0.12 * (1 - daylightDimming * 0.85) : 0;
       ctx.globalAlpha =
         baseStarOpacity < 0.999
-          ? Math.min(1, baseStarOpacity + (star.mag < 1.0 ? 0.12 : 0))
+          ? Math.min(1, baseStarOpacity + brightBoost)
           : 1;
 
       // Star radial glow for bright stars (mag < 2.5)
@@ -497,6 +529,8 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     solarBodies,
     deepSkyBodies,
     eclipticData,
+    twilightState,
+    equatorialGridData,
     lang,
   ]);
 

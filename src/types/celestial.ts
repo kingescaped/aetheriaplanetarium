@@ -52,4 +52,6 @@ export interface CelestialSettings {
   showSolarSystem: boolean;
   showDeepSky: boolean;
   showEclipticLine: boolean;
+  showAtmosphereTwilight: boolean;
+  showEquatorialGrid: boolean;
 }

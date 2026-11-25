@@ -95,7 +95,7 @@ export const SolarSystem3D: React.FC<SolarSystem3DProps> = ({
         const kind = meta?.kind ?? 'planet';
         const pos = altAzToVector3(body.alt, body.az, DOME_RADIUS * 0.96);
         const alpha = Math.max(
-          kind === 'sun' ? 0.65 : kind === 'moon' ? 0.55 : 0.28,
+          kind === 'sun' ? 0.94 : kind === 'moon' ? 0.55 : 0.28,
           baseAlpha
         );
         const discSize = kind === 'sun' ? 1.55 : body.mag < -1 ? 0.72 : 0.52;
