@@ -162,7 +162,7 @@ export const WeatherDetailPanel: React.FC<WeatherDetailPanelProps> = ({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain touch-manipulation">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain touch-pan-y">
               {status === 'loading' && !sample && (
                 <div className="py-10 text-center space-y-2 text-xs text-slate-300">
                   <Cloud className="w-7 h-7 text-cyan-400 animate-pulse mx-auto" aria-hidden="true" />

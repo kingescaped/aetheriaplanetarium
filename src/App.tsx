@@ -743,7 +743,7 @@ export function App() {
     <>
       <div
         id="aetheria-app-shell"
-        className={`fixed top-0 left-0 right-0 overflow-hidden bg-[#030712] text-slate-100 select-none flex flex-col ${preferences.nightVisionMode ? 'night-vision' : ''}`}
+        className={`fixed inset-0 w-full max-w-full overflow-hidden bg-[#030712] text-slate-100 select-none flex flex-col ${preferences.nightVisionMode ? 'night-vision' : ''}`}
         style={{ height: 'var(--app-height, 100vh)' }}
       >
         {/* Row 1: Everything above Mobile BottomNav */}

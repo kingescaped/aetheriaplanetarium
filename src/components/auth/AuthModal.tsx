@@ -118,6 +118,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    if (typeof window !== 'undefined' && (window.scrollX !== 0 || window.scrollY !== 0)) {
+      window.scrollTo(0, 0);
+    }
+
     setErrorMessage(null);
     setIsSubmitting(true);
     soundFx.playTabClick();
@@ -161,7 +168,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       style={{ opacity: backdropOpacity, height: 'var(--visual-vh, 100%)' }}
-      className="fixed inset-0 z-[70] flex items-center justify-center p-0 md:p-4 bg-[#030712]/90 md:bg-black/75 backdrop-blur-xl"
+      className="fixed inset-0 z-[70] overflow-hidden flex items-center justify-center p-0 md:p-4 bg-[#030712]/90 md:bg-black/75 backdrop-blur-xl"
       onClick={() => {
         if (!isSubmitting) onClose();
       }}
@@ -196,7 +203,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
         />
 
-        <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7 md:py-6 space-y-5 overscroll-contain touch-manipulation">
+        <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7 md:py-6 space-y-5 overscroll-contain touch-pan-y">
           {/* Brand Crest & Primary Heading */}
           <div className="flex items-start gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-indigo-500/25 to-purple-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0 shadow-[0_8px_20px_rgba(2,132,199,0.22)]">

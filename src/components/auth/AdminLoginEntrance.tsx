@@ -112,6 +112,9 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
   const finishImmediately = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
+    if (typeof window !== 'undefined' && (window.scrollX !== 0 || window.scrollY !== 0)) {
+      window.scrollTo(0, 0);
+    }
     if (!landedRef.current) {
       landedRef.current = true;
       onLandRef.current?.();
@@ -220,7 +223,8 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
       aria-modal="true"
       aria-label={t.supremeAdminTitle}
       onClick={finishImmediately}
-      className="fixed inset-0 z-[120] overflow-hidden select-none cursor-pointer"
+      style={{ height: 'var(--app-height, 100dvh)' }}
+      className="fixed inset-0 z-[120] w-full h-full max-w-[100vw] overflow-hidden select-none cursor-pointer touch-none [contain:layout_paint]"
     >
       {/* Phase 1 Backdrop + Radial Sovereign Bloom */}
       <div
@@ -246,12 +250,12 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
         <div
           aria-hidden="true"
           style={{ transition: 'opacity 420ms ease-out' }}
-          className={`pointer-events-none fixed inset-0 flex items-center justify-center ${
+          className={`pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center ${
             isReveal ? 'opacity-100' : 'opacity-0'
           }`}
         >
           <div
-            className="imperial-godrays-spin w-[620px] h-[620px] sm:w-[760px] sm:h-[760px] rounded-full opacity-55"
+            className="imperial-godrays-spin w-[min(140vw,620px)] h-[min(140vw,620px)] sm:w-[760px] sm:h-[760px] shrink-0 rounded-full opacity-55"
             style={{
               background:
                 'conic-gradient(from 0deg, transparent 0deg 16deg, rgba(250, 204, 21, 0.2) 24deg, transparent 34deg 62deg, rgba(168, 85, 247, 0.18) 74deg, transparent 88deg 120deg, rgba(255, 247, 204, 0.22) 132deg, transparent 144deg 184deg, rgba(245, 158, 11, 0.2) 196deg, transparent 210deg 252deg, rgba(124, 58, 237, 0.18) 264deg, transparent 278deg 315deg, rgba(250, 204, 21, 0.22) 326deg, transparent 340deg 360deg)',
@@ -271,7 +275,7 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
       )}
 
       {/* Hero Medallion centered cleanly at 50vw / 50vh for pixel-accurate fly */}
-      <div className="pointer-events-none fixed inset-0 flex items-center justify-center">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center">
         <div
           ref={medallionRef}
           style={{
@@ -319,7 +323,7 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
         style={{
           transition: 'opacity 320ms ease-out, transform 320ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className={`pointer-events-none fixed inset-x-0 top-1/2 mt-24 sm:mt-28 flex flex-col items-center text-center px-6 ${
+        className={`pointer-events-none absolute inset-x-0 top-1/2 mt-24 sm:mt-28 flex flex-col items-center text-center px-6 ${
           isReveal
             ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 -translate-y-2 scale-90'
@@ -342,7 +346,7 @@ export const AdminLoginEntrance: React.FC<AdminLoginEntranceProps> = ({
             top: `${flyVector.landY}px`,
             animationDuration: '360ms',
           }}
-          className="imperial-shockwave-expand pointer-events-none fixed w-20 h-20 rounded-full border-2 border-amber-300/90 shadow-[0_0_26px_rgba(250,204,21,0.85)]"
+          className="imperial-shockwave-expand pointer-events-none absolute w-20 h-20 rounded-full border-2 border-amber-300/90 shadow-[0_0_26px_rgba(250,204,21,0.85)]"
         />
       )}
     </div>

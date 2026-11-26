@@ -122,7 +122,7 @@ const MobileSidebarOverlay: React.FC<MobileSidebarOverlayProps> = ({
           />
           <div className="flex flex-col flex-1 overflow-hidden">
             {tabNavigation}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain touch-manipulation">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain touch-pan-y">
               {tabContent}
             </div>
           </div>
@@ -761,7 +761,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   magnitudeLimit: value,
                 }));
               }}
-              className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-manipulation"
+              className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-pan-x"
             />
             <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
               <span>{t.brightestOnly}</span>
@@ -947,7 +947,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isOpen ? (
               <>
                 {tabNavigation}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain touch-manipulation">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs overscroll-contain touch-pan-y">
                   {tabContent}
                 </div>
               </>

@@ -51,6 +51,15 @@ import {
   getAdminQuickZoomTarget,
 } from '../../utils/skyMapLod';
 import {
+  clampSkyMapPan,
+  computePinchAnchoredPan,
+  computePinchZoomRatio,
+  computeTouchDistance,
+  computeTouchMidpoint,
+  isTapGesture,
+  type TouchPoint2D,
+} from '../../utils/mobileTouch';
+import {
   getLST,
   equatorialToHorizontal,
   getSpectralColor,
@@ -225,6 +234,13 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
 
   const isGodModeRef = useRef<boolean>(isGodMode);
   isGodModeRef.current = isGodMode;
+  const zoomRef = useRef<number>(zoom);
+  zoomRef.current = zoom;
+  const panRef = useRef<{ x: number; y: number }>(pan);
+  panRef.current = pan;
+  const onSelectStarRef = useRef<(star: Star) => void>(onSelectStar);
+  onSelectStarRef.current = onSelectStar;
+  const lastTouchInteractionAtRef = useRef<number>(0);
 
   const renderDataRef = useRef<RenderParamsSnapshot>({
     stars,
@@ -1285,6 +1301,36 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     }
   }, [zoom, isGodMode, hoveredStar]);
 
+  const findClosestCelestialAt = useCallback(
+    (mouseX: number, mouseY: number, isTouch: boolean): Star | null => {
+      const candidates: Array<{
+        list: Array<{ visible: boolean; x: number; y: number; star: Star }>;
+        maxDist: number;
+      }> = [
+        { list: projectedSatRef.current, maxDist: isTouch ? 24 : 18 },
+        { list: projectedSolarRef.current, maxDist: isTouch ? 24 : 18 },
+        { list: projectedDeepSkyRef.current, maxDist: isTouch ? 22 : 16 },
+        { list: projectedStarsRef.current, maxDist: isTouch ? 22 : 15 },
+      ];
+
+      let closest: Star | null = null;
+      for (const { list, maxDist } of candidates) {
+        let minDist = maxDist;
+        for (const proj of list) {
+          if (!proj.visible) continue;
+          const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = proj.star;
+          }
+        }
+        if (closest) return closest;
+      }
+      return null;
+    },
+    []
+  );
+
   // Mouse Move Event (Hover detection & Alt/Az coordinate reporting)
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -1294,10 +1340,15 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     const mouseY = e.clientY - rect.top;
 
     if (isDragging) {
-      setPan({
-        x: mouseX - dragStart.x,
-        y: mouseY - dragStart.y,
-      });
+      setPan(
+        clampSkyMapPan(
+          { x: mouseX - dragStart.x, y: mouseY - dragStart.y },
+          rect.width,
+          rect.height,
+          zoomRef.current,
+          isGodModeRef.current
+        )
+      );
       return;
     }
 
@@ -1324,55 +1375,7 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
       return;
     }
 
-    let closest: Star | null = null;
-    let minDist = 18;
-
-    for (const proj of projectedSatRef.current) {
-      if (!proj.visible) continue;
-      const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = proj.star;
-      }
-    }
-
-    if (!closest) {
-      for (const proj of projectedSolarRef.current) {
-        if (!proj.visible) continue;
-        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = proj.star;
-        }
-      }
-    }
-
-    if (!closest) {
-      minDist = 16;
-      for (const proj of projectedDeepSkyRef.current) {
-        if (!proj.visible) continue;
-        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = proj.star;
-        }
-      }
-    }
-
-    if (!closest) {
-      minDist = 15;
-      for (const proj of projectedStarsRef.current) {
-        if (!proj.visible) continue;
-        const dx = proj.x - mouseX;
-        const dy = proj.y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < minDist) {
-          minDist = dist;
-          closest = proj.star;
-        }
-      }
-    }
+    const closest = findClosestCelestialAt(mouseX, mouseY, false);
 
     setHoveredStar(closest);
     if (closest) {
@@ -1402,6 +1405,9 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
   };
 
   const handleClick = () => {
+    if (performance.now() - lastTouchInteractionAtRef.current < 450) {
+      return;
+    }
     if (hoveredStar) {
       if (isGodMode) {
         adminSoundFx.unlock();
@@ -1411,128 +1417,202 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
     }
   };
 
-  // Touch Handlers for Mobile 2D Sky Map
-  const touchPinchDist = useRef<number | null>(null);
+  // Attach non-passive native touch & Safari gesture listeners so multi-touch pinch zooms the map cleanly without triggering page pinch-zoom or accidental star selection
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 1) {
-      setIsDragging(true);
-      const touch = e.touches[0];
-      const rect = canvasRef.current!.getBoundingClientRect();
-      const mouseX = touch.clientX - rect.left;
-      const mouseY = touch.clientY - rect.top;
-      setDragStart({
-        x: mouseX - pan.x,
-        y: mouseY - pan.y,
-      });
+    let isTouchDragging = false;
+    let touchDragStart: TouchPoint2D = { x: 0, y: 0 };
+    let touchStartPos: TouchPoint2D = { x: 0, y: 0 };
+    let touchLastPos: TouchPoint2D = { x: 0, y: 0 };
+    let touchStartTime = 0;
+    let touchMoved = false;
+    let wasPinch = false;
+    let pinchDist: number | null = null;
+    let pinchMid: TouchPoint2D | null = null;
 
-      const lod = computeSkyMapLod(zoom, isGodMode);
-      if (lod.starsAlpha < 0.05) {
-        if (isGodMode) {
+    const getRelativePoint = (touch: Touch, rect: DOMRect): TouchPoint2D => ({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    });
+
+    const resetTouchState = () => {
+      isTouchDragging = false;
+      touchMoved = false;
+      wasPinch = false;
+      pinchDist = null;
+      pinchMid = null;
+      setIsDragging(false);
+    };
+
+    const handlePreventGesture = (e: Event) => {
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const handleNativeTouchStart = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+      lastTouchInteractionAtRef.current = performance.now();
+      const rect = canvas.getBoundingClientRect();
+
+      if (e.touches.length === 1) {
+        const pt = getRelativePoint(e.touches[0], rect);
+        touchStartPos = pt;
+        touchLastPos = pt;
+        touchStartTime = performance.now();
+        touchMoved = false;
+        wasPinch = false;
+        pinchDist = null;
+        pinchMid = null;
+        isTouchDragging = true;
+        touchDragStart = {
+          x: pt.x - panRef.current.x,
+          y: pt.y - panRef.current.y,
+        };
+        if (isGodModeRef.current) {
           adminSoundFx.unlock();
           adminSoundFx.playAdminPanStart();
         }
+      } else if (e.touches.length >= 2) {
+        wasPinch = true;
+        isTouchDragging = false;
+        setIsDragging(false);
+        const p0 = getRelativePoint(e.touches[0], rect);
+        const p1 = getRelativePoint(e.touches[1], rect);
+        pinchDist = computeTouchDistance(p0, p1);
+        pinchMid = computeTouchMidpoint(p0, p1);
+      }
+    };
+
+    const handleNativeTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+      lastTouchInteractionAtRef.current = performance.now();
+      const rect = canvas.getBoundingClientRect();
+
+      if (e.touches.length === 1 && isTouchDragging) {
+        const pt = getRelativePoint(e.touches[0], rect);
+        touchLastPos = pt;
+        if (!touchMoved && Math.hypot(pt.x - touchStartPos.x, pt.y - touchStartPos.y) > 10) {
+          touchMoved = true;
+        }
+        const nextPan = clampSkyMapPan(
+          { x: pt.x - touchDragStart.x, y: pt.y - touchDragStart.y },
+          rect.width,
+          rect.height,
+          zoomRef.current,
+          isGodModeRef.current
+        );
+        panRef.current = nextPan;
+        setPan(nextPan);
+      } else if (e.touches.length >= 2) {
+        const p0 = getRelativePoint(e.touches[0], rect);
+        const p1 = getRelativePoint(e.touches[1], rect);
+        const currentDist = computeTouchDistance(p0, p1);
+        const currMid = computeTouchMidpoint(p0, p1);
+
+        if (pinchDist === null) {
+          pinchDist = currentDist;
+          pinchMid = currMid;
+          wasPinch = true;
+          isTouchDragging = false;
+          return;
+        }
+
+        const ratio = computePinchZoomRatio(pinchDist, currentDist);
+        const prevZoom = zoomRef.current;
+        const nextZoom = applyMultiplicativeZoom(prevZoom, ratio, isGodModeRef.current);
+        const nextPan = computePinchAnchoredPan({
+          pan: panRef.current,
+          center: { x: rect.width * 0.5, y: rect.height * 0.5 },
+          prevMid: pinchMid ?? currMid,
+          currMid,
+          prevZoom,
+          nextZoom,
+          width: rect.width,
+          height: rect.height,
+          isGodMode: isGodModeRef.current,
+        });
+
+        pinchDist = currentDist;
+        pinchMid = currMid;
+        zoomRef.current = nextZoom;
+        panRef.current = nextPan;
+        setZoom(nextZoom);
+        setPan(nextPan);
+
+        if (isGodModeRef.current && nextZoom !== prevZoom) {
+          adminSoundFx.unlock();
+          adminSoundFx.playAdminZoomTick(nextZoom, ratio > 1);
+        }
+      }
+    };
+
+    const handleNativeTouchEnd = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+      lastTouchInteractionAtRef.current = performance.now();
+      const rect = canvas.getBoundingClientRect();
+
+      if (e.touches.length === 1) {
+        const pt = getRelativePoint(e.touches[0], rect);
+        pinchDist = null;
+        pinchMid = null;
+        wasPinch = true;
+        isTouchDragging = true;
+        touchMoved = true;
+        touchLastPos = pt;
+        touchDragStart = {
+          x: pt.x - panRef.current.x,
+          y: pt.y - panRef.current.y,
+        };
         return;
       }
 
-      let closest: Star | null = null;
-      let minDist = 24;
-      for (const proj of projectedSatRef.current) {
-        if (!proj.visible) continue;
-        const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = proj.star;
+      if (e.touches.length === 0) {
+        if (isGodModeRef.current && isTouchDragging && touchMoved) {
+          adminSoundFx.playAdminPanEnd();
         }
-      }
-      if (!closest) {
-        for (const proj of projectedSolarRef.current) {
-          if (!proj.visible) continue;
-          const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-          if (dist < minDist) {
-            minDist = dist;
-            closest = proj.star;
+        const elapsedMs = performance.now() - touchStartTime;
+        const lod = computeSkyMapLod(zoomRef.current, isGodModeRef.current);
+        if (
+          lod.starsAlpha >= 0.05 &&
+          isTapGesture(touchStartPos, touchLastPos, elapsedMs, wasPinch)
+        ) {
+          const closest = findClosestCelestialAt(touchLastPos.x, touchLastPos.y, true);
+          if (closest) {
+            if (isGodModeRef.current) {
+              adminSoundFx.unlock();
+              adminSoundFx.playAdminStarSelect();
+            }
+            onSelectStarRef.current(closest);
           }
         }
+        resetTouchState();
       }
-      if (!closest) {
-        minDist = 22;
-        for (const proj of projectedDeepSkyRef.current) {
-          if (!proj.visible) continue;
-          const dist = Math.hypot(proj.x - mouseX, proj.y - mouseY);
-          if (dist < minDist) {
-            minDist = dist;
-            closest = proj.star;
-          }
-        }
-      }
-      if (!closest) {
-        minDist = 22;
-        for (const proj of projectedStarsRef.current) {
-          if (!proj.visible) continue;
-          const dx = proj.x - mouseX;
-          const dy = proj.y - mouseY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < minDist) {
-            minDist = dist;
-            closest = proj.star;
-          }
-        }
-      }
-      if (closest) {
-        if (isGodMode) {
-          adminSoundFx.unlock();
-          adminSoundFx.playAdminStarSelect();
-        }
-        onSelectStar(closest);
-      } else if (isGodMode) {
-        adminSoundFx.unlock();
-        adminSoundFx.playAdminPanStart();
-      }
-    } else if (e.touches.length === 2) {
-      setIsDragging(false);
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchPinchDist.current = Math.hypot(dx, dy);
-    }
-  };
+    };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 1 && isDragging) {
-      const touch = e.touches[0];
-      const rect = canvasRef.current!.getBoundingClientRect();
-      const mouseX = touch.clientX - rect.left;
-      const mouseY = touch.clientY - rect.top;
-      setPan({
-        x: mouseX - dragStart.x,
-        y: mouseY - dragStart.y,
-      });
-    } else if (e.touches.length === 2 && touchPinchDist.current !== null) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const currentDist = Math.hypot(dx, dy);
-      const prevDist = touchPinchDist.current;
-      touchPinchDist.current = currentDist;
-      const ratio = prevDist > 0 ? currentDist / prevDist : 1;
-      const clampedRatio = Math.max(0.75, Math.min(1.35, ratio));
-      setZoom((prev) => {
-        const next = applyMultiplicativeZoom(prev, clampedRatio, isGodModeRef.current);
-        if (isGodModeRef.current && next !== prev) {
-          adminSoundFx.unlock();
-          adminSoundFx.playAdminZoomTick(next, clampedRatio > 1);
-        }
-        return next;
-      });
-    }
-  };
+    const handleNativeTouchCancel = () => {
+      lastTouchInteractionAtRef.current = performance.now();
+      resetTouchState();
+    };
 
-  const handleTouchEnd = () => {
-    if (isGodMode && isDragging) {
-      adminSoundFx.playAdminPanEnd();
-    }
-    setIsDragging(false);
-    touchPinchDist.current = null;
-  };
+    canvas.addEventListener('touchstart', handleNativeTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleNativeTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleNativeTouchCancel, { passive: false });
+    canvas.addEventListener('gesturestart', handlePreventGesture, { passive: false });
+    canvas.addEventListener('gesturechange', handlePreventGesture, { passive: false });
+    canvas.addEventListener('gestureend', handlePreventGesture, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleNativeTouchStart);
+      canvas.removeEventListener('touchmove', handleNativeTouchMove);
+      canvas.removeEventListener('touchend', handleNativeTouchEnd);
+      canvas.removeEventListener('touchcancel', handleNativeTouchCancel);
+      canvas.removeEventListener('gesturestart', handlePreventGesture);
+      canvas.removeEventListener('gesturechange', handlePreventGesture);
+      canvas.removeEventListener('gestureend', handlePreventGesture);
+    };
+  }, [findClosestCelestialAt]);
 
   const isRefiningView = isGodMode && zoom <= 0.36;
 
@@ -1547,9 +1627,6 @@ export const SkyMap2D: React.FC<SkyMap2DProps> = ({
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onClick={handleClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         className="w-full h-full block touch-none"
       />
 

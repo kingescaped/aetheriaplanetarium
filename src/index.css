@@ -38,24 +38,33 @@
     }
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+
   html,
   body,
   #root {
     width: 100%;
+    max-width: 100%;
     height: var(--app-height, 100vh);
     min-height: var(--app-height, 100vh);
     max-height: var(--app-height, 100vh);
     margin: 0;
     padding: 0;
     overflow: hidden;
+    overflow-x: clip;
     overscroll-behavior: none;
-    touch-action: manipulation;
+    touch-action: pan-x pan-y;
     user-select: none;
     -webkit-user-select: none;
     background-color: #030712;
   }
 
-  canvas {
+  canvas,
+  #aetheria-app-shell main {
     touch-action: none;
   }
 
@@ -251,6 +260,9 @@ select {
 .imperial-conic-rim {
   position: relative;
   overflow: hidden;
+  overflow: clip;
+  contain: paint;
+  isolation: isolate;
 }
 
 .imperial-conic-rim::before {
@@ -282,6 +294,9 @@ select {
 .imperial-shimmer-sweep {
   position: relative;
   overflow: hidden;
+  overflow: clip;
+  contain: paint;
+  isolation: isolate;
 }
 
 .imperial-shimmer-sweep::after {

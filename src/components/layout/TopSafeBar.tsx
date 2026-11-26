@@ -41,7 +41,7 @@ export const TopSafeBar: React.FC<TopSafeBarProps> = ({
 
   return (
     <header
-      className={`sticky top-0 w-full shrink-0 z-40 bg-[#030712] select-none safe-pt safe-h-header ${borderClass} ${desktopResetClass} ${className}`.trim()}
+      className={`sticky top-0 w-full shrink-0 z-40 bg-[#030712] select-none touch-none overflow-x-clip safe-pt safe-h-header ${borderClass} ${desktopResetClass} ${className}`.trim()}
       style={style}
     >
       <div

@@ -1094,7 +1094,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 onChange={(e) =>
                   onSettingsChange({ ...settings, magnitudeLimit: parseFloat(e.target.value) })
                 }
-                className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-manipulation"
+                className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer touch-pan-x"
               />
             </div>
           </div>
@@ -1239,7 +1239,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             <IOSNavigationBar
               title={lang === 'vi' ? 'Cài đặt' : 'Settings'}
             />
-            <div className="flex-1 overflow-y-auto py-4 safe-px space-y-4 overscroll-contain touch-manipulation">
+            <div className="flex-1 overflow-y-auto py-4 safe-px space-y-4 overscroll-contain touch-pan-y">
               {/* Guest Sign In Banner on Mobile Hub */}
               {user.isGuest && (
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/75 via-slate-900/90 to-indigo-950/75 border border-cyan-400/35 space-y-2.5">
@@ -1388,7 +1388,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     backLabel={lang === 'vi' ? 'Cài đặt' : 'Settings'}
                     onBack={handleCloseSection}
                   />
-                  <div className="flex-1 overflow-y-auto py-4 safe-px pb-8 overscroll-contain touch-manipulation">
+                  <div className="flex-1 overflow-y-auto py-4 safe-px pb-8 overscroll-contain touch-pan-y">
                     {renderSectionContent(activeSection)}
                   </div>
                 </motion.div>

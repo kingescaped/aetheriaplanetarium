@@ -43,7 +43,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="relative w-full shrink-0 z-50 bg-[#030712] border-t border-white/10 safe-pb safe-h-bottom md:hidden [transform:translateZ(0)]">
+    <nav className="relative w-full shrink-0 z-50 bg-[#030712] border-t border-white/10 touch-none safe-pb safe-h-bottom md:hidden [transform:translateZ(0)]">
       <div className="w-full h-[52px] flex items-center justify-around safe-px">
         {/* 1. 2D Sky Map */}
         <button

@@ -38,7 +38,7 @@ export const StarTelemetryHUD: React.FC<StarTelemetryHUDProps> = ({
 
   return (
     <div
-      className={`rounded-2xl glass-panel border border-cyan-400/40 shadow-glow-cyan text-xs font-mono select-none pointer-events-auto transition-all animate-in fade-in duration-200 ${className}`}
+      className={`rounded-2xl glass-panel border border-cyan-400/40 shadow-glow-cyan text-xs font-mono select-none touch-none pointer-events-auto transition-all animate-in fade-in duration-200 ${className}`}
     >
       {/* Header: Star name & Magnitude Badge */}
       <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-1.5 bg-slate-950/60">

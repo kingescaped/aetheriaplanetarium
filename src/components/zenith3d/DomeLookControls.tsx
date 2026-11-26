@@ -84,6 +84,7 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
   
   // Pinch-to-zoom multi-touch tracking
   const previousPinchDist = useRef<number | null>(null);
+  const wasMultiTouch = useRef<boolean>(false);
 
   const observerHeight = 1.6;
 
@@ -128,16 +129,29 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
   // 5. Native Pointer & Multi-Touch Gestures (1-finger rotate, 2-finger pinch zoom)
   useEffect(() => {
     const domElement = gl.domElement;
+    const activePointers = new Set<number>();
+
+    const preventNativeGesture = (e: Event) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
 
     // Mouse / Pointer Down
     const handlePointerDown = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      isDragging.current = true;
-      previousPointer.current = { x: e.clientX, y: e.clientY };
-      pointerDownPos.current = { x: e.clientX, y: e.clientY };
-      pointerDownTime.current = performance.now();
-      if (isGyroEnabled && onManualDrag) {
-        onManualDrag();
+      activePointers.add(e.pointerId);
+      if (activePointers.size >= 2) {
+        wasMultiTouch.current = true;
+        isDragging.current = false;
+      } else if (!wasMultiTouch.current) {
+        isDragging.current = true;
+        previousPointer.current = { x: e.clientX, y: e.clientY };
+        pointerDownPos.current = { x: e.clientX, y: e.clientY };
+        pointerDownTime.current = performance.now();
+        if (isGyroEnabled && onManualDrag) {
+          onManualDrag();
+        }
       }
       try {
         domElement.setPointerCapture(e.pointerId);
@@ -146,7 +160,7 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
 
     // Mouse / Pointer Move
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDragging.current) return;
+      if (!isDragging.current || activePointers.size >= 2 || wasMultiTouch.current) return;
 
       const deltaX = e.clientX - previousPointer.current.x;
       const deltaY = e.clientY - previousPointer.current.y;
@@ -168,10 +182,19 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      activePointers.delete(e.pointerId);
       isDragging.current = false;
       try {
         domElement.releasePointerCapture(e.pointerId);
       } catch {}
+
+      const suppressTap = e.type === 'pointercancel' || wasMultiTouch.current || activePointers.size > 0;
+      if (activePointers.size === 0) {
+        wasMultiTouch.current = false;
+      }
+      if (suppressTap) {
+        return;
+      }
 
       // Precision Star Selection on Click / Tap (< 9px movement, < 500ms duration)
       const dx = e.clientX - pointerDownPos.current.x;
@@ -264,17 +287,29 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
 
     // Touch Event Handlers for 2-finger Pinch-to-Zoom on Mobile
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        // Initialize pinch distance
+      if (e.touches.length >= 2) {
+        if (e.cancelable) e.preventDefault();
+        wasMultiTouch.current = true;
+        isDragging.current = false;
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         previousPinchDist.current = Math.hypot(dx, dy);
+      } else if (e.touches.length === 1 && activePointers.size === 0) {
+        wasMultiTouch.current = false;
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && previousPinchDist.current !== null) {
-        e.preventDefault(); // Prevent native mobile browser zoom
+      if (e.touches.length >= 2) {
+        if (e.cancelable) e.preventDefault();
+        if (previousPinchDist.current === null) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          previousPinchDist.current = Math.hypot(dx, dy);
+          wasMultiTouch.current = true;
+          isDragging.current = false;
+          return;
+        }
 
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -293,8 +328,17 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
       }
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        previousPinchDist.current = null;
+      }
+    };
+
+    const handleTouchCancel = () => {
+      activePointers.clear();
       previousPinchDist.current = null;
+      isDragging.current = false;
+      wasMultiTouch.current = false;
     };
 
     // Mouse wheel for optical FOV zoom
@@ -313,12 +357,17 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
     domElement.addEventListener('pointerup', handlePointerUp);
     domElement.addEventListener('pointercancel', handlePointerUp);
 
-    domElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+    domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
     domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
     domElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+    domElement.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+    domElement.addEventListener('gesturestart', preventNativeGesture, { passive: false });
+    domElement.addEventListener('gesturechange', preventNativeGesture, { passive: false });
+    domElement.addEventListener('gestureend', preventNativeGesture, { passive: false });
     domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
+      activePointers.clear();
       domElement.removeEventListener('pointerdown', handlePointerDown);
       domElement.removeEventListener('pointermove', handlePointerMove);
       domElement.removeEventListener('pointerup', handlePointerUp);
@@ -327,6 +376,10 @@ export const DomeLookControls: React.FC<DomeLookControlsProps> = ({
       domElement.removeEventListener('touchstart', handleTouchStart);
       domElement.removeEventListener('touchmove', handleTouchMove);
       domElement.removeEventListener('touchend', handleTouchEnd);
+      domElement.removeEventListener('touchcancel', handleTouchCancel);
+      domElement.removeEventListener('gesturestart', preventNativeGesture);
+      domElement.removeEventListener('gesturechange', preventNativeGesture);
+      domElement.removeEventListener('gestureend', preventNativeGesture);
       domElement.removeEventListener('wheel', handleWheel);
     };
   }, [gl, camera]);

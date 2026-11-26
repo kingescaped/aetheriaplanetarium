@@ -70,7 +70,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   const spectralColor = star.color || getSpectralColor(star.spect);
 
   return (
-    <div className="absolute top-3 right-[max(1rem,var(--sar))] max-h-[calc(100%-var(--sab)-4.25rem)] overflow-y-auto overscroll-contain touch-manipulation z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
+    <div className="absolute top-3 right-[max(1rem,var(--sar))] max-h-[calc(100%-var(--sab)-4.25rem)] overflow-y-auto overscroll-contain touch-pan-y z-20 w-80 md:w-96 space-y-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-right duration-300">
       {/* 1. Main Star Info Card */}
       <div className="rounded-2xl glass-panel border border-white/10 shadow-glass overflow-hidden">
         {/* Header with Celestial Body Glyph */}

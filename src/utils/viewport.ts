@@ -1,7 +1,84 @@
+export interface ViewportMetricsInput {
+  innerHeight: number;
+  screenWidth: number;
+  screenHeight: number;
+  isLandscape: boolean;
+  isIOS: boolean;
+  isStandalone: boolean;
+  safeAreaTopPx: number;
+  visualViewportHeight?: number | null;
+  visualViewportOffsetTop?: number | null;
+  visualViewportScale?: number | null;
+}
+
+export interface ViewportMetrics {
+  appHeight: number;
+  visualVh: number;
+  isKeyboardOpen: boolean;
+  isPagePinchZoomed: boolean;
+}
+
+const PINCH_SCALE_EPSILON = 0.02;
+const KEYBOARD_THRESHOLD_PX = 120;
+
+/**
+ * Computes shell height metrics while ignoring transient native pinch-zoom
+ * scale changes so `--app-height` never shrinks during multi-touch gestures.
+ */
+export function computeViewportMetrics(input: ViewportMetricsInput): ViewportMetrics {
+  const {
+    innerHeight,
+    screenWidth,
+    screenHeight,
+    isLandscape,
+    isIOS,
+    isStandalone,
+    safeAreaTopPx,
+    visualViewportHeight,
+    visualViewportOffsetTop,
+    visualViewportScale,
+  } = input;
+
+  const isPagePinchZoomed =
+    typeof visualViewportScale === 'number' &&
+    Number.isFinite(visualViewportScale) &&
+    Math.abs(visualViewportScale - 1) > PINCH_SCALE_EPSILON;
+
+  const hasVvH =
+    typeof visualViewportHeight === 'number' &&
+    Number.isFinite(visualViewportHeight) &&
+    visualViewportHeight > 0;
+  const vvH = hasVvH ? visualViewportHeight : innerHeight;
+
+  const screenH = isLandscape
+    ? Math.min(screenWidth, screenHeight)
+    : Math.max(screenWidth, screenHeight);
+
+  let appHeight = innerHeight;
+  if (isIOS && isStandalone && safeAreaTopPx > 0) {
+    appHeight = Math.abs(screenH - innerHeight) <= 110 ? screenH : innerHeight;
+  } else if (!isStandalone && !isPagePinchZoomed && hasVvH) {
+    appHeight = Math.round(vvH);
+  }
+
+  const isKeyboardOpen = !isPagePinchZoomed && appHeight - vvH > KEYBOARD_THRESHOLD_PX;
+  const visualVh = isKeyboardOpen
+    ? Math.round(vvH + (visualViewportOffsetTop ?? 0))
+    : appHeight;
+
+  return {
+    appHeight,
+    visualVh,
+    isKeyboardOpen,
+    isPagePinchZoomed,
+  };
+}
+
 /**
  * Synchronize --app-height and --visual-vh on the root document element to
  * counteract WebKit standalone status-bar height truncation and keyboard shrink,
- * and run the iOS standalone top-blur composite clearing sweep when edge-to-edge.
+ * lock down page-level iOS Safari/PWA pinch-zoom gestures, and run the iOS
+ * standalone top-blur composite clearing sweep when edge-to-edge.
  */
 export function initViewportCalibration(): () => void {
   if (typeof window === 'undefined' || !document.body) {
@@ -17,6 +94,7 @@ export function initViewportCalibration(): () => void {
     (navigator as unknown as { standalone?: boolean }).standalone === true;
 
   let satProbe: HTMLDivElement | null = null;
+  let pinchRecoveryTimer = 0;
 
   const ensureSatProbe = (): HTMLDivElement => {
     if (!satProbe) {
@@ -40,32 +118,30 @@ export function initViewportCalibration(): () => void {
 
     const innerH = window.innerHeight;
     const vv = window.visualViewport;
-    const vvH = vv ? vv.height : innerH;
+    const isLandscape = window.matchMedia('(orientation: landscape)').matches;
 
-    let appHeight = innerH;
-    if (isIOS && isStandalone && satPx > 0) {
-      const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-      const screenH = isLandscape
-        ? Math.min(window.screen.width, window.screen.height)
-        : Math.max(window.screen.width, window.screen.height);
-
-      if (screenH - innerH >= 0 && screenH - innerH <= 110) {
-        appHeight = screenH;
-      }
-    } else if (!isStandalone && vvH > 0) {
-      appHeight = Math.round(vvH);
-    }
-
-    const isKeyboardOpen = appHeight - vvH > 120;
-    const visualVh = isKeyboardOpen
-      ? Math.round(vvH + (vv?.offsetTop ?? 0))
-      : appHeight;
+    const metrics = computeViewportMetrics({
+      innerHeight: innerH,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      isLandscape,
+      isIOS,
+      isStandalone,
+      safeAreaTopPx: satPx,
+      visualViewportHeight: vv?.height ?? null,
+      visualViewportOffsetTop: vv?.offsetTop ?? null,
+      visualViewportScale: vv?.scale ?? null,
+    });
 
     doc.classList.toggle('ios-standalone', isIOS && isStandalone && satPx > 0);
-    doc.style.setProperty('--app-height', `${appHeight}px`);
-    doc.style.setProperty('--visual-vh', `${visualVh}px`);
+    doc.style.setProperty('--app-height', `${metrics.appHeight}px`);
+    doc.style.setProperty('--visual-vh', `${metrics.visualVh}px`);
 
-    if (isIOS && (window.scrollY !== 0 || window.scrollX !== 0)) {
+    if (metrics.isPagePinchZoomed) {
+      window.clearTimeout(pinchRecoveryTimer);
+      pinchRecoveryTimer = window.setTimeout(syncViewport, 180);
+      window.scrollTo(0, 0);
+    } else if (isIOS && (window.scrollY !== 0 || window.scrollX !== 0)) {
       window.scrollTo(0, 0);
     }
   };
@@ -144,6 +220,24 @@ export function initViewportCalibration(): () => void {
     );
   };
 
+  const preventNativeGesture = (e: Event) => {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+  };
+
+  const preventMultiTouchPageZoom = (e: TouchEvent) => {
+    if (e.touches.length >= 2 && e.cancelable) {
+      e.preventDefault();
+    }
+  };
+
+  const preventCtrlWheelZoom = (e: WheelEvent) => {
+    if (e.ctrlKey && e.cancelable) {
+      e.preventDefault();
+    }
+  };
+
   const handleLoad = () => {
     syncViewport();
     clearIOSTopBlurComposite(true);
@@ -184,6 +278,13 @@ export function initViewportCalibration(): () => void {
     }, 1450)
   );
 
+  document.addEventListener('gesturestart', preventNativeGesture, { passive: false });
+  document.addEventListener('gesturechange', preventNativeGesture, { passive: false });
+  document.addEventListener('gestureend', preventNativeGesture, { passive: false });
+  document.addEventListener('touchstart', preventMultiTouchPageZoom, { passive: false });
+  document.addEventListener('touchmove', preventMultiTouchPageZoom, { passive: false });
+  document.addEventListener('wheel', preventCtrlWheelZoom, { passive: false });
+
   window.addEventListener('resize', syncViewport);
   window.addEventListener('orientationchange', handleOrientationChange);
   window.addEventListener('focusout', handleFocusOut);
@@ -196,6 +297,7 @@ export function initViewportCalibration(): () => void {
     cancelAnimationFrame(rafId);
     cancelAnimationFrame(sweepRaf);
     cancelAnimationFrame(readySweepRaf);
+    window.clearTimeout(pinchRecoveryTimer);
     for (const id of timers) {
       clearTimeout(id);
     }
@@ -206,6 +308,12 @@ export function initViewportCalibration(): () => void {
     blurPanel = null;
     satProbe?.remove();
     satProbe = null;
+    document.removeEventListener('gesturestart', preventNativeGesture);
+    document.removeEventListener('gesturechange', preventNativeGesture);
+    document.removeEventListener('gestureend', preventNativeGesture);
+    document.removeEventListener('touchstart', preventMultiTouchPageZoom);
+    document.removeEventListener('touchmove', preventMultiTouchPageZoom);
+    document.removeEventListener('wheel', preventCtrlWheelZoom);
     window.removeEventListener('load', handleLoad);
     window.removeEventListener('resize', syncViewport);
     window.removeEventListener('orientationchange', handleOrientationChange);
