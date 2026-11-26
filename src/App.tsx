@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { AlertCircle, X } from 'lucide-react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { InfoPanel } from './components/layout/InfoPanel';
@@ -10,6 +11,26 @@ import { BottomNav } from './components/layout/BottomNav';
 import { SkyMap2D } from './components/planetarium/SkyMap2D';
 import { WeatherBadge } from './components/weather/WeatherBadge';
 import { useAstronomyWeather } from './hooks/useAstronomyWeather';
+import { useGeolocation } from './hooks/useGeolocation';
+import { AdminLoginEntrance } from './components/auth/AdminLoginEntrance';
+import { getFirebaseAuth } from './services/firebase';
+import {
+  readAdminGodModeEnabled,
+  writeAdminGodModeEnabled,
+  startSessionKeepAlive,
+} from './services/tokenSession';
+import {
+  subscribeToAuthState,
+  signOutUser,
+  DEFAULT_USER_PREFERENCES,
+} from './services/authService';
+import {
+  loadUserCloudData,
+  saveCloudProfile,
+  syncCloudUserData,
+  uploadAvatarToCloudflare,
+  type CloudUserBundle,
+} from './services/profileApi';
 
 const ZenithDomeCanvas = lazy(() =>
   import('./components/zenith3d/ZenithDomeCanvas').then((m) => ({
@@ -24,6 +45,11 @@ const SearchBarModal = lazy(() =>
 const AccountModal = lazy(() =>
   import('./components/account/AccountModal').then((m) => ({
     default: m.AccountModal,
+  }))
+);
+const AuthModal = lazy(() =>
+  import('./components/auth/AuthModal').then((m) => ({
+    default: m.AuthModal,
   }))
 );
 const WeatherDetailPanel = lazy(() =>
@@ -42,7 +68,14 @@ import {
   CelestialSettings,
   Star
 } from './types/celestial';
-import { UserProfile, ObservationLog, UserPreferences } from './types/account';
+import {
+  UserProfile,
+  ObservationLog,
+  UserPreferences,
+  SavedObserverLocation,
+  createGuestUserProfile,
+  isAdminUser,
+} from './types/account';
 import { STAR_CATALOG } from './data/stars';
 import { getLST, batchComputeHorizontalCoordsInPlace } from './utils/astronomy';
 import { computeSolarSystemBodies } from './utils/solarSystem';
@@ -54,11 +87,66 @@ import { computeMilkyWayOverlay } from './utils/milkyWay';
 import { computeSatelliteBodies } from './utils/satellites';
 import { useSatelliteTles } from './hooks/useSatelliteTles';
 import type { SkyCaptureMetadata } from './types/atmosphere';
-import { Language } from './utils/i18n';
+import { Language, TRANSLATIONS } from './utils/i18n';
 import { soundFx } from './utils/audio';
+import { adminSoundFx } from './utils/adminAudio';
 import { usePWA } from './hooks/usePWA';
 import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
 import { AetheriaSplashScreen } from './components/common/AetheriaSplashScreen';
+
+const DEFAULT_FAVORITES = ['sirius', 'betelgeuse', 'vega', 'polaris'];
+
+const DEFAULT_GUEST_LOGS: ObservationLog[] = [
+  {
+    id: 'log_1',
+    starId: 'sirius',
+    starName: 'Sirius (Dog Star)',
+    date: '11/22/2026, 8:45 PM',
+    locationName: 'Hanoi Observatory',
+    notes: 'Brilliant scintillation in the night sky. Unmistakable blue-white diamond glow.',
+    altitude: 42.5,
+    azimuth: 145.2,
+  },
+  {
+    id: 'log_2',
+    starId: 'betelgeuse',
+    starName: 'Betelgeuse',
+    date: '11/22/2026, 9:15 PM',
+    locationName: 'Hanoi Observatory',
+    notes: 'Deep reddish orange hue clearly visible to the naked eye.',
+    altitude: 58.1,
+    azimuth: 172.0,
+  },
+];
+
+function readGuestFavorites(): string[] {
+  try {
+    const saved = localStorage.getItem('aetheria_favorites');
+    return saved ? JSON.parse(saved) : DEFAULT_FAVORITES;
+  } catch {
+    return DEFAULT_FAVORITES;
+  }
+}
+
+function readGuestLogs(): ObservationLog[] {
+  try {
+    const saved = localStorage.getItem('aetheria_logs');
+    return saved ? JSON.parse(saved) : DEFAULT_GUEST_LOGS;
+  } catch {
+    return DEFAULT_GUEST_LOGS;
+  }
+}
+
+function readGuestPreferences(): UserPreferences {
+  try {
+    const saved = localStorage.getItem('aetheria_prefs');
+    return saved
+      ? { ...DEFAULT_USER_PREFERENCES, ...JSON.parse(saved) }
+      : { ...DEFAULT_USER_PREFERENCES };
+  } catch {
+    return { ...DEFAULT_USER_PREFERENCES };
+  }
+}
 
 export function App() {
   // PWA Service Worker & Install State
@@ -128,7 +216,13 @@ export function App() {
     latitude: 21.0285,
     longitude: 105.8542,
   });
-  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const {
+    locate,
+    isLocating,
+    error: geoError,
+    clearError: clearGeoError,
+    lastAccuracy,
+  } = useGeolocation(lang);
 
   // Time Machine Epoch
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -174,9 +268,9 @@ export function App() {
     return isSmallScreen || isMediaSmall || isMobileUA;
   };
 
-  // UI Panels State (Sidebar LUÔN đóng mặc định trên Mobile ngay từ đầu)
+  // UI Panels State (Sidebar starts closed on BOTH desktop and mobile on initial page load)
   const [isMobile, setIsMobile] = useState<boolean>(checkIsMobile);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => !checkIsMobile());
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -193,84 +287,189 @@ export function App() {
   const [selectedStarId, setSelectedStarId] = useState<string | number>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAccountOpen, setIsAccountOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [showAdminEntrance, setShowAdminEntrance] = useState<boolean>(false);
+  const [adminBadgeJustLanded, setAdminBadgeJustLanded] = useState<boolean>(false);
+  const adminLandTimerRef = useRef<number>(0);
   const [isCaptureOpen, setIsCaptureOpen] = useState<boolean>(false);
   const [capturedRawCanvas, setCapturedRawCanvas] = useState<HTMLCanvasElement | null>(null);
   const [capturedMeta, setCapturedMeta] = useState<SkyCaptureMetadata | null>(null);
   const captureSkyFrameRef = useRef<(() => HTMLCanvasElement | null) | null>(null);
 
-  // Stargazer Account & User Preferences
-  const [user, setUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('aetheria_user');
-    return saved ? JSON.parse(saved) : {
-      id: 'usr_stargazer_1',
-      name: 'Stargazer Leo',
-      callsign: 'LeoCosmos',
-      email: 'leo@stargazer.space',
-      avatarUrl: '',
-      rank: 'Senior Astrophotographer',
-      joinedDate: 'Nov 2026',
-      isGuest: false,
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(adminLandTimerRef.current);
     };
-  });
+  }, []);
 
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('aetheria_favorites');
-    return saved ? JSON.parse(saved) : ['sirius', 'betelgeuse', 'vega', 'polaris'];
-  });
+  // Preload AccountModal chunk when AuthModal opens so Admin Entrance target mounts immediately
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      void import('./components/account/AccountModal');
+    }
+  }, [isAuthModalOpen]);
 
-  const [observationLogs, setObservationLogs] = useState<ObservationLog[]>(() => {
-    const saved = localStorage.getItem('aetheria_logs');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'log_1',
-        starId: 'sirius',
-        starName: 'Sirius (Dog Star)',
-        date: '11/22/2026, 8:45 PM',
-        locationName: 'Hanoi Observatory',
-        notes: 'Brilliant scintillation in the night sky. Unmistakable blue-white diamond glow.',
-        altitude: 42.5,
-        azimuth: 145.2,
-      },
-      {
-        id: 'log_2',
-        starId: 'betelgeuse',
-        starName: 'Betelgeuse',
-        date: '11/22/2026, 9:15 PM',
-        locationName: 'Hanoi Observatory',
-        notes: 'Deep reddish orange hue clearly visible to the naked eye.',
-        altitude: 58.1,
-        azimuth: 172.0,
+  // Stargazer Account, Auth & Cloud User Preferences (Default: Guest Mode)
+  const [user, setUser] = useState<UserProfile>(() => createGuestUserProfile(lang));
+  const isAdmin = isAdminUser(user);
+  const [godModeEnabled, setGodModeEnabled] = useState<boolean>(readAdminGodModeEnabled);
+
+  const handleCloseAuthModal = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
+
+  const handleToggleGodMode = useCallback(
+    (next: boolean) => {
+      writeAdminGodModeEnabled(next);
+      setGodModeEnabled(next);
+      if (isAdmin) {
+        adminSoundFx.unlock();
+        adminSoundFx.playAdminUiClick();
+      } else {
+        soundFx.playToggle(next);
       }
-    ];
-  });
+    },
+    [isAdmin]
+  );
 
-  const [preferences, setPreferences] = useState<UserPreferences>(() => {
-    const saved = localStorage.getItem('aetheria_prefs');
-    return saved ? JSON.parse(saved) : {
-      nightVisionMode: false,
-      soundEnabled: true,
-      coordinateFormat: 'DECIMAL',
-      fovSpeed: 1.0,
+  // Maintain active Firebase/Worker sessions across token expiry, tab wake, and reconnect
+  useEffect(() => {
+    return startSessionKeepAlive(() => getFirebaseAuth().currentUser);
+  }, []);
+
+  // Sync exclusive Admin audio engine & register one-time gesture unlock when Admin is active
+  useEffect(() => {
+    adminSoundFx.setAdminActive(isAdmin);
+    if (!isAdmin) {
+      adminSoundFx.stopAmbient();
+      return;
+    }
+
+    const handleGestureUnlock = () => {
+      adminSoundFx.unlock();
+      window.removeEventListener('pointerdown', handleGestureUnlock);
+      window.removeEventListener('keydown', handleGestureUnlock);
     };
-  });
 
-  // Persist user data
+    window.addEventListener('pointerdown', handleGestureUnlock, { passive: true, once: true });
+    window.addEventListener('keydown', handleGestureUnlock, { passive: true, once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleGestureUnlock);
+      window.removeEventListener('keydown', handleGestureUnlock);
+      adminSoundFx.stopAmbient();
+    };
+  }, [isAdmin]);
+
+  const [favorites, setFavorites] = useState<string[]>(readGuestFavorites);
+  const [observationLogs, setObservationLogs] = useState<ObservationLog[]>(readGuestLogs);
+  const [preferences, setPreferences] = useState<UserPreferences>(readGuestPreferences);
+
+  const langRef = useRef<Language>(lang);
+  langRef.current = lang;
+  const isAuthModalOpenRef = useRef<boolean>(isAuthModalOpen);
+  isAuthModalOpenRef.current = isAuthModalOpen;
+  const hydratedUidRef = useRef<string | null>(null);
+
+  const applyCloudBundle = useCallback((bundle: CloudUserBundle) => {
+    hydratedUidRef.current = bundle.profile.id;
+    setUser(bundle.profile);
+    setFavorites(bundle.favorites);
+    setObservationLogs(bundle.observationLogs);
+    setPreferences(bundle.preferences);
+    if (bundle.profile.savedLocation) {
+      setLocation({
+        name: bundle.profile.savedLocation.name,
+        latitude: bundle.profile.savedLocation.latitude,
+        longitude: bundle.profile.savedLocation.longitude,
+      });
+    }
+  }, []);
+
+  const handleAuthSuccess = useCallback(
+    (bundle?: CloudUserBundle) => {
+      if (!bundle) return;
+      applyCloudBundle(bundle);
+      if (isAdminUser(bundle.profile) && godModeEnabled) {
+        window.clearTimeout(adminLandTimerRef.current);
+        setAdminBadgeJustLanded(false);
+        setIsAccountOpen(true);
+        setShowAdminEntrance(true);
+      }
+    },
+    [applyCloudBundle, godModeEnabled]
+  );
+
+  // Subscribe to real Firebase Auth state + hydrate Firestore & Worker verified role
   useEffect(() => {
-    localStorage.setItem('aetheria_user', JSON.stringify(user));
-  }, [user]);
+    let active = true;
+    const unsubscribe = subscribeToAuthState((firebaseUser) => {
+      if (!active) return;
+
+      if (!firebaseUser) {
+        hydratedUidRef.current = null;
+        window.clearTimeout(adminLandTimerRef.current);
+        setShowAdminEntrance(false);
+        setAdminBadgeJustLanded(false);
+        setUser(createGuestUserProfile(langRef.current));
+        setFavorites(readGuestFavorites());
+        setObservationLogs(readGuestLogs());
+        setPreferences(readGuestPreferences());
+        return;
+      }
+
+      if (isAuthModalOpenRef.current) {
+        return;
+      }
+
+      if (hydratedUidRef.current === firebaseUser.uid) {
+        return;
+      }
+
+      loadUserCloudData(firebaseUser)
+        .then((bundle) => {
+          if (!active) return;
+          applyCloudBundle(bundle);
+        })
+        .catch((err) => {
+          console.warn('Cloud profile hydration error:', err);
+        });
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // Keep guest display label synchronized with active language
+  useEffect(() => {
+    setUser((prev) =>
+      prev.isGuest && prev.id === 'guest_observer'
+        ? { ...prev, name: createGuestUserProfile(lang).name }
+        : prev
+    );
+  }, [lang]);
+
+  // Persist guest data locally only when in guest mode
+  useEffect(() => {
+    if (user.isGuest) {
+      localStorage.setItem('aetheria_favorites', JSON.stringify(favorites));
+    }
+  }, [favorites, user.isGuest]);
 
   useEffect(() => {
-    localStorage.setItem('aetheria_favorites', JSON.stringify(favorites));
-  }, [favorites]);
+    if (user.isGuest) {
+      localStorage.setItem('aetheria_logs', JSON.stringify(observationLogs));
+    }
+  }, [observationLogs, user.isGuest]);
 
   useEffect(() => {
-    localStorage.setItem('aetheria_logs', JSON.stringify(observationLogs));
-  }, [observationLogs]);
-
-  useEffect(() => {
-    localStorage.setItem('aetheria_prefs', JSON.stringify(preferences));
+    if (user.isGuest) {
+      localStorage.setItem('aetheria_prefs', JSON.stringify(preferences));
+    }
     soundFx.setEnabled(preferences.soundEnabled ?? true);
-  }, [preferences]);
+  }, [preferences, user.isGuest]);
 
   // Telemetry HUD Cursor Coordinates
   const [cursorCoords, setCursorCoords] = useState<{
@@ -374,7 +573,12 @@ export function App() {
   }, [satelliteBodies, solarBodies, deepSkyBodies, calculatedStars, selectedStarId]);
 
   const handleSelectCelestial = (star: Star) => {
-    soundFx.playStarSelect();
+    if (isAdmin) {
+      adminSoundFx.unlock();
+      adminSoundFx.playAdminStarSelect();
+    } else {
+      soundFx.playStarSelect();
+    }
     setSelectedStarId(star.id);
     if (star.bodyType === 'dso' && !settings.showDeepSky) {
       setSettings((prev) => ({ ...prev, showDeepSky: true }));
@@ -404,28 +608,14 @@ export function App() {
     return () => clearInterval(interval);
   }, [settings.timeSpeed]);
 
-  // Geolocation detector
-  const handleGetGeolocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
+  // Geolocation detector via useGeolocation hook
+  const handleGetGeolocation = async (): Promise<ObserverLocation | null> => {
+    clearGeoError();
+    const resolved = await locate();
+    if (resolved) {
+      setLocation(resolved);
     }
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({
-          name: 'My GPS Location',
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
-        setIsLocating(false);
-      },
-      (err) => {
-        console.warn('Geolocation error:', err.message);
-        setIsLocating(false);
-      },
-      { timeout: 10000 }
-    );
+    return resolved;
   };
 
   // Keyboard shortcut Ctrl+K for search
@@ -440,12 +630,83 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Handle Favorites toggle
+  // Cloud profile, favorites, logs, preferences synchronization helpers
+  const handleUpdateUser = async (updated: UserProfile) => {
+    setUser(updated);
+    if (!updated.isGuest && updated.id !== 'guest_observer') {
+      await saveCloudProfile(updated.id, {
+        name: updated.name,
+        callsign: updated.callsign,
+        avatarUrl: updated.avatarUrl,
+        rank: updated.rank,
+        savedLocation: updated.savedLocation,
+      });
+    }
+  };
+
+  const handleSaveLocationToProfile = async (loc?: ObserverLocation) => {
+    if (user.isGuest || user.id === 'guest_observer') return;
+    const target = loc ?? location;
+    const savedLocation: SavedObserverLocation = {
+      name: target.name,
+      latitude: target.latitude,
+      longitude: target.longitude,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveCloudProfile(user.id, { savedLocation });
+    setUser((prev) => ({ ...prev, savedLocation }));
+  };
+
+  const handleUploadAvatar = async (file: File): Promise<string> => {
+    const { avatarUrl } = await uploadAvatarToCloudflare(file);
+    setUser((prev) => ({ ...prev, avatarUrl }));
+    return avatarUrl;
+  };
+
+  const handleSignOut = async () => {
+    await signOutUser();
+  };
+
   const handleToggleFavorite = (starId: string | number) => {
     const strId = String(starId);
-    setFavorites((prev) =>
-      prev.includes(strId) ? prev.filter((id) => id !== strId) : [...prev, strId]
-    );
+    const nextFavorites = favorites.includes(strId)
+      ? favorites.filter((id) => id !== strId)
+      : [...favorites, strId];
+    setFavorites(nextFavorites);
+    if (!user.isGuest && user.id !== 'guest_observer') {
+      syncCloudUserData(user.id, { favorites: nextFavorites }).catch((err) => {
+        console.warn('Cloud favorites sync failed:', err);
+      });
+    }
+  };
+
+  const handleAddLog = (newLog: Omit<ObservationLog, 'id'>) => {
+    const nextLogs = [{ ...newLog, id: `log_${Date.now()}` }, ...observationLogs];
+    setObservationLogs(nextLogs);
+    if (!user.isGuest && user.id !== 'guest_observer') {
+      syncCloudUserData(user.id, { observationLogs: nextLogs }).catch((err) => {
+        console.warn('Cloud observation logs sync failed:', err);
+      });
+    }
+  };
+
+  const handleDeleteLog = (id: string) => {
+    const nextLogs = observationLogs.filter((log) => log.id !== id);
+    setObservationLogs(nextLogs);
+    if (!user.isGuest && user.id !== 'guest_observer') {
+      syncCloudUserData(user.id, { observationLogs: nextLogs }).catch((err) => {
+        console.warn('Cloud observation logs sync failed:', err);
+      });
+    }
+  };
+
+  const handleUpdatePreferences = (nextPrefs: UserPreferences) => {
+    setPreferences(nextPrefs);
+    if (!user.isGuest && user.id !== 'guest_observer') {
+      syncCloudUserData(user.id, { preferences: nextPrefs }).catch((err) => {
+        console.warn('Cloud preferences sync failed:', err);
+      });
+    }
   };
 
   const handleOpenCapture = () => {
@@ -475,8 +736,8 @@ export function App() {
     setIsCaptureOpen(true);
   };
 
-  // Check if full-screen modal (Settings / Search / Capture) is open to hide Main Header
-  const isAnyModalOpen = isAccountOpen || isSearchOpen || isCaptureOpen;
+  // Check if full-screen modal (Settings / Search / Capture / Auth) is open to hide Main Header
+  const isAnyModalOpen = isAccountOpen || isSearchOpen || isCaptureOpen || isAuthModalOpen;
 
   return (
     <>
@@ -514,6 +775,13 @@ export function App() {
                 setIsSidebarOpen((prev) => !prev);
               }}
               onOpenCapture={handleOpenCapture}
+              user={user}
+              isAdmin={isAdmin}
+              onOpenAuth={() => {
+                soundFx.playModalTransition();
+                setIsWeatherOpen(false);
+                setIsAuthModalOpen(true);
+              }}
               weatherSlot={
                 <WeatherBadge
                   resolved={weather.resolved}
@@ -553,6 +821,8 @@ export function App() {
                   equatorialGridData={equatorialGridData}
                   milkyWayData={milkyWayData}
                   captureRef={captureSkyFrameRef}
+                  isAdmin={isAdmin}
+                  godModeEnabled={godModeEnabled}
                   lang={lang}
                 />
               ) : (
@@ -615,6 +885,27 @@ export function App() {
                   lang={lang}
                   compact
                 />
+              </div>
+            )}
+
+            {/* Non-intrusive Geolocation Error Toast */}
+            {geoError && !isAnyModalOpen && (
+              <div
+                role="alert"
+                className="absolute bottom-3 md:bottom-16 left-[max(0.75rem,var(--sal))] right-[max(0.75rem,var(--sar))] md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-md z-30 pointer-events-auto"
+              >
+                <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-rose-950/95 border border-rose-400/45 text-rose-100 text-xs shadow-[0_12px_32px_rgba(0,0,0,0.65)] backdrop-blur-xl">
+                  <AlertCircle className="w-4 h-4 text-rose-300 shrink-0 mt-0.5" aria-hidden="true" />
+                  <span className="flex-1 leading-relaxed">{geoError}</span>
+                  <button
+                    type="button"
+                    onClick={clearGeoError}
+                    aria-label={TRANSLATIONS[lang].geoDismissError}
+                    className="p-1 rounded-lg text-rose-200 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -724,6 +1015,10 @@ export function App() {
             }}
             location={location}
             onLocationChange={setLocation}
+            onGetGeolocation={handleGetGeolocation}
+            isLocating={isLocating}
+            geoError={geoError}
+            geoAccuracy={lastAccuracy}
             currentDate={currentDate}
             onDateChange={setCurrentDate}
             settings={settings}
@@ -744,7 +1039,23 @@ export function App() {
                   isOpen={isAccountOpen}
                   onClose={() => setIsAccountOpen(false)}
                   user={user}
-                  onUpdateUser={setUser}
+                  isAdmin={isAdmin}
+                  godModeEnabled={godModeEnabled}
+                  onToggleGodMode={handleToggleGodMode}
+                  adminBadgeJustLanded={adminBadgeJustLanded}
+                  isAdminEntranceActive={showAdminEntrance}
+                  onUpdateUser={handleUpdateUser}
+                  onOpenAuth={() => {
+                    soundFx.playModalTransition();
+                    setIsAuthModalOpen(true);
+                  }}
+                  onSignOut={handleSignOut}
+                  onGetGeolocation={handleGetGeolocation}
+                  isLocating={isLocating}
+                  geoError={geoError}
+                  geoAccuracy={lastAccuracy}
+                  onSaveLocationToProfile={handleSaveLocationToProfile}
+                  onUploadAvatar={handleUploadAvatar}
                   favorites={favorites}
                   onToggleFavorite={handleToggleFavorite}
                   onSelectStar={(id) => {
@@ -757,17 +1068,10 @@ export function App() {
                     setViewMode('3D_ZENITH_DOME');
                   }}
                   observationLogs={observationLogs}
-                  onAddLog={(newLog) => {
-                    setObservationLogs((prev) => [
-                      { ...newLog, id: `log_${Date.now()}` },
-                      ...prev,
-                    ]);
-                  }}
-                  onDeleteLog={(id) => {
-                    setObservationLogs((prev) => prev.filter((log) => log.id !== id));
-                  }}
+                  onAddLog={handleAddLog}
+                  onDeleteLog={handleDeleteLog}
                   preferences={preferences}
-                  onUpdatePreferences={setPreferences}
+                  onUpdatePreferences={handleUpdatePreferences}
                   starsCatalog={[...satelliteBodies, ...solarBodies, ...deepSkyBodies, ...calculatedStars]}
                   settings={settings}
                   onSettingsChange={setSettings}
@@ -825,6 +1129,32 @@ export function App() {
             />
           </Suspense>
         )}
+
+        <AnimatePresence>
+          {isAuthModalOpen && (
+            <Suspense fallback={null}>
+              <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={handleCloseAuthModal}
+                lang={lang}
+                onSuccess={handleAuthSuccess}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AdminLoginEntrance
+          isOpen={showAdminEntrance}
+          lang={lang}
+          onLand={() => {
+            window.clearTimeout(adminLandTimerRef.current);
+            setAdminBadgeJustLanded(true);
+            adminLandTimerRef.current = window.setTimeout(() => {
+              setAdminBadgeJustLanded(false);
+            }, 1200);
+          }}
+          onComplete={() => setShowAdminEntrance(false)}
+        />
       </div>
 
       <AetheriaSplashScreen isReady={isAppReady} lang={lang} />

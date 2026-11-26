@@ -95,6 +95,9 @@ export default defineConfig({
             return 'vendor-react';
           }
           if (id.includes('node_modules')) {
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
             if (id.includes('astronomy-engine')) {
               return 'vendor-astronomy';
             }

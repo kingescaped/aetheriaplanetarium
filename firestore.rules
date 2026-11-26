@@ -1,0 +1,349 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId} (must equal request.auth.uid)
+// Fields:
+//   - id: string (required, immutable, must equal userId & request.auth.uid, 1..128 chars)
+//   - name: string (required, mutable, 1..80 chars, non-empty after trim)
+//   - callsign: string (required, mutable, 1..40 chars, non-empty after trim)
+//   - email: string (required, immutable, valid email 3..120 chars; matches auth token email on create)
+//   - avatarUrl: string (required, mutable, "" or http(s)://... URL <= 500 chars)
+//   - rank: string (required, mutable, observer rank; 'Supreme Sovereign' requires supreme_admin)
+//   - role: string (required, immutable, 'observer', or 'supreme_admin' only for admin@lvq.std on create)
+//   - adminTitle: string (optional, immutable, 1..80 chars non-empty after trim, only when role == 'supreme_admin')
+//   - joinedDate: string (required, immutable, 1..40 chars, non-empty after trim)
+//   - savedLocation: map (optional, mutable, keys:
+//       name (string, 1..120 chars, non-empty after trim),
+//       latitude (number, -90..90),
+//       longitude (number, -180..180),
+//       updatedAt? (timestamp or string 1..64 chars))
+//   - favorites: list (required, mutable, <= 500 strings, total joined size <= 40000 chars,
+//       head/tail items 1..120 chars)
+//   - observationLogs: list (required, mutable, <= 500 ObservationLog maps;
+//       empty list allowed; non-empty validates schema, types, enums, and bounds on head [0..4] and tail [size-1]
+//       within Firestore Rules expression limits; fields: id, starId, starName, date, locationName,
+//       notes, altitude, azimuth, equipment?, seeingCondition?)
+//   - preferences: map (required, mutable, allowed keys only:
+//       nightVisionMode? (bool), soundEnabled? (bool),
+//       coordinateFormat? ('DECIMAL' | 'DMS'), distanceUnit? ('LY' | 'PARSEC'),
+//       starGlowIntensity? (number 0..10), fovSpeed? (number 0.1..10))
+//   - updatedAt: timestamp or string (optional, mutable, string 1..64 chars if string)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all collections and subcollections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return request.resource.data.id == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    function hasAuthEmail() {
+      return isAuthenticated() &&
+        'email' in request.auth.token &&
+        request.auth.token.email != null &&
+        request.auth.token.email is string;
+    }
+
+    // Note: Email/Password accounts for admin@lvq.std bootstrap immediately on sign-up
+    // without email verification because .std is a non-deliverable internal domain.
+    function isSupremeAdminEmail() {
+      return hasAuthEmail() &&
+        request.auth.token.email.lower() == 'admin@lvq.std';
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isNonEmptyString(val, minLen, maxLen) {
+      return val is string &&
+        val.size() >= minLen &&
+        val.size() <= maxLen &&
+        val.trim().size() >= 1;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 3 &&
+        email.size() <= 120 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        url.size() <= 500 &&
+        (url.matches("^https://[^\\s]+$") || url.matches("^http://[^\\s]+$"));
+    }
+
+    function isValidAvatarUrl(url) {
+      return url is string && (url == "" || isValidUrl(url));
+    }
+
+    function isValidUpdatedAt(val) {
+      return val is timestamp || (val is string && val.size() >= 1 && val.size() <= 64);
+    }
+
+    function isValidRank(rank, role) {
+      let observerRanks = [
+        'Apprentice Stargazer',
+        'Observer',
+        'Senior Astrophotographer',
+        'Chief Astronomer'
+      ];
+      return rank is string && (
+        rank in observerRanks ||
+        (role == 'supreme_admin' && rank == 'Supreme Sovereign')
+      );
+    }
+
+    function isValidSavedLocation(loc) {
+      return loc is map &&
+        loc.keys().hasAll(['name', 'latitude', 'longitude']) &&
+        loc.keys().hasOnly(['name', 'latitude', 'longitude', 'updatedAt']) &&
+        isNonEmptyString(loc.name, 1, 120) &&
+        loc.latitude is number && loc.latitude >= -90 && loc.latitude <= 90 &&
+        loc.longitude is number && loc.longitude >= -180 && loc.longitude <= 180 &&
+        (!('updatedAt' in loc) || isValidUpdatedAt(loc.updatedAt));
+    }
+
+    function isValidFavoritesList(favorites) {
+      return favorites is list &&
+        favorites.size() <= 500 &&
+        (
+          favorites.size() == 0 ||
+          (
+            favorites.join(',').size() <= 40000 &&
+            isNonEmptyString(favorites[0], 1, 120) &&
+            isNonEmptyString(favorites[favorites.size() - 1], 1, 120)
+          )
+        );
+    }
+
+    function isValidObservationLog(entry) {
+      return entry is map &&
+        entry.keys().hasAll([
+          'id',
+          'starId',
+          'starName',
+          'date',
+          'locationName',
+          'notes',
+          'altitude',
+          'azimuth'
+        ]) &&
+        entry.keys().hasOnly([
+          'id',
+          'starId',
+          'starName',
+          'date',
+          'locationName',
+          'notes',
+          'altitude',
+          'azimuth',
+          'equipment',
+          'seeingCondition'
+        ]) &&
+        isNonEmptyString(entry.id, 1, 120) &&
+        (isNonEmptyString(entry.starId, 1, 120) || entry.starId is number) &&
+        isNonEmptyString(entry.starName, 1, 160) &&
+        isNonEmptyString(entry.date, 1, 80) &&
+        isNonEmptyString(entry.locationName, 1, 160) &&
+        entry.notes is string && entry.notes.size() <= 2000 &&
+        entry.altitude is number && entry.altitude >= -90 && entry.altitude <= 90 &&
+        entry.azimuth is number && entry.azimuth >= 0 && entry.azimuth <= 360 &&
+        (!('equipment' in entry) || (
+          entry.equipment is string &&
+          entry.equipment in [
+            'Naked Eye',
+            'Binoculars',
+            'Refractor Telescope',
+            'Reflector Telescope'
+          ]
+        )) &&
+        (!('seeingCondition' in entry) || (
+          entry.seeingCondition is string &&
+          entry.seeingCondition in [
+            'Pristine',
+            'Good',
+            'Moderate',
+            'Light Pollution'
+          ]
+        ));
+    }
+
+    function isValidObservationLogsList(logs) {
+      return logs is list &&
+        logs.size() <= 500 &&
+        (
+          logs.size() == 0 ||
+          (
+            isValidObservationLog(logs[0]) &&
+            (logs.size() < 2 || isValidObservationLog(logs[1])) &&
+            (logs.size() < 3 || isValidObservationLog(logs[2])) &&
+            (logs.size() < 4 || isValidObservationLog(logs[3])) &&
+            (logs.size() < 5 || isValidObservationLog(logs[4])) &&
+            isValidObservationLog(logs[logs.size() - 1])
+          )
+        );
+    }
+
+    function isValidPreferences(prefs) {
+      return prefs is map &&
+        prefs.keys().hasOnly([
+          'nightVisionMode',
+          'soundEnabled',
+          'coordinateFormat',
+          'distanceUnit',
+          'starGlowIntensity',
+          'fovSpeed'
+        ]) &&
+        (!('nightVisionMode' in prefs) || prefs.nightVisionMode is bool) &&
+        (!('soundEnabled' in prefs) || prefs.soundEnabled is bool) &&
+        (!('coordinateFormat' in prefs) || (
+          prefs.coordinateFormat is string &&
+          prefs.coordinateFormat in ['DECIMAL', 'DMS']
+        )) &&
+        (!('distanceUnit' in prefs) || (
+          prefs.distanceUnit is string &&
+          prefs.distanceUnit in ['LY', 'PARSEC']
+        )) &&
+        (!('starGlowIntensity' in prefs) || (
+          prefs.starGlowIntensity is number &&
+          prefs.starGlowIntensity >= 0 &&
+          prefs.starGlowIntensity <= 10
+        )) &&
+        (!('fovSpeed' in prefs) || (
+          prefs.fovSpeed is number &&
+          prefs.fovSpeed >= 0.1 &&
+          prefs.fovSpeed <= 10
+        ));
+    }
+
+    // ===============================================================
+    // Domain Validator (enforced on BOTH create and update)
+    // ===============================================================
+
+    function isValidUser(data, userId) {
+      return hasOnlyAllowedFields([
+          'id',
+          'name',
+          'callsign',
+          'email',
+          'avatarUrl',
+          'rank',
+          'role',
+          'adminTitle',
+          'joinedDate',
+          'savedLocation',
+          'favorites',
+          'observationLogs',
+          'preferences',
+          'updatedAt'
+        ]) &&
+        hasRequiredFields([
+          'id',
+          'name',
+          'callsign',
+          'email',
+          'avatarUrl',
+          'rank',
+          'role',
+          'joinedDate',
+          'favorites',
+          'observationLogs',
+          'preferences'
+        ]) &&
+        isNonEmptyString(data.id, 1, 128) &&
+        data.id == userId &&
+        isNonEmptyString(data.name, 1, 80) &&
+        isNonEmptyString(data.callsign, 1, 40) &&
+        isValidEmail(data.email) &&
+        isValidAvatarUrl(data.avatarUrl) &&
+        data.role is string &&
+        data.role in ['observer', 'supreme_admin'] &&
+        isValidRank(data.rank, data.role) &&
+        (!('adminTitle' in data) || (
+          data.role == 'supreme_admin' &&
+          isNonEmptyString(data.adminTitle, 1, 80)
+        )) &&
+        isNonEmptyString(data.joinedDate, 1, 40) &&
+        (!('savedLocation' in data) || isValidSavedLocation(data.savedLocation)) &&
+        isValidFavoritesList(data.favorites) &&
+        isValidObservationLogsList(data.observationLogs) &&
+        isValidPreferences(data.preferences) &&
+        (!('updatedAt' in data) || isValidUpdatedAt(data.updatedAt));
+    }
+
+    // ===============================================================
+    // User Profiles Collection
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+        uidUnchanged() &&
+        isValidUser(request.resource.data, userId) &&
+        hasAuthEmail() &&
+        request.resource.data.email.lower() == request.auth.token.email.lower() &&
+        (
+          (
+            request.resource.data.role == 'observer' &&
+            !('adminTitle' in request.resource.data)
+          ) ||
+          (
+            request.resource.data.role == 'supreme_admin' &&
+            isSupremeAdminEmail() &&
+            request.resource.data.rank == 'Supreme Sovereign'
+          )
+        );
+
+      allow update: if isOwner(userId) &&
+        uidNotModified() &&
+        isValidUser(request.resource.data, userId) &&
+        areImmutableFieldsUnchanged([
+          'id',
+          'email',
+          'role',
+          'joinedDate',
+          'adminTitle'
+        ]);
+
+      allow delete: if false;
+    }
+  }
+}

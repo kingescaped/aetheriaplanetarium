@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  ChevronRight,
   MapPin,
   Clock,
   Layers,
@@ -20,6 +18,9 @@ import {
   Globe2,
   Orbit,
   Satellite,
+  Navigation2,
+  Loader2,
+  AlertCircle,
   X
 } from 'lucide-react';
 import { CelestialSettings, ObserverLocation, Star } from '../../types/celestial';
@@ -38,6 +39,10 @@ interface SidebarProps {
   onToggle: () => void;
   location: ObserverLocation;
   onLocationChange: (newLoc: ObserverLocation) => void;
+  onGetGeolocation?: () => void;
+  isLocating?: boolean;
+  geoError?: string | null;
+  geoAccuracy?: number | null;
   currentDate: Date;
   onDateChange: (date: Date) => void;
   settings: CelestialSettings;
@@ -132,6 +137,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggle,
   location,
   onLocationChange,
+  onGetGeolocation,
+  isLocating = false,
+  geoError = null,
+  geoAccuracy = null,
   currentDate,
   onDateChange,
   settings,
@@ -239,6 +248,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {t.observerCoords}
             </span>
             <span className="text-[10px] text-slate-500 font-mono">WGS84</span>
+          </div>
+
+          {/* Primary GPS Geolocation Card */}
+          <div className="p-3 rounded-2xl bg-slate-900/65 border border-cyan-500/25 space-y-2.5">
+            <button
+              type="button"
+              onClick={onGetGeolocation}
+              disabled={isLocating}
+              data-testid="sidebar-gps-btn"
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500/25 to-blue-600/25 hover:from-cyan-500/35 hover:to-blue-500/35 active:scale-[0.99] border border-cyan-400/50 text-cyan-100 font-semibold text-xs shadow-glow-cyan transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            >
+              {isLocating ? (
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-300 shrink-0" aria-hidden="true" />
+              ) : (
+                <Navigation2 className="w-4 h-4 text-cyan-300 shrink-0" aria-hidden="true" />
+              )}
+              <span>{isLocating ? t.geoLocating : t.geoGetCurrentBtn}</span>
+            </button>
+
+            <div className="flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-950/75 border border-white/5">
+              <div className="flex items-start gap-2 min-w-0">
+                <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" aria-hidden="true" />
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-white truncate">{location.name}</div>
+                  <div className="text-[10.5px] font-mono tabular-nums text-cyan-300/90 mt-0.5">
+                    {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
+                  </div>
+                </div>
+              </div>
+              {geoAccuracy !== null && geoAccuracy !== undefined && (
+                <span className="text-[10px] font-mono tabular-nums text-emerald-300 px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/30 shrink-0">
+                  ±{geoAccuracy} m
+                </span>
+              )}
+            </div>
+
+            {geoError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-950/65 border border-rose-400/40 text-rose-100 text-[11px] leading-snug"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-rose-300 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{geoError}</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">

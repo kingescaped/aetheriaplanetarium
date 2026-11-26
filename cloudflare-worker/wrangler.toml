@@ -1,0 +1,14 @@
+name = "aetheria-planetarium-api"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "aetheria-planetarium-lvq"
+ADMIN_EMAIL = "admin@lvq.std"
+FIREBASE_WEB_API_KEY = "AIzaSyAtCwBzKfITZgc7SaHxWDbIlB6w_4bx3uU"
+
+[[d1_databases]]
+binding = "AETHERIA_DB"
+database_name = "aetheria-planetarium-db"
+database_id = "fa789aa3-5040-46bc-9c6a-4d8fc4eb6e2d"

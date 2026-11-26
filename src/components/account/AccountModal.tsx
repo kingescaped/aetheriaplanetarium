@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   User,
   X,
   Bookmark,
   BookOpen,
-  Settings,
   Sparkles,
   ChevronRight,
-  ChevronLeft,
   ChevronDown,
   Trash2,
   Moon,
@@ -18,14 +16,29 @@ import {
   Volume2,
   Info,
   MapPin,
-  Crosshair
+  Crosshair,
+  Camera,
+  Loader2,
+  LogIn,
+  LogOut,
+  Navigation2,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  Save,
 } from 'lucide-react';
-import { UserProfile, ObservationLog, UserPreferences } from '../../types/account';
+import {
+  UserProfile,
+  ObservationLog,
+  UserPreferences,
+} from '../../types/account';
 import { Star, CelestialSettings, ObserverLocation } from '../../types/celestial';
 import { Language, TRANSLATIONS } from '../../utils/i18n';
 import { soundFx } from '../../utils/audio';
+import { validateAvatarFile } from '../../utils/avatarResize';
 import { IOSNavigationBar } from '../layout/IOSNavigationBar';
 import { IOSSwitch } from '../layout/IOSSwitch';
+import { SupremeAdminBadge } from '../common/SupremeAdminBadge';
 import { UsePWAResult } from '../../hooks/usePWA';
 import { AboutSection } from './AboutSection';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +48,20 @@ interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: UserProfile;
-  onUpdateUser: (updated: UserProfile) => void;
+  isAdmin: boolean;
+  godModeEnabled?: boolean;
+  onToggleGodMode?: (enabled: boolean) => void;
+  adminBadgeJustLanded?: boolean;
+  isAdminEntranceActive?: boolean;
+  onUpdateUser: (updated: UserProfile) => Promise<void> | void;
+  onOpenAuth: () => void;
+  onSignOut: () => Promise<void> | void;
+  onGetGeolocation: () => Promise<ObserverLocation | null>;
+  isLocating: boolean;
+  geoError?: string | null;
+  geoAccuracy?: number | null;
+  onSaveLocationToProfile: (loc?: ObserverLocation) => Promise<void>;
+  onUploadAvatar: (file: File) => Promise<string>;
   favorites: string[];
   onToggleFavorite: (starId: string | number) => void;
   onSelectStar: (starId: string | number) => void;
@@ -59,7 +85,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   isOpen,
   onClose,
   user,
+  isAdmin,
+  godModeEnabled = true,
+  onToggleGodMode,
+  adminBadgeJustLanded = false,
+  isAdminEntranceActive = false,
   onUpdateUser,
+  onOpenAuth,
+  onSignOut,
+  onGetGeolocation,
+  isLocating,
+  geoError,
+  geoAccuracy,
+  onSaveLocationToProfile,
+  onUploadAvatar,
   favorites,
   onToggleFavorite,
   onSelectStar,
@@ -84,6 +123,26 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>(user.name);
   const [callsignInput, setCallsignInput] = useState<string>(user.callsign);
+  const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false);
+  const [profileNotice, setProfileNotice] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState<boolean>(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarStatus, setAvatarStatus] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [isSavingLocation, setIsSavingLocation] = useState<boolean>(false);
+  const [locationNotice, setLocationNotice] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
 
   // Journal Inputs
   const [newLogNotes, setNewLogNotes] = useState<string>('');
@@ -93,8 +152,28 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   const t = TRANSLATIONS[lang];
 
+  useEffect(() => {
+    setNameInput(user.name);
+    setCallsignInput(user.callsign);
+  }, [user.id, user.name, user.callsign, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setProfileNotice(null);
+      setAvatarStatus(null);
+      setLocationNotice(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && isAdmin && isAdminEntranceActive) {
+      setDesktopTab('profile');
+      setActiveSection('profile');
+    }
+  }, [isOpen, isAdmin, isAdminEntranceActive]);
+
   // Global Escape key listener for desktop
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
@@ -110,7 +189,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     setActiveSection(null);
   };
 
-  const { handlers: rootSwipeHandlers, style: rootSwipeStyle, backdropOpacity } = useEdgeSwipeBack({
+  const { handlers: rootSwipeHandlers, style: rootSwipeStyle } = useEdgeSwipeBack({
     onBack: onClose,
     edge: 'left',
     enabled: isOpen && activeSection === null,
@@ -130,16 +209,113 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    if (isSavingProfile) return;
     soundFx.playToggle(true);
-    onUpdateUser({
-      ...user,
-      name: nameInput.trim() || user.name,
-      callsign: callsignInput.trim() || user.callsign,
-      isGuest: false,
-    });
-    setIsEditing(false);
+    setIsSavingProfile(true);
+    setProfileNotice(null);
+    try {
+      await onUpdateUser({
+        ...user,
+        name: nameInput.trim() || user.name,
+        callsign: callsignInput.trim() || user.callsign,
+      });
+      setIsEditing(false);
+      if (!user.isGuest) {
+        setProfileNotice({ type: 'success', text: t.profileSaveBtnSuccess });
+      }
+    } catch {
+      setProfileNotice({
+        type: 'error',
+        text: lang === 'vi' ? 'Không thể lưu hồ sơ lúc này.' : 'Failed to save profile right now.',
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
+
+  const handleTriggerAvatarPicker = () => {
+    soundFx.playTabClick();
+    if (user.isGuest) {
+      setAvatarStatus({ type: 'error', text: t.avatarAuthRequired });
+      return;
+    }
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (user.isGuest) {
+      setAvatarStatus({ type: 'error', text: t.avatarAuthRequired });
+      return;
+    }
+
+    const validation = validateAvatarFile(file);
+    if (!validation.valid) {
+      setAvatarStatus({ type: 'error', text: t.avatarInvalidFile });
+      return;
+    }
+
+    const localObjectUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(localObjectUrl);
+    setAvatarStatus(null);
+    setIsUploadingAvatar(true);
+
+    try {
+      await onUploadAvatar(file);
+      soundFx.playToggle(true);
+      setAvatarStatus({ type: 'success', text: t.avatarUploadSuccess });
+    } catch {
+      setAvatarStatus({ type: 'error', text: t.avatarUploadError });
+    } finally {
+      setIsUploadingAvatar(false);
+      setAvatarPreviewUrl(null);
+      URL.revokeObjectURL(localObjectUrl);
+    }
+  };
+
+  const handleSaveCurrentLocation = async () => {
+    if (isSavingLocation) return;
+    soundFx.playTabClick();
+    if (user.isGuest) {
+      onOpenAuth();
+      return;
+    }
+    setIsSavingLocation(true);
+    setLocationNotice(null);
+    try {
+      await onSaveLocationToProfile(location);
+      soundFx.playToggle(true);
+      setLocationNotice({ type: 'success', text: t.profileLocationSaved });
+    } catch {
+      setLocationNotice({
+        type: 'error',
+        text:
+          lang === 'vi'
+            ? 'Không thể lưu vị trí vào hồ sơ lúc này.'
+            : 'Unable to save location to cloud profile.',
+      });
+    } finally {
+      setIsSavingLocation(false);
+    }
+  };
+
+  const handleSignOutClick = async () => {
+    if (isSigningOut) return;
+    soundFx.playTabClick();
+    setIsSigningOut(true);
+    try {
+      await onSignOut();
+      setIsEditing(false);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  const displayedAvatarUrl = avatarPreviewUrl || user.avatarUrl;
 
   const handleAddJournalEntry = () => {
     const star = starsCatalog.find((s) => s.id === selectedLogStarId);
@@ -180,61 +356,240 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       case 'profile':
         return (
           <div className="space-y-4">
-            {/* Observer Card */}
-            <div className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border-2 border-cyan-400/50 flex items-center justify-center text-2xl font-bold font-hud text-cyan-300 shadow-glow-cyan flex-shrink-0">
-                {user.name.charAt(0).toUpperCase()}
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-space-950" />
+            {/* Hidden file input for Avatar upload */}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/*"
+              onChange={handleAvatarFileChange}
+              className="sr-only"
+              aria-label={t.avatarChangeBtn}
+            />
+
+            {/* Guest Sign In / Register Banner OR Verified Cloud Account Bar */}
+            {user.isGuest ? (
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/70 via-slate-900/90 to-indigo-950/70 border border-cyan-400/35 shadow-[0_10px_28px_rgba(2,132,199,0.2)] space-y-3">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white">{t.authSignInBannerTitle}</h3>
+                  <p className="text-xs text-cyan-100/80 leading-relaxed">{t.authSignInBannerDesc}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playModalTransition();
+                    onOpenAuth();
+                  }}
+                  data-testid="account-open-auth-btn"
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99] text-white text-xs font-semibold shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                >
+                  <LogIn className="w-4 h-4" aria-hidden="true" />
+                  <span>{t.authSignInAction}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl bg-slate-900/75 border border-emerald-400/25">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider font-hud text-emerald-300">
+                      {t.authVerifiedAccount}
+                    </div>
+                    <div className="text-xs text-white font-mono truncate">{user.email}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOutClick}
+                  disabled={isSigningOut}
+                  data-testid="account-signout-btn"
+                  className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 border border-rose-400/35 text-rose-100 text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                >
+                  {isSigningOut ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  <span>{t.authSignOut}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Grand Supreme Sovereign Admin Card */}
+            {isAdmin && (
+              <SupremeAdminBadge
+                variant="card"
+                lang={lang}
+                adminTitle={user.adminTitle}
+                justLanded={adminBadgeJustLanded}
+                godModeEnabled={godModeEnabled}
+                onToggleGodMode={onToggleGodMode}
+              />
+            )}
+
+            {/* Observer Card with Interactive Avatar Upload */}
+            <div
+              className={`flex items-center space-x-4 p-4 rounded-2xl border ${
+                isAdmin
+                  ? 'bg-gradient-to-r from-[#170c33]/85 via-slate-900/80 to-[#1f103d]/85 border-amber-400/40 shadow-[0_8px_24px_rgba(0,0,0,0.45)]'
+                  : 'bg-slate-900/60 border-white/10'
+              }`}
+            >
+              <div className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={handleTriggerAvatarPicker}
+                  disabled={isUploadingAvatar}
+                  data-testid="profile-avatar-upload-btn"
+                  title={t.avatarChangeBtn}
+                  aria-label={t.avatarChangeBtn}
+                  className={`group relative w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center text-2xl font-bold font-hud transition-all cursor-pointer disabled:cursor-wait focus:outline-none focus-visible:ring-2 ${
+                    isAdmin
+                      ? 'bg-gradient-to-tr from-amber-950 to-purple-950 border-2 border-amber-300/80 text-amber-200 shadow-[0_0_20px_rgba(250,204,21,0.35)] focus-visible:ring-amber-300'
+                      : 'bg-gradient-to-tr from-cyan-950 to-indigo-950 border-2 border-cyan-400/50 text-cyan-300 shadow-glow-cyan focus-visible:ring-cyan-400'
+                  }`}
+                >
+                  {displayedAvatarUrl ? (
+                    <img
+                      src={displayedAvatarUrl}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{user.name.charAt(0).toUpperCase()}</span>
+                  )}
+
+                  <span
+                    className={`absolute inset-0 bg-black/55 flex items-center justify-center transition-opacity ${
+                      isUploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Camera className="w-5 h-5 text-white" aria-hidden="true" />
+                    )}
+                  </span>
+                </button>
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-space-950"
+                />
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base font-bold text-white truncate">{user.name}</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-hud bg-purple-950/80 text-purple-300 border border-purple-500/30">
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-hud border ${
+                      isAdmin
+                        ? 'bg-amber-950/70 text-amber-200 border-amber-400/40'
+                        : 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                    }`}
+                  >
                     {user.rank}
                   </span>
                 </div>
                 <div className="text-xs text-cyan-400 font-mono mt-0.5">
                   Callsign: @{user.callsign}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-slate-400" />
-                  <span>{location.name} ({location.latitude.toFixed(1)}°, {location.longitude.toFixed(1)}°)</span>
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleTriggerAvatarPicker}
+                    disabled={isUploadingAvatar}
+                    data-testid="profile-change-avatar-text-btn"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 border border-white/10 text-[11px] text-slate-200 hover:text-white transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="w-3 h-3 animate-spin text-cyan-300" aria-hidden="true" />
+                    ) : (
+                      <Camera className="w-3 h-3 text-cyan-300" aria-hidden="true" />
+                    )}
+                    <span>{isUploadingAvatar ? t.avatarUploading : t.avatarChangeBtn}</span>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Edit Profile Form */}
+            {/* Avatar Status Feedback */}
+            {avatarStatus && (
+              <div
+                role={avatarStatus.type === 'error' ? 'alert' : 'status'}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                  avatarStatus.type === 'success'
+                    ? 'bg-emerald-950/55 border-emerald-400/35 text-emerald-100'
+                    : 'bg-rose-950/60 border-rose-400/40 text-rose-100'
+                }`}
+              >
+                {avatarStatus.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" aria-hidden="true" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" aria-hidden="true" />
+                )}
+                <span className="flex-1">{avatarStatus.text}</span>
+                {user.isGuest && avatarStatus.type === 'error' && (
+                  <button
+                    type="button"
+                    onClick={onOpenAuth}
+                    className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[11px] font-semibold hover:bg-cyan-500/30 cursor-pointer shrink-0"
+                  >
+                    {t.authSignInTab}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Field 1: Observer Name & Callsign Editor */}
             {isEditing ? (
-              <div className="p-4 rounded-2xl bg-slate-900/40 border border-white/10 space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/10 space-y-3">
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-hud uppercase">{t.observerName}</label>
+                  <label
+                    htmlFor="profile-name-input"
+                    className="block text-[10px] text-slate-300 mb-1 font-hud uppercase"
+                  >
+                    {t.observerName}
+                  </label>
                   <input
+                    id="profile-name-input"
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
+                    disabled={isSavingProfile}
                     className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-hud uppercase">{t.callsign}</label>
+                  <label
+                    htmlFor="profile-callsign-input"
+                    className="block text-[10px] text-slate-300 mb-1 font-hud uppercase"
+                  >
+                    {t.callsign}
+                  </label>
                   <input
+                    id="profile-callsign-input"
                     type="text"
                     value={callsignInput}
                     onChange={(e) => setCallsignInput(e.target.value)}
+                    disabled={isSavingProfile}
                     className="w-full px-3 py-2 rounded-xl glass-input text-base md:text-xs font-mono"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button
+                    type="button"
                     onClick={handleSaveProfile}
-                    className="flex-1 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 font-semibold"
+                    disabled={isSavingProfile}
+                    data-testid="profile-save-btn"
+                    className="flex-1 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-100 border border-cyan-400/40 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                   >
-                    {t.saveProfile}
+                    {isSavingProfile && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+                    <span>{t.saveProfile}</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    disabled={isSavingProfile}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs cursor-pointer"
                   >
                     {t.cancel}
                   </button>
@@ -242,22 +597,141 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() => setIsEditing(true)}
-                className="w-full py-2.5 rounded-xl glass-panel text-xs text-slate-200 hover:text-white hover:border-cyan-500/40 font-medium transition-all"
+                data-testid="profile-edit-btn"
+                className="w-full py-2.5 rounded-xl glass-panel text-xs text-slate-100 hover:text-white hover:border-cyan-500/40 font-medium transition-all cursor-pointer"
               >
-                {lang === 'vi' ? 'Chỉnh sửa thông tin hồ sơ' : 'Edit Profile Information'}
+                {lang === 'vi' ? 'Chỉnh sửa Tên & Hô hiệu' : 'Edit Observer Name & Callsign'}
               </button>
             )}
+
+            {profileNotice && (
+              <div
+                role={profileNotice.type === 'error' ? 'alert' : 'status'}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                  profileNotice.type === 'success'
+                    ? 'bg-emerald-950/55 border-emerald-400/35 text-emerald-100'
+                    : 'bg-rose-950/60 border-rose-400/40 text-rose-100'
+                }`}
+              >
+                {profileNotice.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" aria-hidden="true" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" aria-hidden="true" />
+                )}
+                <span>{profileNotice.text}</span>
+              </div>
+            )}
+
+            {/* Field 3: Current Location + GPS + Save Location to Firestore */}
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/10 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-cyan-400 shrink-0" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-white">{t.currentLocation}</span>
+                </div>
+                {geoAccuracy !== null && geoAccuracy !== undefined && (
+                  <span className="text-[10px] font-mono tabular-nums text-cyan-300 px-2 py-0.5 rounded-full bg-cyan-950/70 border border-cyan-500/30">
+                    {t.geoAccuracyLabel}: ±{geoAccuracy} m
+                  </span>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
+                <div className="text-xs font-medium text-white">{location.name}</div>
+                <div className="text-[11px] font-mono tabular-nums text-cyan-300">
+                  {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
+                </div>
+                {user.savedLocation && (
+                  <div className="pt-1.5 mt-1.5 border-t border-white/5 text-[11px] text-slate-300 flex items-center justify-between gap-2">
+                    <span className="text-slate-400 shrink-0">{t.profileSavedLocationLabel}:</span>
+                    <span className="font-mono tabular-nums text-emerald-300 truncate">
+                      {user.savedLocation.name} ({user.savedLocation.latitude.toFixed(2)}°, {user.savedLocation.longitude.toFixed(2)}°)
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {geoError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-950/60 border border-rose-400/40 text-rose-100 text-xs"
+                >
+                  <AlertCircle className="w-4 h-4 text-rose-300 shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{geoError}</span>
+                </div>
+              )}
+
+              {locationNotice && (
+                <div
+                  role={locationNotice.type === 'error' ? 'alert' : 'status'}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                    locationNotice.type === 'success'
+                      ? 'bg-emerald-950/55 border-emerald-400/35 text-emerald-100'
+                      : 'bg-rose-950/60 border-rose-400/40 text-rose-100'
+                  }`}
+                >
+                  {locationNotice.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" aria-hidden="true" />
+                  )}
+                  <span>{locationNotice.text}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playTabClick();
+                    void onGetGeolocation();
+                  }}
+                  disabled={isLocating}
+                  data-testid="profile-gps-btn"
+                  className="py-2.5 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/45 text-cyan-100 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                >
+                  {isLocating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-300" aria-hidden="true" />
+                  ) : (
+                    <Navigation2 className="w-3.5 h-3.5 text-cyan-300" aria-hidden="true" />
+                  )}
+                  <span>{isLocating ? t.geoLocating : t.profileGetGpsBtn}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentLocation}
+                  disabled={isSavingLocation}
+                  data-testid="profile-save-location-btn"
+                  className="py-2.5 px-3 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/45 text-indigo-100 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                >
+                  {isSavingLocation ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-300" aria-hidden="true" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5 text-indigo-300" aria-hidden="true" />
+                  )}
+                  <span>
+                    {isSavingLocation ? t.profileSavingLocation : t.profileSaveLocationBtn}
+                  </span>
+                </button>
+              </div>
+            </div>
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
                 <div className="text-[10px] text-slate-400 font-hud">{t.favoriteObjects}</div>
-                <div className="text-xl font-bold font-mono text-cyan-400 mt-1">{favorites.length}</div>
+                <div className="text-xl font-bold font-mono tabular-nums text-cyan-400 mt-1">
+                  {favorites.length}
+                </div>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
                 <div className="text-[10px] text-slate-400 font-hud">{t.loggedObservations}</div>
-                <div className="text-xl font-bold font-mono text-purple-400 mt-1">{observationLogs.length}</div>
+                <div className="text-xl font-bold font-mono tabular-nums text-purple-400 mt-1">
+                  {observationLogs.length}
+                </div>
               </div>
             </div>
           </div>
@@ -766,23 +1240,78 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               title={lang === 'vi' ? 'Cài đặt' : 'Settings'}
             />
             <div className="flex-1 overflow-y-auto py-4 safe-px space-y-4 overscroll-contain touch-manipulation">
+              {/* Guest Sign In Banner on Mobile Hub */}
+              {user.isGuest && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/75 via-slate-900/90 to-indigo-950/75 border border-cyan-400/35 space-y-2.5">
+                  <div className="text-sm font-bold text-white">{t.authSignInBannerTitle}</div>
+                  <p className="text-xs text-cyan-100/80 leading-relaxed">{t.authSignInBannerDesc}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundFx.playModalTransition();
+                      onOpenAuth();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4" aria-hidden="true" />
+                    <span>{t.authSignInAction}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Grand Supreme Sovereign Badge on Mobile Settings Hub (hidden while sub-view covers it so Entrance fly targets the visible Profile crest) */}
+              {isAdmin && activeSection === null && (
+                <SupremeAdminBadge
+                  variant="card"
+                  lang={lang}
+                  adminTitle={user.adminTitle}
+                  justLanded={adminBadgeJustLanded}
+                  godModeEnabled={godModeEnabled}
+                  onToggleGodMode={onToggleGodMode}
+                />
+              )}
+
               {/* Profile Card Banner */}
               <div
                 onClick={() => handleOpenSection('profile')}
-                className="p-4 rounded-3xl glass-panel border border-cyan-500/30 flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer"
+                className={`p-4 rounded-3xl glass-panel border flex items-center space-x-3.5 active:scale-98 transition-all cursor-pointer ${
+                  isAdmin ? 'border-amber-400/50 shadow-[0_0_20px_rgba(250,204,21,0.22)]' : 'border-cyan-500/30'
+                }`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-xl font-bold font-hud text-cyan-300 flex-shrink-0">
-                  {user.name.charAt(0).toUpperCase()}
+                <div
+                  className={`w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center text-xl font-bold font-hud flex-shrink-0 ${
+                    isAdmin
+                      ? 'bg-amber-950/80 border-2 border-amber-300/80 text-amber-200'
+                      : 'bg-cyan-950/80 border border-cyan-400/50 text-cyan-300'
+                  }`}
+                >
+                  {displayedAvatarUrl ? (
+                    <img
+                      src={displayedAvatarUrl}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user.name.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-sm font-bold text-white truncate">{user.name}</h3>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-hud bg-purple-950/80 text-purple-300 border border-purple-500/30">
+                    <span
+                      className={`px-1.5 py-0.2 rounded text-[9px] font-hud border ${
+                        isAdmin
+                          ? 'bg-amber-950/75 text-amber-200 border-amber-400/40'
+                          : 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                      }`}
+                    >
                       {user.rank.split(' ')[0]}
                     </span>
                   </div>
-                  <div className="text-[11px] text-cyan-400 font-mono">@{user.callsign}</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{location.name}</div>
+                  <div className="text-[11px] text-cyan-400 font-mono truncate">
+                    @{user.callsign}{!user.isGuest && user.email ? ` • ${user.email}` : ''}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 truncate">{location.name}</div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-500" />
               </div>
@@ -818,6 +1347,23 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Mobile Sign Out Button when signed in */}
+              {!user.isGuest && (
+                <button
+                  type="button"
+                  onClick={handleSignOutClick}
+                  disabled={isSigningOut}
+                  className="w-full py-3 px-4 rounded-2xl bg-rose-950/60 hover:bg-rose-900/70 border border-rose-400/35 text-rose-100 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isSigningOut ? (
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
+                  )}
+                  <span>{t.authSignOut}</span>
+                </button>
+              )}
             </div>
           </div>
 
